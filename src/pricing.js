@@ -42,4 +42,19 @@ function paymentPlan(price) {
   };
 }
 
-module.exports = { QueryError, childBand, childFactors, parseChildAges, paymentPlan };
+// Yerləşmə kodu (SAMO-tour üslubu): pax-a görə avtomatik.
+//   2 böyük → DBL; 2 böyük + 8 yaş → DBL+1CHD(2-11.99); körpə → +1INF(0-1.99); 12+ yaş böyük sayılır.
+// family = otaqda 4+ nəfər (körpəsiz) və ya 3 böyük + uşaq → "Family Room" tələb olunur.
+const ADULT_CODES = ['', 'SGL', 'DBL', 'TRPL', 'QDPL'];
+function accommodation(adults, childAges) {
+  const ages = (childAges || []).map((a) => (Number.isInteger(a) ? a : config.defaultChildAge));
+  const ad = adults + ages.filter((a) => a >= 12).length;
+  const chd = ages.filter((a) => a >= 2 && a < 12).length;
+  const inf = ages.filter((a) => a < 2).length;
+  let code = ADULT_CODES[ad] || `${ad}ADL`;
+  if (chd) code += `+${chd}CHD(2-11.99)`;
+  if (inf) code += `+${inf}INF(0-1.99)`;
+  return { code, family: ad + chd >= 4 || (ad >= 3 && chd >= 1) };
+}
+
+module.exports = { QueryError, childBand, childFactors, parseChildAges, paymentPlan, accommodation };

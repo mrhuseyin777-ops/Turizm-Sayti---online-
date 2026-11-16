@@ -86,7 +86,7 @@ const ID_RE = /^[A-Za-z0-9_-]{12}$/;
 // Seçim yaradılarkən təkliflər serverin öz axtarışından yenidən götürülür — klientin göndərdiyi
 // qiymət, ad, operator və s. NƏZƏRƏ ALINMIR (qiymət manipulyasiyası qorunması).
 // Yalnız təklif qiymətinə təsir edən axtarış parametrləri ötürülür (filtrlər qiyməti dəyişmir).
-const SEL_QUERY_KEYS = ['type', 'q', 'destinationId', 'checkIn', 'flex', 'nights', 'adults', 'children', 'childAges', 'lastMinute'];
+const SEL_QUERY_KEYS = ['type', 'q', 'destinationId', 'checkIn', 'checkInTo', 'flex', 'nights', 'nightsTo', 'adults', 'children', 'childAges', 'lastMinute'];
 async function resolveOffersBySearch(query, offerIds) {
   const raw = {};
   for (const k of SEL_QUERY_KEYS) {
@@ -95,7 +95,7 @@ async function resolveOffersBySearch(query, offerIds) {
   }
   raw.currency = 'AZN';
   raw.flat = '1';
-  const r = await search(raw);
+  const r = await search(raw, { offerLimit: Infinity }); // seçilmiş təklif 1000-lik limitdən kənarda qala bilər
   const byId = new Map((r.offers || []).map((o) => [o.id, o]));
   return { pax: { adults: r.query.adults, children: r.query.children }, offers: offerIds.map((id) => byId.get(id) || null) };
 }

@@ -2,7 +2,7 @@
 (async function () {
   const $ = (s) => document.querySelector(s);
   const cfg = await api('/api/config');
-  const state = { type: 'package', view: 'matrix', data: null, selected: new Set(), sortKey: 'price', sortDir: 1 };
+  const state = { type: 'package', view: 'matrix', data: null, selected: new Set(), sortKey: 'price', sortDir: 1, facetFor: '' };
   const markup = () => Math.max(0, Number($('#markup').value) || 0);
   const withMarkup = (p) => Math.round(p * (1 + markup() / 100));
 
@@ -80,8 +80,22 @@
   document.addEventListener('langchange', syncAges);
 
   $('#checkIn').value = defaultDate(30);
+  $('#checkInTo').value = defaultDate(36);
   $('#markup').value = store.get('b2bMarkup', 0);
   autocomplete($('#dest'));
+  // Tarix aralığı (gediş -dan / -dək, maks. 14 gün) və gecə aralığı; qısa yollar (dəqiq, ±3, +7, +14)
+  const range = bindRangeInputs({ from: $('#checkIn'), to: $('#checkInTo'), nFrom: $('#nights'), nTo: $('#nightsTo') }, cfg.searchLimits);
+  $('#dateQuick').addEventListener('click', (e) => { const b = e.target.closest('[data-span]'); if (b) range.quick(b.dataset.span); });
+
+  // Rayon və otel multi-select-ləri (axtarışlı siyahı) + otel atributları + yer/satış filtrləri
+  const districtMs = msCreate($('#districtMs'), { title: 'f_district' });
+  const hotelMs = msCreate($('#hotelMs'), { title: 'f_hotel', onlySelToggle: true });
+  $('#attrFilter').innerHTML = HOTEL_ATTR_KEYS.map((a) => `<label><input type="checkbox" name="attrs" value="${a}"> <span data-i18n="attr_${a}">${esc(t('attr_' + a))}</span></label>`).join('');
+  let msT;
+  $('#advFilters').addEventListener('mschange', () => { clearTimeout(msT); msT = setTimeout(run, 250); });
+  $('#advFilters').addEventListener('change', (e) => { if (e.target.matches('input[type="checkbox"]')) run(); });
+  $('#rateLine').innerHTML = rateLineHtml(cfg.operatorRate);
+  document.addEventListener('langchange', () => { msRender(districtMs); msRender(hotelMs); $('#rateLine').innerHTML = rateLineHtml((state.data && state.data.operatorRate) || cfg.operatorRate); if (state.data) render(); });
 
   $('#typeTabs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-type]'); if (!b) return;
@@ -99,19 +113,31 @@
 
   async function run() {
     if (!$('#dest').value.trim()) return;
+    range.fix();
     $('#tableWrap').innerHTML = '<div class="spinner"></div>';
+    // İstiqamət/növ dəyişibsə köhnə rayon/otel seçimi aid deyil
+    const facetKey = `${$('#dest').dataset.id || $('#dest').value.trim().toLowerCase()}|${state.type}`;
+    if (state.facetFor && state.facetFor !== facetKey) { msSetSelected(districtMs, []); msSetSelected(hotelMs, []); msSetItems(districtMs, []); msSetItems(hotelMs, []); }
+    state.facetFor = facetKey;
+    const checkedAttrs = [...document.querySelectorAll('#attrFilter input:checked')].map((i) => i.value).join(',');
     const p = {
-      q: $('#dest').value, destinationId: $('#dest').dataset.id || '', type: state.type, checkIn: $('#checkIn').value,
-      flex: $('#flex').value, nights: $('#nights').value, adults: $('#adults').value, children: $('#children').value,
+      q: $('#dest').value, destinationId: $('#dest').dataset.id || '', type: state.type, checkIn: $('#checkIn').value, checkInTo: $('#checkInTo').value,
+      nights: $('#nights').value, nightsTo: $('#nightsTo').value, adults: $('#adults').value, children: $('#children').value,
       childAges: readChildAges($('#childAges')).join(','),
       maxPrice: $('#maxPrice').value, stars: $('#stars').value, boards: $('#board').value, earlyOnly: $('#earlyOnly').checked ? '1' : '', flat: '1',
       lastMinute: $('#lastMinute').checked ? '1' : '', prepay: $('#prepayNone').checked ? 'none' : '', freeCancel: $('#freeCancel').checked ? '1' : '',
+      districts: msValue(districtMs).join(','), hotels: msValue(hotelMs).join(','), attrs: checkedAttrs,
+      seatsOnly: $('#seatsOnly').checked ? '1' : '', noStopSale: $('#noStopSale').checked ? '1' : '', instantOnly: $('#instantOnly').checked ? '1' : '',
     };
     try {
       state.data = await api('/api/search', p);
       state.lastParams = p;
       state.selected.clear();
       saveHistory(p);
+      const f = state.data.facets || { districts: [], hotels: [] };
+      msSetItems(districtMs, f.districts.map((d) => ({ id: d.id, label: d.name, sub: d.destination || '', count: d.count })));
+      msSetItems(hotelMs, f.hotels.map((h) => ({ id: h.id, label: `${h.name}${h.stars ? ' ' + h.stars + '*' : ''}`, sub: h.district || '', count: h.count })));
+      $('#rateLine').innerHTML = rateLineHtml(state.data.operatorRate || cfg.operatorRate);
       render();
     } catch (err) { $('#tableWrap').innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
   }
@@ -124,13 +150,16 @@
   }
   function renderHistory() {
     const h = store.get('b2bHistory', []);
-    $('#history').innerHTML = h.length ? h.map((x, i) => `<div data-h="${i}"><b>${esc(x.client || x.q)}</b><br><small class="muted">${esc(x.q)} · ${esc(fmtDate(x.checkIn || ''))} · ${esc(x.nights)}g · ${esc(x.adults)}+${esc(x.children)}</small></div>`).join('') : '<p class="muted">Hələ yoxdur</p>';
+    $('#history').innerHTML = h.length ? h.map((x, i) => `<div data-h="${i}"><b>${esc(x.client || x.q)}</b><br><small class="muted">${esc(x.q)} · ${esc(fmtDate(x.checkIn || ''))}${x.checkInTo && x.checkInTo !== x.checkIn ? '–' + esc(shortDate(x.checkInTo)) : ''} · ${esc(x.nights)}${x.nightsTo && x.nightsTo !== x.nights ? '–' + esc(x.nightsTo) : ''}g · ${esc(x.adults)}+${esc(x.children)}</small></div>`).join('') : '<p class="muted">Hələ yoxdur</p>';
   }
   $('#history').addEventListener('click', (e) => {
     const el = e.target.closest('[data-h]'); if (!el) return;
     const x = store.get('b2bHistory', [])[+el.dataset.h];
     $('#dest').value = x.q; if (x.destinationId) $('#dest').dataset.id = x.destinationId; else delete $('#dest').dataset.id;
-    for (const k of ['checkIn', 'flex', 'nights', 'adults', 'children', 'maxPrice']) $('#' + k).value = x[k] || '';
+    for (const k of ['checkIn', 'nights', 'adults', 'children', 'maxPrice']) $('#' + k).value = x[k] || '';
+    // Köhnə tarixçə qeydlərində checkInTo/nightsTo yoxdur (±gün) → dəqiq tarix
+    $('#checkInTo').value = x.checkInTo || x.checkIn || '';
+    $('#nightsTo').value = x.nightsTo || x.nights || '';
     renderChildAges($('#childAges'), x.children, String(x.childAges || '').split(',').filter(Boolean).map(Number));
     $('#client').value = x.client || '';
     if (['package', 'hotel', 'tour'].includes(x.type)) $(`#typeTabs [data-type="${x.type}"]`).click();
@@ -158,7 +187,7 @@
     const offers = d.offers || [];
     renderKpis(offers);
     $('#selCount').textContent = state.selected.size;
-    if (!offers.length) { $('#tableWrap').innerHTML = `<div class="empty muted">${esc(d.message || 'Təklif tapılmadı')}</div>`; return; }
+    if (!offers.length) { $('#tableWrap').innerHTML = `<div class="empty">${emptyDiagnosisHtml(d, 'AZN')}</div>`; return; }
     if (state.view === 'matrix') renderMatrix(d); else renderList(offers);
   }
 
@@ -167,7 +196,7 @@
     const rows = d.groups.map((g) => {
       const byOp = Object.fromEntries(g.providers.map((o) => [o.providerId, o]));
       return `<tr>
-        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.rating ? ' · ' + esc(g.rating) : ''}</small></td>
+        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating ? ' · ' + esc(g.rating) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}</div></td>
         ${ops.map((s) => {
           const o = byOp[s.id];
           if (!o) return '<td class="num muted">—</td>';
@@ -175,7 +204,8 @@
           const sel = state.selected.has(o.id);
           return `<td class="num" style="${best ? 'background:var(--good-soft);font-weight:700' : ''}">
             <label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
-            <br><small class="muted">${fmtDate(o.checkIn).slice(0, 5)} ${esc(o.board || '')}${o.earlyBooking ? ' · ER' : ''}</small></td>`;
+            <br><small class="muted" title="${esc([roomText(o), priceTypeText(o), flightText(o), o.stopSale ? t('stop_sale') : ''].filter(Boolean).join(' · '))}">${fmtDate(o.checkIn).slice(0, 5)} ${esc(o.board || '')}${o.earlyBooking ? ' · ER' : o.priceType === 'SPO' ? ' · SPO' : ''}${o.stopSale ? ' · ⛔' : ''}</small>
+            <br><small class="muted mx-room">${esc(o.room || '')}</small></td>`;
         }).join('')}
         <td class="num"><b style="color:var(--good)">${g.savings ? money(g.savings, 'AZN') : '—'}</b></td>
       </tr>`;
@@ -183,9 +213,11 @@
     $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th>Otel / tur</th>${ops.map((s) => `<th style="text-align:right"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(s.color)}"></span> ${esc(s.name)}</th>`).join('')}<th style="text-align:right">Fərq</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  const cols = [
-    ['name', 'Otel / tur'], ['providerName', 'Operator'], ['checkIn', 'Tarix'], ['nights', 'Gecə'], ['board', 'Qida'],
-    ['stars', '★'], ['price', 'Net qiymət'], ['client', 'Müştəri qiyməti'], ['availability', 'Status'], ['prepayment', t('b2b_terms')],
+  // "Bütün təkliflər" — operator saytındakı sütunlar + müqayisə (net / müştəri qiyməti, operator)
+  const cols = () => [
+    ['checkIn', t('col_date')], ['tourName', t('col_tour')], ['nights', t('col_nights')], ['name', t('col_hotel')], ['stars', '★'],
+    ['hotelSeats', t('col_seats')], ['board', t('col_board')], ['room', t('col_room')], ['price', 'Net (AZN)'], ['opPrice', t('col_opprice')],
+    ['client', 'Müştəri qiyməti'], ['priceType', t('col_ptype')], ['providerName', t('col_op')], ['availability', 'Status'], ['prepayment', t('b2b_terms')],
   ];
   const termsShort = (o) => [o.prepayment === 'none' ? t('prepay_none') : o.prepayment === '50' ? t('prepay_50') : o.prepayment === 'full' ? t('prepay_full') : '',
     o.freeCancelUntil ? t('free_cancel', { d: shortDate(o.freeCancelUntil) }) : ''].filter(Boolean).join(' · ');
@@ -193,21 +225,48 @@
     const k = state.sortKey === 'client' ? 'price' : state.sortKey;
     const list = [...offers].sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * state.sortDir).slice(0, 400);
     const minPrice = Math.min(...offers.map((o) => o.price));
-    $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th></th>${cols.map(([key, label]) => `<th data-sort="${key}">${label}${state.sortKey === key ? (state.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
-      ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''}">
+    $('#tableWrap').innerHTML = `<table class="grid op-table"><thead><tr><th></th>${cols().map(([key, label]) => `<th data-sort="${key}">${esc(label)}${state.sortKey === key ? (state.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
+      ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''} ${o.stopSale ? 'stop' : ''}">
         <td><input type="checkbox" data-sel="${esc(o.id)}" ${state.selected.has(o.id) ? 'checked' : ''}></td>
-        <td>${esc(o.name)}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}</td>
+        <td>${esc(fmtDate(o.checkIn))}${o.flight ? `<br><small class="muted">✈ ${esc(o.flight.out.time)} · ${esc(t('cls_' + o.flight.cls))}</small>` : ''}</td>
+        <td class="wrap"><small>${esc(o.tourName || '')}</small></td>
+        <td class="num">${esc(o.nights)}</td>
+        <td class="wrap">${esc(o.name)}${o.district ? ` <small class="muted">(${esc(o.district)})</small>` : ''}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}<div class="badges tight">${attrBadges(o.attrs)}</div></td>
+        <td>${esc(o.stars || '')}</td>
+        <td>${seatsHtml(o)}</td>
+        <td>${esc(o.board || '—')}</td>
+        <td class="wrap"><small>${esc(roomText(o))}</small></td>
+        <td class="num">${money(o.price, 'AZN')}</td>
+        <td class="num"><small>${o.opCurrency ? money(o.opPrice, o.opCurrency) : ''}</small></td>
+        <td class="num"><b>${money(withMarkup(o.price), 'AZN')}</b></td>
+        <td class="wrap"><small>${esc(priceTypeText(o))}</small></td>
         <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td>
-        <td>${esc(fmtDate(o.checkIn))}</td><td>${esc(o.nights)}</td><td>${esc(o.board || '—')}</td><td>${esc(o.stars || '')}</td>
-        <td class="num">${money(o.price, 'AZN')}</td><td class="num"><b>${money(withMarkup(o.price), 'AZN')}</b></td>
-        <td>${o.availability === 'instant' ? '✅ Mövcud' : '⏳ Sorğu ilə'}</td><td><small>${esc(termsShort(o))}</small></td></tr>`).join('')}
-      </tbody></table>`;
+        <td>${o.stopSale ? `⛔ ${esc(t('stop_sale'))}` : o.availability === 'instant' ? '✅ Mövcud' : '⏳ Sorğu ilə'}</td><td><small>${esc(termsShort(o))}</small></td></tr>`).join('')}
+      </tbody></table>${state.data.offersTruncated ? '<p class="muted" style="padding:0 10px;font-size:13px">Cavab 1000 təkliflə məhdudlaşdırılıb — filtrlərlə daraldın.</p>' : ''}`;
   }
 
   $('#tableWrap').addEventListener('click', (e) => {
     const th = e.target.closest('[data-sort]');
     if (th) { const key = th.dataset.sort; state.sortDir = state.sortKey === key ? -state.sortDir : 1; state.sortKey = key; render(); return; }
+    // Boş nəticə: tur paketinə / otelə keç, ekskursiya istiqamətinə keç, filtri yumşalt
+    const sw = e.target.closest('[data-switch-type]');
+    if (sw) { $(`#typeTabs [data-type="${sw.dataset.switchType === 'hotel' ? 'hotel' : 'package'}"]`).click(); run(); return; }
+    const gd = e.target.closest('[data-go-dest]');
+    if (gd) { $('#dest').value = gd.dataset.goName; $('#dest').dataset.id = gd.dataset.goDest; run(); return; }
+    const rx = e.target.closest('[data-relax]');
+    if (rx) { relaxFilter(rx.dataset.relax, rx.dataset.value); }
   });
+  function relaxFilter(key, value) {
+    const map = { stars: '#stars', boards: '#board' };
+    const boxes = { earlyOnly: '#earlyOnly', lastMinute: '#lastMinute', prepay: '#prepayNone', freeCancel: '#freeCancel', seatsOnly: '#seatsOnly', noStopSale: '#noStopSale', instantOnly: '#instantOnly' };
+    if (key === 'maxPrice') $('#maxPrice').value = value || '';
+    else if (map[key]) $(map[key]).value = '';
+    else if (boxes[key]) $(boxes[key]).checked = false;
+    else if (key === 'districts') msSetSelected(districtMs, []);
+    else if (key === 'hotels') msSetSelected(hotelMs, []);
+    else if (key === 'attrs') document.querySelectorAll('#attrFilter input').forEach((i) => { i.checked = false; });
+    run();
+  }
   $('#tableWrap').addEventListener('change', (e) => {
     const id = e.target.dataset.sel; if (!id) return;
     e.target.checked ? state.selected.add(id) : state.selected.delete(id);
@@ -231,9 +290,10 @@
       '',
       ...list.map((o, i) => [
         `${i + 1}) ${o.name} ${starStr(o.stars)}`,
-        `   📅 ${fmtDate(o.checkIn)} · ${o.nights} gecə${o.boardLabel ? ' · ' + o.boardLabel + ' (' + o.board + ')' : ''}${o.includesFlight ? ' · ✈ aviabilet daxil' : ''}`,
+        `   📅 ${fmtDate(o.checkIn)} · ${o.nights} gecə${o.boardLabel ? ' · ' + o.boardLabel + ' (' + o.board + ')' : ''}${o.includesFlight ? ' · ✈ aviabilet daxil' : ''}${o.flight ? ' (uçuş ' + o.flight.out.time + ', ' + t('cls_' + o.flight.cls) + ')' : ''}`,
+        o.room || o.district ? `   🛏 ${[o.room, o.district ? 'rayon: ' + o.district : ''].filter(Boolean).join(' · ')}` : '',
         `   💰 ${money(withMarkup(o.price), 'AZN')} (cəmi)${o.earlyBooking ? ' — erkən rezervasiya endirimi' : ''}`,
-      ].join('\n')),
+      ].filter(Boolean).join('\n')),
       '',
       'Qiymətlər yerlərin mövcudluğundan asılı olaraq dəyişə bilər.',
       s.manager ? `Hörmətlə, ${s.manager} — ${s.agency}` : '',
@@ -296,8 +356,12 @@
   const csvCell = (c) => { let v = String(c ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return v.replace(/"/g, '""'); };
   $('#csvBtn').addEventListener('click', () => {
     if (!state.data || !state.data.offers.length) return toast('Əvvəlcə axtarış edin');
-    const head = ['Otel/Tur', 'İstiqamət', 'Operator', 'Tarix', 'Gecə', 'Qida', 'Ulduz', 'Net qiymət (AZN)', 'Müştəri qiyməti (AZN)', 'Erkən rez.', 'Status'];
-    const rows = state.data.offers.map((o) => [o.name, o.destination.name, o.providerName, o.checkIn, o.nights, o.board || '', o.stars, o.price, withMarkup(o.price), o.earlyBooking ? 'bəli' : '', o.availability]);
+    const head = ['Otel/Tur', 'İstiqamət', 'Rayon', 'Tur', 'Operator', 'Tarix', 'Uçuş saatı', 'Sinif', 'Gecə', 'Qida', 'Otaq', 'Yerləşmə', 'Ulduz',
+      'Net qiymət (AZN)', 'Operator qiyməti', 'Operator valyutası', 'Müştəri qiyməti (AZN)', 'Qiymət növü', 'Otel yer', 'Reys yer (gediş)', 'Reys yer (dönüş)', 'Stop-sale', 'Status'];
+    const rows = state.data.offers.map((o) => [o.name, o.destination.name, o.district || '', o.tourName || '', o.providerName, o.checkIn,
+      o.flight ? o.flight.out.time : '', o.flight ? o.flight.cls : '', o.nights, o.board || '', o.room || '', o.accommodation || '', o.stars,
+      o.price, o.opPrice ?? '', o.opCurrency || '', withMarkup(o.price), o.priceTypeLabel || '', o.hotelSeats || '',
+      o.flight ? o.flight.out.seats : '', o.flight ? o.flight.back.seats : '', o.stopSale ? 'bəli' : '', o.availability]);
     const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${csvCell(c)}"`).join(';')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

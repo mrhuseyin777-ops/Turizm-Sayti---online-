@@ -64,6 +64,7 @@ function applyI18n(root = document) {
   document.documentElement.lang = LANG;
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
   root.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+  root.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); el.setAttribute('aria-label', el.title); });
 }
 function setLang(l) { LANG = l; store.set('lang', l); applyI18n(); document.dispatchEvent(new Event('langchange')); }
 
@@ -134,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ---- P1 funksiyaları (istiqamətsiz axtarış, şərtlər, taksit, etibar, geri zəng, B2B seçim linki) ----
 Object.assign(I18N.az, {
   explore_btn: 'Hara gedə bilərəm?', explore_hint: 'İstiqamət yazmasanız, büdcə və tarixə uyğun bütün istiqamətlər ucuzdan bahalıya göstərilir.',
-  explore_title: 'Hara gedə bilərəm? · {date} ±{flex} · {n} gecə', explore_sub: '{n} istiqamət · {budget}', budget_upto: 'büdcə: {b}-dək', budget_none: 'büdcə limitsiz',
+  explore_title: 'Hara gedə bilərəm? · {date} · {n} gecə', explore_sub: '{n} istiqamət · {budget}', budget_upto: 'büdcə: {b}-dək', budget_none: 'büdcə limitsiz',
   dest_meta: '{h} otel/tur · {p} operator', dest_go: 'Variantlara bax', from_price: 'başlayan',
   lastmin_title: 'Son dəqiqə turları', lastmin_sub: 'Yaxın {n} gündə çıxış — istiqamətlər üzrə ən ucuz', lastmin_btn: '🔥 Son dəqiqə', lastmin_badge: 'Son dəqiqə', lastmin_all: 'Hamısı',
   f_lastmin: 'Son dəqiqə ({n} gün)', f_terms: 'Ödəniş və ləğv', f_prepay_none: 'İlkin ödənişsiz', f_prepay_50: 'İlkin ödəniş ≤ 50%', f_free_cancel: 'Pulsuz ləğv',
@@ -156,7 +157,7 @@ Object.assign(I18N.az, {
 });
 Object.assign(I18N.en, {
   explore_btn: 'Where can I go?', explore_hint: 'Leave the destination empty to see every destination that fits your budget and dates, cheapest first.',
-  explore_title: 'Where can I go? · {date} ±{flex} · {n} nights', explore_sub: '{n} destinations · {budget}', budget_upto: 'budget up to {b}', budget_none: 'no budget limit',
+  explore_title: 'Where can I go? · {date} · {n} nights', explore_sub: '{n} destinations · {budget}', budget_upto: 'budget up to {b}', budget_none: 'no budget limit',
   dest_meta: '{h} hotels/tours · {p} operators', dest_go: 'See options', from_price: 'from',
   lastmin_title: 'Last-minute deals', lastmin_sub: 'Departures within {n} days — cheapest per destination', lastmin_btn: '🔥 Last minute', lastmin_badge: 'Last minute', lastmin_all: 'Show all',
   f_lastmin: 'Last minute ({n} days)', f_terms: 'Payment & cancellation', f_prepay_none: 'No prepayment', f_prepay_50: 'Prepayment ≤ 50%', f_free_cancel: 'Free cancellation',
@@ -178,7 +179,7 @@ Object.assign(I18N.en, {
 });
 Object.assign(I18N.ru, {
   explore_btn: 'Куда можно поехать?', explore_hint: 'Оставьте направление пустым — покажем все направления под ваш бюджет и даты, от дешёвых к дорогим.',
-  explore_title: 'Куда поехать? · {date} ±{flex} · {n} ночей', explore_sub: '{n} направлений · {budget}', budget_upto: 'бюджет до {b}', budget_none: 'без лимита бюджета',
+  explore_title: 'Куда поехать? · {date} · {n} ночей', explore_sub: '{n} направлений · {budget}', budget_upto: 'бюджет до {b}', budget_none: 'без лимита бюджета',
   dest_meta: '{h} отелей/туров · {p} операторов', dest_go: 'Смотреть варианты', from_price: 'от',
   lastmin_title: 'Горящие туры', lastmin_sub: 'Вылет в ближайшие {n} дней — самые дешёвые по направлениям', lastmin_btn: '🔥 Горящие', lastmin_badge: 'Горящий', lastmin_all: 'Все',
   f_lastmin: 'Горящие ({n} дней)', f_terms: 'Оплата и отмена', f_prepay_none: 'Без предоплаты', f_prepay_50: 'Предоплата ≤ 50%', f_free_cancel: 'Бесплатная отмена',
@@ -310,4 +311,241 @@ function bindCallbackForm(form, contextFn) {
       form.reset(); toast(t('cb_ok'));
     } catch (err) { toast(err.message); } finally { btn.disabled = false; }
   });
+}
+
+// ---- Genişləndirilmiş axtarış (operator saytları səviyyəsində): tarix/gecə aralığı, rayonlar, otel seçimi,
+// otel atributları, otaq/yerləşmə, qiymət növü, uçuş/yer statusu, cədvəl görünüşü, boş nəticə diaqnostikası ----
+Object.assign(I18N.az, {
+  f_date_range: 'Gediş -dan / -dək', f_date_from: 'Gediş -dan', f_date_to: 'Gediş -dək', f_nights_range: 'Gecə -dan / -dək', f_nights_from: 'Gecə -dan', f_nights_to: 'Gecə -dək',
+  dq_title: 'Tarix:', dq_exact: 'Dəqiq tarix', dq_pm3: '±3 gün', dq_7: '+7 gün', dq_14: '+14 gün',
+  range_combo: 'Tarix × gecə kombinasiyası maksimum {n} ola bilər — aralıq daraldıldı.',
+  f_district: 'Kurort / rayon', f_hotel: 'Otel', ms_all: 'Hamısı', ms_search: 'Ada görə axtar...', ms_only_sel: 'Yalnız seçilmişlər', ms_n: '{n} seçilib',
+  ms_empty: 'Siyahı axtarışdan sonra dolur', ms_none: 'Uyğun nəticə yoxdur',
+  attr_title: 'Otel xüsusiyyətləri', attr_chdFree: 'CHD FREE (uşaq pulsuz)', attr_adultsOnly: 'Yalnız böyüklər üçün', attr_recommended: 'Tövsiyə edirik', attr_family: 'Ailəvi',
+  attr_b_chdFree: 'CHD FREE', attr_b_adultsOnly: 'Adults only', attr_b_recommended: '👍 Tövsiyə edirik', attr_b_family: 'Ailəvi',
+  avail_title: 'Yer və satış', f_seats: 'Reyslərdə yer var', f_no_stop: 'Satış dayandırılmayıb', f_instant: 'Ani təsdiq',
+  view_cards: 'Kartlar', view_table: 'Cədvəl', group_by: 'Qruplaşdır (otel üzrə ən ucuz)',
+  col_date: 'Tarix / uçuş', col_tour: 'Tur', col_nights: 'Gecə', col_hotel: 'Otel (rayon)', col_seats: 'Yer', col_board: 'Qida', col_room: 'Otaq / yerləşmə',
+  col_price: 'Qiymət', col_ptype: 'Qiymət növü', col_op: 'Operator', col_opprice: 'Operator qiyməti',
+  pt_EB: 'Erkən rezervasiya {y}', pt_SPO: 'SPO (xüsusi təklif)', pt_STD: 'Standart',
+  seat_many: 'çox', seat_few: 'az', seat_none: 'yoxdur', seat_request: 'sorğu ilə', seats_hotel: 'Otel', seats_out: 'Gediş reysi', seats_back: 'Dönüş reysi',
+  cls_econom: 'Ekonom', cls_business: 'Biznes', stop_sale: 'Stop-sale', flight_at: 'Uçuş {t}',
+  rate_line: 'Operator məzənnəsi {d}: {pair} {v}', rate_demo: 'DEMO məzənnə; CBAR / operator gündəlik məzənnəsi ilə inteqrasiya planlaşdırılır.',
+  table_more: 'Cədvəldə ilk {n} təklif göstərilir. Filtrlərlə daraldın.',
+  empty_no_tours: 'Bu istiqamət üçün ekskursiya turu yoxdur', empty_no_tours_sub: 'Tur paketinə və ya yalnız otelə baxa bilərsiniz.',
+  empty_no_departures: 'Seçilmiş tarixlərdə ekskursiya turunun çıxışı yoxdur', empty_no_departures_sub: 'Tarix aralığını genişləndirin və ya başqa istiqamət seçin.',
+  empty_no_pkg: 'Daxili istiqamətlər üçün aviabiletli tur paketi yoxdur', empty_no_pkg_sub: 'Yalnız otel axtarışına keçin.',
+  btn_see_package: 'Tur paketinə bax', btn_see_hotel: 'Yalnız otelə bax', tours_avail: 'Ekskursiya turu olan istiqamətlər:',
+  empty_filters: 'Filtrlər {n} təklifin hamısını gizlətdi. Bunu sınayın:', relax_maxPrice: 'Büdcəni {v}-ə qaldırsanız {n} təklif var',
+  relax_generic: '“{f}” filtrini götürsəniz {n} təklif var', f_minprice: 'Minimum qiymət', f_lastmin_short: 'Son dəqiqə',
+});
+Object.assign(I18N.en, {
+  f_date_range: 'Departure from / to', f_date_from: 'Departure from', f_date_to: 'Departure to', f_nights_range: 'Nights from / to', f_nights_from: 'Nights from', f_nights_to: 'Nights to',
+  dq_title: 'Dates:', dq_exact: 'Exact date', dq_pm3: '±3 days', dq_7: '+7 days', dq_14: '+14 days',
+  range_combo: 'Dates × nights combinations are limited to {n} — the range was narrowed.',
+  f_district: 'Resort area', f_hotel: 'Hotel', ms_all: 'All', ms_search: 'Search by name...', ms_only_sel: 'Selected only', ms_n: '{n} selected',
+  ms_empty: 'The list fills after a search', ms_none: 'No matches',
+  attr_title: 'Hotel features', attr_chdFree: 'CHD FREE (kids stay free)', attr_adultsOnly: 'Adults only', attr_recommended: 'Recommended', attr_family: 'Family friendly',
+  attr_b_chdFree: 'CHD FREE', attr_b_adultsOnly: 'Adults only', attr_b_recommended: '👍 Recommended', attr_b_family: 'Family',
+  avail_title: 'Availability', f_seats: 'Seats on flights', f_no_stop: 'No stop-sale', f_instant: 'Instant confirmation',
+  view_cards: 'Cards', view_table: 'Table', group_by: 'Group (cheapest per hotel)',
+  col_date: 'Date / flight', col_tour: 'Tour', col_nights: 'Nights', col_hotel: 'Hotel (area)', col_seats: 'Seats', col_board: 'Board', col_room: 'Room / occupancy',
+  col_price: 'Price', col_ptype: 'Price type', col_op: 'Operator', col_opprice: 'Operator price',
+  pt_EB: 'Early booking {y}', pt_SPO: 'SPO (special offer)', pt_STD: 'Standard',
+  seat_many: 'many', seat_few: 'few', seat_none: 'none', seat_request: 'on request', seats_hotel: 'Hotel', seats_out: 'Outbound flight', seats_back: 'Return flight',
+  cls_econom: 'Economy', cls_business: 'Business', stop_sale: 'Stop-sale', flight_at: 'Flight {t}',
+  rate_line: 'Operator rate {d}: {pair} {v}', rate_demo: 'DEMO rate; integration with CBAR / operator daily rate is planned.',
+  table_more: 'The table shows the first {n} offers. Narrow down with filters.',
+  empty_no_tours: 'There are no guided tours for this destination', empty_no_tours_sub: 'You can look at packages or hotel-only offers instead.',
+  empty_no_departures: 'No guided tour departures on the selected dates', empty_no_departures_sub: 'Widen the date range or choose another destination.',
+  empty_no_pkg: 'Flight packages are not available for domestic destinations', empty_no_pkg_sub: 'Switch to hotel-only search.',
+  btn_see_package: 'See packages', btn_see_hotel: 'See hotels only', tours_avail: 'Destinations with guided tours:',
+  empty_filters: 'Filters hid all {n} offers. Try this:', relax_maxPrice: 'Raise the budget to {v} — {n} offers',
+  relax_generic: 'Remove the “{f}” filter — {n} offers', f_minprice: 'Minimum price', f_lastmin_short: 'Last minute',
+});
+Object.assign(I18N.ru, {
+  f_date_range: 'Вылет с / по', f_date_from: 'Вылет с', f_date_to: 'Вылет по', f_nights_range: 'Ночей от / до', f_nights_from: 'Ночей от', f_nights_to: 'Ночей до',
+  dq_title: 'Даты:', dq_exact: 'Точная дата', dq_pm3: '±3 дня', dq_7: '+7 дней', dq_14: '+14 дней',
+  range_combo: 'Комбинаций дат × ночей не больше {n} — диапазон сокращён.',
+  f_district: 'Курорт / район', f_hotel: 'Отель', ms_all: 'Все', ms_search: 'Поиск по названию...', ms_only_sel: 'Только выбранные', ms_n: 'выбрано: {n}',
+  ms_empty: 'Список заполнится после поиска', ms_none: 'Ничего не найдено',
+  attr_title: 'Особенности отеля', attr_chdFree: 'CHD FREE (ребёнок бесплатно)', attr_adultsOnly: 'Только для взрослых', attr_recommended: 'Рекомендуем', attr_family: 'Семейный',
+  attr_b_chdFree: 'CHD FREE', attr_b_adultsOnly: 'Adults only', attr_b_recommended: '👍 Рекомендуем', attr_b_family: 'Семейный',
+  avail_title: 'Места и продажа', f_seats: 'Есть места на рейсы', f_no_stop: 'Нет остановки продажи', f_instant: 'Мгновенное подтверждение',
+  view_cards: 'Карточки', view_table: 'Таблица', group_by: 'Группировать (самый дешёвый по отелю)',
+  col_date: 'Дата / вылет', col_tour: 'Тур', col_nights: 'Ночей', col_hotel: 'Отель (район)', col_seats: 'Места', col_board: 'Питание', col_room: 'Номер / размещение',
+  col_price: 'Цена', col_ptype: 'Тип цены', col_op: 'Оператор', col_opprice: 'Цена оператора',
+  pt_EB: 'Раннее бронирование {y}', pt_SPO: 'SPO (спецпредложение)', pt_STD: 'Стандарт',
+  seat_many: 'много', seat_few: 'мало', seat_none: 'нет', seat_request: 'под запрос', seats_hotel: 'Отель', seats_out: 'Рейс туда', seats_back: 'Рейс обратно',
+  cls_econom: 'Эконом', cls_business: 'Бизнес', stop_sale: 'Стоп-продажа', flight_at: 'Вылет {t}',
+  rate_line: 'Курс оператора {d}: {pair} {v}', rate_demo: 'ДЕМО-курс; интеграция с ЦБА / дневным курсом оператора планируется.',
+  table_more: 'В таблице первые {n} предложений. Сузьте фильтрами.',
+  empty_no_tours: 'Для этого направления нет экскурсионных туров', empty_no_tours_sub: 'Посмотрите турпакеты или только отели.',
+  empty_no_departures: 'На выбранные даты нет выездов экскурсионного тура', empty_no_departures_sub: 'Расширьте диапазон дат или выберите другое направление.',
+  empty_no_pkg: 'Для направлений по Азербайджану нет пакетов с перелётом', empty_no_pkg_sub: 'Переключитесь на поиск только отелей.',
+  btn_see_package: 'Смотреть турпакеты', btn_see_hotel: 'Смотреть только отели', tours_avail: 'Направления с экскурсионными турами:',
+  empty_filters: 'Фильтры скрыли все {n} предложений. Попробуйте:', relax_maxPrice: 'Бюджет до {v} — {n} предложений',
+  relax_generic: 'Убрать фильтр «{f}» — {n} предложений', f_minprice: 'Минимальная цена', f_lastmin_short: 'Горящие',
+});
+
+const HOTEL_ATTR_KEYS = ['chdFree', 'adultsOnly', 'recommended', 'family'];
+// Otel atributları nişanları
+function attrBadges(attrs) {
+  return (attrs || []).filter((a) => HOTEL_ATTR_KEYS.includes(a))
+    .map((a) => `<span class="badge attr attr-${a}" title="${esc(t('attr_' + a))}">${esc(t('attr_b_' + a))}</span>`).join('');
+}
+// Qiymət növü: "Erkən rezervasiya 2027" / SPO / Standart
+function priceTypeText(o) {
+  if (!o || !o.priceType) return '';
+  return o.priceType === 'EB' ? t('pt_EB', { y: String(o.checkIn || '').slice(0, 4) }) : t('pt_' + o.priceType);
+}
+// Otaq / yerləşmə: "Standard Land View / DBL+1CHD(2-11.99)"
+const roomText = (o) => [o.room, o.accommodation].filter(Boolean).join(' / ');
+// Uçuş: "✈ 07:55 · Ekonom"
+const flightText = (o) => (o.flight ? `✈ ${o.flight.out.time} · ${t('cls_' + o.flight.cls)}` : '');
+// Yer statusu çipləri: otel + reys (gediş/dönüş). Rəng statusa görə, mətn title-da.
+function seatChip(kind, status, icon) {
+  if (!status) return '';
+  const label = `${t('seats_' + kind)}: ${t('seat_' + status)}`;
+  return `<span class="seat s-${esc(status)}" title="${esc(label)}" aria-label="${esc(label)}">${icon} ${esc(t('seat_' + status))}</span>`;
+}
+function seatsHtml(o) {
+  const parts = [seatChip('hotel', o.hotelSeats, '🏨')];
+  if (o.flight) parts.push(seatChip('out', o.flight.out.seats, '✈→'), seatChip('back', o.flight.back.seats, '←✈'));
+  if (o.stopSale) parts.push(`<span class="badge stop">${esc(t('stop_sale'))}</span>`);
+  return `<span class="seats">${parts.join('')}</span>`;
+}
+// "Operator məzənnəsi 13.11.2026: USD/AZN 1.7055"
+function rateLineText(rate) {
+  if (!rate) return '';
+  return t('rate_line', { d: fmtDate(rate.date), pair: rate.pair, v: Number(rate.value).toFixed(4) });
+}
+function rateLineHtml(rate) {
+  if (!rate) return '';
+  return `<span class="rate-line" title="${esc(t('rate_demo'))}">💱 ${esc(rateLineText(rate))} <span class="demo-tag">demo</span></span>`;
+}
+
+// Filtr açarı → istifadəçi üçün ad (boş nəticə tövsiyələri)
+function filterLabel(key) {
+  const m = {
+    minPrice: 'f_minprice', stars: 'stars', boards: 'board', earlyOnly: 'early_only', prepay: 'f_terms', freeCancel: 'f_free_cancel',
+    lastMinute: 'f_lastmin_short', seatsOnly: 'f_seats', noStopSale: 'f_no_stop', instantOnly: 'f_instant', districts: 'f_district', hotels: 'f_hotel', attrs: 'attr_title',
+  };
+  return t(m[key] || key);
+}
+
+// Boş nəticə: səbəb + düymələr (data-switch-type / data-go-dest / data-relax). Səhifə klikləri özü emal edir.
+function emptyDiagnosisHtml(data, cur) {
+  const e = (data && data.empty) || {};
+  const btn = (attrs, label, cls = 'secondary') => `<button type="button" class="btn ${cls} sm" ${attrs}>${esc(label)}</button>`;
+  const destList = (list) => (list && list.length
+    ? `<p class="muted" style="margin:14px 0 6px">${esc(t('tours_avail'))}</p><div class="chips">${list.map((d) => `<button type="button" class="chip" data-go-dest="${esc(d.id)}" data-go-name="${esc(d.name)}">${esc(d.name)} <small class="muted">${esc(d.country)}</small></button>`).join('')}</div>`
+    : '');
+  if (e.reason === 'no_tours' || e.reason === 'no_departures') {
+    const nt = e.reason === 'no_tours';
+    return `<div class="diag"><h3>${esc(t(nt ? 'empty_no_tours' : 'empty_no_departures'))}</h3><p class="muted">${esc(t(nt ? 'empty_no_tours_sub' : 'empty_no_departures_sub'))}</p>
+      <div class="chips">${btn('data-switch-type="package"', t('btn_see_package'), 'primary')}${btn('data-switch-type="hotel"', t('btn_see_hotel'))}</div>${destList(e.tourDestinations)}</div>`;
+  }
+  if (e.reason === 'no_package_domestic') {
+    return `<div class="diag"><h3>${esc(t('empty_no_pkg'))}</h3><p class="muted">${esc(t('empty_no_pkg_sub'))}</p><div class="chips">${btn('data-switch-type="hotel"', t('btn_see_hotel'), 'primary')}</div></div>`;
+  }
+  if (e.reason === 'filters' && e.relax && e.relax.length) {
+    return `<div class="diag"><h3>${esc(t('empty_filters', { n: e.total }))}</h3><div class="chips">${e.relax.map((r) => btn(
+      `data-relax="${esc(r.key)}"${r.value != null ? ` data-value="${esc(r.value)}"` : ''}`,
+      r.key === 'maxPrice' ? t('relax_maxPrice', { v: money(r.value, cur), n: r.count }) : t('relax_generic', { f: filterLabel(r.key), n: r.count }),
+    )).join('')}</div></div>`;
+  }
+  return `<div class="diag"><h3>${esc((data && data.message) || t('no_results'))}</h3></div>`;
+}
+
+// Multi-select (axtarışlı siyahı, "Hamısı", istəyə görə "Yalnız seçilmişlər").
+// root-da 'mschange' hadisəsi yaranır; daxili change/input hadisələri yuxarı ötürülmür.
+function msCreate(root, { title, onlySelToggle = false } = {}) {
+  root.classList.add('ms');
+  const st = { items: [], sel: new Set(), title, onlySelToggle, onlySel: false, filter: '' };
+  root._ms = st;
+  root.innerHTML = `<details><summary class="ms-sum"></summary><div class="ms-panel">
+    <input type="search" class="ms-q" maxlength="60">
+    <div class="ms-tools"><label><input type="checkbox" class="ms-all"> <span class="ms-all-l"></span></label>${onlySelToggle ? '<label><input type="checkbox" class="ms-only"> <span class="ms-only-l"></span></label>' : ''}</div>
+    <div class="ms-list" role="group"></div></div></details>`;
+  const emit = () => { msRender(root); root.dispatchEvent(new CustomEvent('mschange', { bubbles: true })); };
+  root.addEventListener('input', (e) => {
+    e.stopPropagation();
+    if (e.target.classList.contains('ms-q')) { st.filter = e.target.value; msRenderList(root); }
+  });
+  root.addEventListener('change', (e) => {
+    e.stopPropagation();
+    const el = e.target;
+    if (el.classList.contains('ms-q')) return;
+    if (el.classList.contains('ms-all')) { if (el.checked) { st.sel.clear(); emit(); } else el.checked = !st.sel.size; return; }
+    if (el.classList.contains('ms-only')) { st.onlySel = el.checked; msRenderList(root); return; }
+    const v = el.dataset.ms; if (v === undefined) return;
+    if (el.checked) st.sel.add(v); else st.sel.delete(v);
+    emit();
+  });
+  msRender(root);
+  return root;
+}
+function msRenderList(root) {
+  const st = root._ms;
+  const f = st.filter.trim().toLocaleLowerCase();
+  const list = st.items.filter((x) => (!f || `${x.label} ${x.sub || ''}`.toLocaleLowerCase().includes(f)) && (!st.onlySel || st.sel.has(x.id)));
+  root.querySelector('.ms-list').innerHTML = !st.items.length ? `<small class="muted">${esc(t('ms_empty'))}</small>`
+    : !list.length ? `<small class="muted">${esc(t('ms_none'))}</small>`
+      : list.map((x) => `<label class="ms-item${x.count === 0 ? ' zero' : ''}"><input type="checkbox" data-ms="${esc(x.id)}" ${st.sel.has(x.id) ? 'checked' : ''}>
+        <span class="ms-l">${esc(x.label)}${x.sub ? ` <small class="muted">${esc(x.sub)}</small>` : ''}</span>${x.count != null ? `<small class="ms-c">${esc(x.count)}</small>` : ''}</label>`).join('');
+}
+function msRender(root) {
+  const st = root._ms;
+  root.querySelector('.ms-sum').innerHTML = `<b>${esc(t(st.title))}</b> <span class="ms-v">${esc(st.sel.size ? t('ms_n', { n: st.sel.size }) : t('ms_all'))}</span>`;
+  root.querySelector('.ms-q').placeholder = t('ms_search');
+  root.querySelector('.ms-q').setAttribute('aria-label', `${t(st.title)}: ${t('ms_search')}`);
+  root.querySelector('.ms-all').checked = !st.sel.size;
+  root.querySelector('.ms-all-l').textContent = t('ms_all');
+  const ol = root.querySelector('.ms-only-l'); if (ol) ol.textContent = t('ms_only_sel');
+  msRenderList(root);
+}
+function msSetItems(root, items) { root._ms.items = items || []; msRender(root); }
+function msSetSelected(root, ids) { root._ms.sel = new Set(ids || []); msRender(root); }
+const msValue = (root) => [...root._ms.sel];
+
+// Tarix və gecə aralığı sahələri: -dək ≥ -dan, maks. aralıq, tarix × gecə kombinasiya limiti
+function bindRangeInputs({ from, to, nFrom, nTo }, limits) {
+  const L = limits || { maxDateRangeDays: 14, maxNightsSpan: 7, maxCombos: 60 };
+  const addD = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const days = () => (from.value && to.value ? Math.round((Date.parse(to.value) - Date.parse(from.value)) / 864e5) + 1 : 1);
+  function fixDates() {
+    if (!from.value) return;
+    to.min = from.value; to.max = addD(from.value, L.maxDateRangeDays);
+    if (!to.value || to.value < from.value) to.value = from.value;
+    if (to.value > to.max) to.value = to.max;
+  }
+  function fixNights(changed) {
+    let a = parseInt(nFrom.value, 10) || 1; let b = parseInt(nTo.value, 10) || a;
+    if (b < a) { if (changed === nTo) a = b; else b = a; }
+    if (b - a > L.maxNightsSpan) { if (changed === nFrom) b = a + L.maxNightsSpan; else a = b - L.maxNightsSpan; }
+    const maxSpan = Math.max(0, Math.floor(L.maxCombos / days()) - 1);
+    if (b - a > maxSpan) { b = a + maxSpan; toast(t('range_combo', { n: L.maxCombos })); }
+    nFrom.value = String(a); nTo.value = String(b);
+  }
+  from.addEventListener('change', () => { fixDates(); fixNights(); });
+  to.addEventListener('change', () => { fixDates(); fixNights(); });
+  nFrom.addEventListener('change', () => fixNights(nFrom));
+  nTo.addEventListener('change', () => fixNights(nTo));
+  fixDates();
+  return {
+    fix() { fixDates(); fixNights(); },
+    // Qısa yollar: span 0 = dəqiq tarix, 'pm3' = ±3 gün, 7/14 = +N gün
+    quick(span) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (span === 'pm3') {
+        const c = from.value || today;
+        from.value = addD(c, -3) < today ? today : addD(c, -3);
+        to.value = addD(c, 3);
+      } else {
+        to.value = addD(from.value || today, Number(span) || 0);
+      }
+      fixDates(); fixNights();
+    },
+  };
 }
