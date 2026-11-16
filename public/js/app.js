@@ -211,9 +211,14 @@
             ${g.tags.slice(0, 3).map((x) => `<span class="badge">${esc(x)}</span>`).join('')}
           </div>
           ${seatsHtml(b)}
-          <div class="compare">
-            ${g.providers.map((o, j) => `<button type="button" class="op ${j === 0 ? 'best' : ''}" data-trust="${esc(o.providerId)}" data-card="${i}" aria-expanded="false" title="${esc(t('trust_hint'))} · ${esc(o.boardLabel || '')} ${fmtDate(o.checkIn)} · ${esc(roomText(o))} · ${esc(priceTypeText(o))}"><span class="dot" style="background:${esc(o.providerColor)}"></span>${esc(o.providerName)} · ${money(o.price, cur)}</button>`).join('')}
-          </div>
+          <ol class="compare rank-list" aria-label="${esc(t('rank_title'))}">
+            ${g.providers.map((o, j) => `<li class="rank-row ${j === 0 ? 'best' : ''}">
+              <span class="rk">${j + 1}</span>
+              <span class="rk-op"><button type="button" class="op" data-trust="${esc(o.providerId)}" data-card="${i}" aria-expanded="false" title="${esc(t('trust_hint'))}"><span class="dot" style="background:${esc(o.providerColor)}"></span>${esc(o.providerName)}</button>
+                <small class="muted">${fmtDate(o.checkIn)}${o.board ? ' · ' + esc(o.board) : ''}${roomText(o) ? ' · ' + esc(roomText(o)) : ''}</small></span>
+              <span class="rk-price"><b>${money(o.price, cur)}</b><small class="${j === 0 ? 'good' : 'muted'}">${j === 0 ? esc(t('rank_cheapest')) : '+' + money(o.price - g.best.price, cur)}</small>${j > 0 ? opLinkHtml(o, true) : ''}</span>
+            </li>`).join('')}
+          </ol>
           <div class="trust-slot" data-slot="${i}"></div>
         </div>
         <div class="price">
@@ -244,9 +249,10 @@
   }
 
   // "Operatorun saytında yoxla" — yalnız operatorun ictimai axtarış səhifəsinə link (qiymət fərqli ola bilər)
-  function opLinkHtml(o) {
+  function opLinkHtml(o, short) {
     if (!o || !o.operatorLink || !/^https:\/\//.test(o.url || '')) return '';
-    return `<a class="op-link" href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener noreferrer" title="${esc(t('op_link_hint'))}">${esc(t('op_link', { op: o.providerName }))} ↗</a>`;
+    const label = short ? t('op_link_short') : t('op_link', { op: o.providerName });
+    return `<a class="op-link" href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener noreferrer" title="${esc(t('op_link', { op: o.providerName }))} — ${esc(t('op_link_hint'))}">${esc(label)} ↗</a>`;
   }
 
   // Cədvəl görünüşü (operator saytlarındakı kimi): tarix+uçuş, tur, gecə, otel (rayon), yer, qida,

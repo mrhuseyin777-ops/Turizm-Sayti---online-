@@ -1,6 +1,8 @@
 // Ortaq köməkçilər: dil (AZ/EN/RU), API, avtomatik tamamlama, formatlama
 const I18N = {
   az: {
+    op_link_short: 'saytda',
+    rank_title: 'Operatorlar ucuzdan bahalıya', rank_cheapest: 'ən ucuz',
     op_link: '{op} saytında yoxla', op_link_hint: 'Operatorun öz axtarış səhifəsi eyni tarix və nəfərlə açılır. Qiymət orada fərqli ola bilər.',
     nav_search: 'Turlar və otellər', nav_flights: 'Aviabilet', nav_cars: 'Avtomobil', nav_b2b: 'Agentliklər üçün (B2B)', tab_package: 'Tur paketi (uçuş + otel)', tab_hotel: 'Yalnız otel', tab_tour: 'Ekskursiya turları',
     reg_all: 'Hamısı', reg_intl: 'Xarici', reg_domestic: 'Daxili', f_dest: 'Hara?', f_dest_ph: 'Antalya, Dubay, Qəbələ...', f_date: 'Gediş tarixi', f_nights: 'Gecə', f_pax: 'Böyük / Uşaq',
@@ -18,6 +20,8 @@ const I18N = {
     feat3_t: 'Büdcəyə görə', feat3_d: 'Büdcəni yaz — uyğun otellər ucuzdan bahalıya düzülür.', feat4_t: 'Agentliklər üçün B2B', feat4_d: 'Menecerlər üçün müqayisə cədvəli, kommersiya təklifi və CSV.',
   },
   en: {
+    op_link_short: 'on site',
+    rank_title: 'Operators, cheapest first', rank_cheapest: 'cheapest',
     op_link: 'Check on {op}', op_link_hint: 'Opens the operator’s own search page with the same dates and guests. The price there may differ.',
     nav_search: 'Tours & hotels', nav_flights: 'Flights', nav_cars: 'Cars', nav_b2b: 'For agencies (B2B)', tab_package: 'Package (flight + hotel)', tab_hotel: 'Hotel only', tab_tour: 'Guided tours',
     reg_all: 'All', reg_intl: 'International', reg_domestic: 'Domestic', f_dest: 'Where to?', f_dest_ph: 'Antalya, Dubai, Gabala...', f_date: 'Departure', f_nights: 'Nights', f_pax: 'Adults / Kids',
@@ -35,6 +39,8 @@ const I18N = {
     feat3_t: 'Budget first', feat3_d: 'Enter a budget — matching hotels sorted cheapest first.', feat4_t: 'B2B for agencies', feat4_d: 'Comparison grid, client quotes and CSV export for managers.',
   },
   ru: {
+    op_link_short: 'на сайте',
+    rank_title: 'Операторы от дешёвых к дорогим', rank_cheapest: 'дешевле всех',
     op_link: 'Проверить на сайте {op}', op_link_hint: 'Откроется поиск оператора с теми же датами и туристами. Цена там может отличаться.',
     nav_search: 'Туры и отели', nav_flights: 'Авиабилеты', nav_cars: 'Авто', nav_b2b: 'Для агентств (B2B)', tab_package: 'Тур (перелёт + отель)', tab_hotel: 'Только отель', tab_tour: 'Экскурсионные туры',
     reg_all: 'Все', reg_intl: 'Зарубежные', reg_domestic: 'По Азербайджану', f_dest: 'Куда?', f_dest_ph: 'Анталья, Дубай, Габала...', f_date: 'Дата вылета', f_nights: 'Ночей', f_pax: 'Взрослые / Дети',
