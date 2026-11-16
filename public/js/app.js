@@ -111,6 +111,7 @@
             ${g.savings > 0 ? `<div class="save">${t('save', { n: money(g.savings, cur) })}</div>` : ''}
           </div>
           <button class="btn sm" data-book="${i}">${t('book')}</button>
+          <a style="font-size:13px" href="/cars.html?loc=${encodeURIComponent(g.destination.id)}&amp;from=${esc(b.checkIn)}&amp;to=${new Date(Date.parse(b.checkIn) + Math.max(1, b.nights) * 864e5).toISOString().slice(0, 10)}">🚗 Maşın əlavə et</a>
         </div>
       </article>`;
     }).join('');

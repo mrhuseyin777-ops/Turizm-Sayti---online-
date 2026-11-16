@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurTap — avtomobil icarəsi və transfer</title>
+  <meta name="description" content="Səyahət üçün avtomobil icarəsi və sürücülü transfer: şirkətlərin qiymətlərini bir axtarışda müqayisə edin.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/cars.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="logo" href="/"><span class="logo-mark">✈</span><span>Tur<b>Tap</b></span></a>
+      <nav class="nav">
+        <a href="/" class="hide-sm" data-i18n="nav_search">Axtarış</a>
+        <a href="/flights.html" class="hide-sm" data-i18n="nav_flights">Aviabilet</a>
+        <a href="/cars.html" class="active" data-i18n="nav_cars">Avtomobil</a>
+        <a href="/b2b" class="hide-sm" data-i18n="nav_b2b">Agentliklər üçün (B2B)</a>
+        <select id="currency" aria-label="Valyuta"></select>
+        <select id="lang" aria-label="Dil"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero cars-hero">
+    <div class="container">
+      <h1 data-i18n="car_hero_title">Səyahətiniz üçün maşın</h1>
+      <p data-i18n="car_hero_sub"></p>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="search-card cars-card">
+      <div class="tabs" id="modeTabs" role="tablist">
+        <button type="button" class="tab active" data-mode="rental" role="tab" data-i18n="car_tab_rental"></button>
+        <button type="button" class="tab" data-mode="transfer" role="tab" data-i18n="car_tab_transfer"></button>
+        <span class="sep"></span>
+        <span class="agent-pill" id="agentPill" hidden></span>
+      </div>
+
+      <!-- İcarə formu -->
+      <form id="rentalForm" autocomplete="off">
+        <div class="fields car-fields">
+          <div class="field f-loc"><label for="pickup" data-i18n="car_pickup"></label><input id="pickup" required data-i18n-ph="car_loc_ph"></div>
+          <div class="field f-loc" id="dropoffField" hidden><label for="dropoff" data-i18n="car_dropoff"></label><input id="dropoff" data-i18n-ph="car_loc_ph"></div>
+          <div class="field"><label for="fromDate" data-i18n="car_from"></label>
+            <div class="dt"><input id="fromDate" type="date" required><input id="fromTime" type="time" value="10:00" step="1800" required aria-label="Saat"></div>
+          </div>
+          <div class="field"><label for="toDate" data-i18n="car_to"></label>
+            <div class="dt"><input id="toDate" type="date" required><input id="toTime" type="time" value="10:00" step="1800" required aria-label="Saat"></div>
+          </div>
+          <div class="field f-age"><label for="age" data-i18n="car_age"></label>
+            <select id="age"></select>
+          </div>
+          <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
+        </div>
+        <div class="car-opts">
+          <label class="chk"><input type="checkbox" id="diffDrop"> <span data-i18n="car_diff_drop"></span></label>
+          <span class="muted opt-sep" data-i18n="car_extras"></span>
+          <label class="chk"><span data-i18n="car_child_seat"></span>
+            <select id="childSeats" aria-label="Uşaq oturacağı"><option>0</option><option>1</option><option>2</option><option>3</option></select></label>
+          <label class="chk"><input type="checkbox" id="gps"> GPS</label>
+          <label class="chk"><input type="checkbox" id="extraDriver"> <span data-i18n="car_extra_driver"></span></label>
+        </div>
+      </form>
+
+      <!-- Transfer formu -->
+      <form id="transferForm" autocomplete="off" hidden>
+        <div class="seg" id="tMode" style="margin-bottom:12px">
+          <button type="button" class="active" data-tmode="transfer" data-i18n="tr_mode_transfer"></button>
+          <button type="button" data-tmode="daily" data-i18n="tr_mode_daily"></button>
+        </div>
+        <div class="fields tr-fields">
+          <div class="field f-loc"><label for="tFrom" data-i18n="tr_from"></label><input id="tFrom" required data-i18n-ph="car_loc_ph"></div>
+          <div class="field f-loc" id="tToField"><label for="tTo" data-i18n="tr_to"></label><input id="tTo" data-i18n-ph="car_loc_ph"></div>
+          <div class="field"><label for="tDate" data-i18n="tr_date"></label>
+            <div class="dt"><input id="tDate" type="date" required><input id="tTime" type="time" value="12:00" step="900" aria-label="Saat"></div>
+          </div>
+          <div class="field" id="tDaysField" hidden><label for="tDays" data-i18n="tr_days"></label>
+            <select id="tDays"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>10</option><option>14</option></select>
+          </div>
+          <div class="field"><label data-i18n="tr_pax_bags"></label>
+            <div class="pax">
+              <input id="tPax" type="number" min="1" max="16" value="2" aria-label="Nəfər">
+              <input id="tBags" type="number" min="0" max="16" value="2" aria-label="Baqaj">
+            </div>
+          </div>
+          <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
+        </div>
+        <p class="muted tr-hint" id="tHint"></p>
+      </form>
+    </div>
+
+    <div id="intro">
+      <div class="features">
+        <div class="feature"><b data-i18n="cfeat1_t"></b><p data-i18n="cfeat1_d"></p></div>
+        <div class="feature"><b data-i18n="cfeat2_t"></b><p data-i18n="cfeat2_d"></p></div>
+        <div class="feature"><b data-i18n="cfeat3_t"></b><p data-i18n="cfeat3_d"></p></div>
+        <div class="feature"><b data-i18n="cfeat4_t"></b><p data-i18n="cfeat4_d"></p></div>
+      </div>
+      <div class="demo-note" data-i18n="car_demo_note"></div>
+    </div>
+
+    <!-- İcarə nəticələri -->
+    <div class="layout" id="rentalLayout" hidden>
+      <aside class="panel filters" id="filters">
+        <h3 data-i18n="filters"></h3>
+        <div class="group"><b data-i18n="car_category"></b><div id="catFilter"></div></div>
+        <div class="group"><b data-i18n="car_transmission"></b>
+          <label class="chk"><input type="radio" name="transmission" value="" checked> <span data-i18n="reg_all"></span></label>
+          <label class="chk"><input type="radio" name="transmission" value="automatic"> <span data-i18n="car_auto"></span></label>
+          <label class="chk"><input type="radio" name="transmission" value="manual"> <span data-i18n="car_manual"></span></label>
+        </div>
+        <div class="group"><b data-i18n="car_seats"></b>
+          <label class="chk"><input type="radio" name="minSeats" value="" checked> <span data-i18n="reg_all"></span></label>
+          <label class="chk"><input type="radio" name="minSeats" value="5"> 5+</label>
+          <label class="chk"><input type="radio" name="minSeats" value="7"> <span data-i18n="car_seats_family"></span></label>
+        </div>
+        <div class="group">
+          <label class="chk"><input type="checkbox" id="fullInsurance"> <span data-i18n="car_full_ins"></span></label>
+          <label class="chk"><input type="checkbox" id="freeCancel"> <span data-i18n="car_free_cancel"></span></label>
+        </div>
+        <div class="group"><b data-i18n="car_companies"></b><div id="companyFilter"></div></div>
+        <div class="group"><b data-i18n="car_max_price"></b>
+          <div class="range" style="margin-top:8px"><input id="maxPrice" type="number" min="0" step="10" placeholder="max"></div>
+        </div>
+      </aside>
+      <main>
+        <div class="results-head">
+          <div><h2 id="resTitle"></h2><div class="muted" id="resSub"></div></div>
+          <div class="head-actions">
+            <button class="btn secondary sm mobile-filter-btn" id="toggleFilters" type="button" data-i18n="filter_btn"></button>
+            <select id="sort" class="btn secondary sm" aria-label="Sıralama">
+              <option value="price" data-i18n="sort_price"></option>
+              <option value="daily" data-i18n="car_sort_daily"></option>
+              <option value="price_desc" data-i18n="sort_price_desc"></option>
+            </select>
+          </div>
+        </div>
+        <div class="agent-bar" id="agentBar" hidden>
+          <b data-i18n="car_agent_mode"></b>
+          <label><span data-i18n="car_commission"></span> <input id="markup" type="number" min="0" max="100" step="1" value="0"></label>
+          <span class="muted" data-i18n="car_agent_hint"></span>
+        </div>
+        <div class="sources" id="sources"></div>
+        <div id="results"></div>
+        <div class="demo-note" data-i18n="car_demo_note"></div>
+      </main>
+    </div>
+
+    <!-- Transfer nəticələri -->
+    <div id="transferLayout" class="tr-layout" hidden>
+      <div class="results-head">
+        <div><h2 id="tTitle"></h2><div class="muted" id="tSub"></div></div>
+      </div>
+      <div class="agent-bar" id="agentBarT" hidden>
+        <b data-i18n="car_agent_mode"></b>
+        <label><span data-i18n="car_commission"></span> <input id="markupT" type="number" min="0" max="100" step="1" value="0"></label>
+      </div>
+      <div id="tResults"></div>
+      <div class="demo-note" data-i18n="car_demo_note"></div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
+
+  <footer><div class="container">© <span id="year"></span> TurTap · <span data-i18n="car_footer"></span></div></footer>
+  <script src="/js/common.js"></script>
+  <script src="/js/cars.js"></script>
+</body>
+</html>
