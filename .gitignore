@@ -1,3 +1,8 @@
 node_modules/
 .env
 .claude/worktrees/
+# Hesablar və digər işləmə vaxtı məlumatları (parol hash-ləri) — heç vaxt commit etməyin
+data/
+*.tmp
+.env.*
+!.env.example

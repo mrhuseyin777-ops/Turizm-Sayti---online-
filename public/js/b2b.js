@@ -6,37 +6,72 @@
   const markup = () => Math.max(0, Number($('#markup').value) || 0);
   const withMarkup = (p) => Math.round(p * (1 + markup() / 100));
 
-  // Giriş (demo)
+  // Giriş: server tərəfli sessiya (httpOnly cookie). JS yalnız /api/b2b/me cavabını görür —
+  // parol və sessiya id-si brauzer yaddaşında (localStorage) saxlanılmır.
+  let me = null;
+  const sessionInfo = () => (me ? { agency: me.agency.name, manager: me.user.displayName } : {});
+  // Köhnə demo versiyadan qalan localStorage girişini sil
+  try { localStorage.removeItem('b2bSession'); } catch { /* */ }
+
   function showApp() {
-    const s = store.get('b2bSession', null);
-    $('#loginView').hidden = !!s; $('#appView').hidden = !s; $('#logout').hidden = !s;
-    if (s) { $('#agencyName').textContent = `${s.agency} · ${s.manager}`; loadLeads(); }
+    $('#loginView').hidden = !!me; $('#appView').hidden = !me; $('#logout').hidden = !me;
+    $('#agencyName').textContent = me ? `${me.agency.name} · ${me.user.displayName}` : '';
+    if (me) loadLeads();
   }
-  $('#loginForm').addEventListener('submit', (e) => {
+  $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = Object.fromEntries(new FormData(e.target));
-    store.set('b2bSession', { agency: fd.agency, manager: fd.manager });
+    const fd = new FormData(e.target);
+    $('#loginErr').textContent = '';
+    $('#loginBtn').disabled = true;
+    try {
+      const r = await postJson('/api/b2b/login', { username: String(fd.get('username') || ''), password: String(fd.get('password') || '') });
+      setCsrf(r.csrfToken);
+      me = r;
+      e.target.reset();
+      showApp();
+    } catch (err) {
+      $('#loginErr').textContent = err.message;
+      e.target.password.value = '';
+    } finally { $('#loginBtn').disabled = false; }
+  });
+  $('#logout').addEventListener('click', async (e) => {
+    e.preventDefault();
+    try { await postJson('/api/b2b/logout', {}); } catch { /* sessiya artıq bitib */ }
+    setCsrf(null); me = null; state.data = null;
+    // Ortaq kompüterdə növbəti istifadəçi müştəri adlarını görməsin
+    try { localStorage.removeItem('b2bHistory'); } catch { /* */ }
+    renderHistory();
+    $('#leads').innerHTML = ''; $('#tableWrap').innerHTML = '';
     showApp();
   });
-  $('#logout').addEventListener('click', (e) => { e.preventDefault(); store.set('b2bSession', null); showApp(); });
+  // Sessiya bitibsə (401) — giriş ekranına qayıt
+  const onAuthError = (err) => {
+    if (err && err.status === 401) { me = null; setCsrf(null); showApp(); toast('Sessiyanın müddəti bitib. Yenidən daxil olun.'); return true; }
+    return false;
+  };
 
-  // "Müraciətlər": paylaşılan seçim linklərindən gələn leadlər.
-  // DEMO: server agentlik adına görə filtrləyir, autentifikasiya yoxdur — real versiyada
-  // agentlik hesabı ilə giriş (sessiya/JWT) olacaq və agency sessiyadan götürüləcək.
+  // "Müraciətlər": paylaşılan seçim linklərindən gələn leadlər — yalnız öz agentliyiniz
+  // (server agentliyi sessiyadan götürür).
   async function loadLeads() {
-    const s = store.get('b2bSession', null);
-    if (!s) return;
+    if (!me) return;
     try {
-      const { leads } = await api('/api/b2b/leads', { agency: s.agency });
+      const r = await fetch('/api/b2b/leads', { credentials: 'same-origin', cache: 'no-store' });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { const er = new Error(data.error || 'Xəta'); er.status = r.status; throw er; }
+      const { leads } = data;
       $('#leadCount').textContent = leads.length;
       $('#leads').innerHTML = leads.length ? leads.map((l) => `<div class="lead">
-        <b>${esc(l.name)}</b> · <a href="tel:${esc(l.phone.replace(/[^+\d]/g, ''))}">${esc(l.phone)}</a><br>
-        <small>${esc(l.item.name)} · ${fmtDate(l.item.checkIn)} · ${money(l.item.clientPrice, l.item.currency)}</small><br>
+        <b>${esc(l.name)}</b> · <a href="tel:${esc(String(l.phone).replace(/[^+\d]/g, ''))}">${esc(l.phone)}</a><br>
+        <small>${esc(l.item.name)} · ${esc(fmtDate(l.item.checkIn))} · ${esc(money(l.item.clientPrice, l.item.currency))}</small><br>
         <small class="muted">${esc(l.item.providerName || '')}${l.client ? ' · ' + esc(l.client) : ''} · ${esc(new Date(l.createdAt).toLocaleString())}</small>
         ${l.note ? `<br><small>${esc(l.note)}</small>` : ''}</div>`).join('') : `<p class="muted">${esc(t('b2b_leads_empty'))}</p>`;
-    } catch (err) { $('#leads').innerHTML = `<p class="muted">${esc(err.message)}</p>`; }
+    } catch (err) {
+      if (onAuthError(err)) return;
+      $('#leads').innerHTML = `<p class="muted">${esc(err.message)}</p>`;
+    }
   }
   $('#leadsReload').addEventListener('click', loadLeads);
+  me = await b2bMe();
   showApp();
 
   // Uşaq yaşları
@@ -74,6 +109,7 @@
     };
     try {
       state.data = await api('/api/search', p);
+      state.lastParams = p;
       state.selected.clear();
       saveHistory(p);
       render();
@@ -88,7 +124,7 @@
   }
   function renderHistory() {
     const h = store.get('b2bHistory', []);
-    $('#history').innerHTML = h.length ? h.map((x, i) => `<div data-h="${i}"><b>${esc(x.client || x.q)}</b><br><small class="muted">${esc(x.q)} · ${fmtDate(x.checkIn)} · ${x.nights}g · ${x.adults}+${x.children}</small></div>`).join('') : '<p class="muted">Hələ yoxdur</p>';
+    $('#history').innerHTML = h.length ? h.map((x, i) => `<div data-h="${i}"><b>${esc(x.client || x.q)}</b><br><small class="muted">${esc(x.q)} · ${esc(fmtDate(x.checkIn || ''))} · ${esc(x.nights)}g · ${esc(x.adults)}+${esc(x.children)}</small></div>`).join('') : '<p class="muted">Hələ yoxdur</p>';
   }
   $('#history').addEventListener('click', (e) => {
     const el = e.target.closest('[data-h]'); if (!el) return;
@@ -97,7 +133,7 @@
     for (const k of ['checkIn', 'flex', 'nights', 'adults', 'children', 'maxPrice']) $('#' + k).value = x[k] || '';
     renderChildAges($('#childAges'), x.children, String(x.childAges || '').split(',').filter(Boolean).map(Number));
     $('#client').value = x.client || '';
-    $(`#typeTabs [data-type="${x.type}"]`).click();
+    if (['package', 'hotel', 'tour'].includes(x.type)) $(`#typeTabs [data-type="${x.type}"]`).click();
     run();
   });
   renderHistory();
@@ -131,7 +167,7 @@
     const rows = d.groups.map((g) => {
       const byOp = Object.fromEntries(g.providers.map((o) => [o.providerId, o]));
       return `<tr>
-        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.rating ? ' · ' + g.rating : ''}</small></td>
+        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.rating ? ' · ' + esc(g.rating) : ''}</small></td>
         ${ops.map((s) => {
           const o = byOp[s.id];
           if (!o) return '<td class="num muted">—</td>';
@@ -144,7 +180,7 @@
         <td class="num"><b style="color:var(--good)">${g.savings ? money(g.savings, 'AZN') : '—'}</b></td>
       </tr>`;
     }).join('');
-    $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th>Otel / tur</th>${ops.map((s) => `<th style="text-align:right"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color}"></span> ${esc(s.name)}</th>`).join('')}<th style="text-align:right">Fərq</th></tr></thead><tbody>${rows}</tbody></table>`;
+    $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th>Otel / tur</th>${ops.map((s) => `<th style="text-align:right"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(s.color)}"></span> ${esc(s.name)}</th>`).join('')}<th style="text-align:right">Fərq</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   const cols = [
@@ -161,8 +197,8 @@
       ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''}">
         <td><input type="checkbox" data-sel="${esc(o.id)}" ${state.selected.has(o.id) ? 'checked' : ''}></td>
         <td>${esc(o.name)}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}</td>
-        <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${o.providerColor}"></span> ${esc(o.providerName)}</td>
-        <td>${fmtDate(o.checkIn)}</td><td>${o.nights}</td><td>${esc(o.board || '—')}</td><td>${o.stars || ''}</td>
+        <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td>
+        <td>${esc(fmtDate(o.checkIn))}</td><td>${esc(o.nights)}</td><td>${esc(o.board || '—')}</td><td>${esc(o.stars || '')}</td>
         <td class="num">${money(o.price, 'AZN')}</td><td class="num"><b>${money(withMarkup(o.price), 'AZN')}</b></td>
         <td>${o.availability === 'instant' ? '✅ Mövcud' : '⏳ Sorğu ilə'}</td><td><small>${esc(termsShort(o))}</small></td></tr>`).join('')}
       </tbody></table>`;
@@ -186,7 +222,7 @@
   }
 
   function quoteText(list) {
-    const s = store.get('b2bSession', {});
+    const s = sessionInfo();
     const q = state.data.query;
     const client = $('#client').value;
     const lines = [
@@ -214,7 +250,7 @@
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
         <button class="btn secondary sm" data-close>Bağla</button>
         <button class="btn secondary sm" id="copyQuote">Kopyala</button>
-        <a class="btn sm primary" id="waQuote" target="_blank" rel="noopener" style="display:inline-flex;align-items:center">WhatsApp-da göndər</a>
+        <a class="btn sm primary" id="waQuote" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center">WhatsApp-da göndər</a>
       </div>`;
     $('#waQuote').href = 'https://wa.me/?text=' + encodeURIComponent(text);
     $('#copyQuote').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#quoteText').value); toast('Kopyalandı'); } catch { $('#quoteText').select(); } });
@@ -234,33 +270,35 @@
     $('#modal').classList.add('open');
     $('#shareCreate').addEventListener('click', async (ev) => {
       ev.target.disabled = true;
-      const s = store.get('b2bSession', {});
-      const q = state.data.query;
       try {
+        // Server qiymətləri öz axtarışından yenidən götürür: yalnız axtarış parametrləri və təklif id-ləri göndərilir.
+        // Agentlik/menecer adı sessiyadan gəlir.
         const r = await postJson('/api/selections', {
-          agency: s.agency, manager: s.manager, client: $('#client').value, message: $('#shareMsg').value, markup: markup(), currency: 'AZN',
-          adults: q.adults, children: q.children,
-          items: list.map((o) => ({ id: o.id, name: o.name, destination: o.destination.name, stars: o.stars, checkIn: o.checkIn, nights: o.nights, board: o.board, boardLabel: o.boardLabel, includesFlight: o.includesFlight, prepayment: o.prepayment, freeCancelUntil: o.freeCancelUntil, providerName: o.providerName, price: o.price })),
+          client: $('#client').value, message: $('#shareMsg').value, markup: markup(),
+          query: state.lastParams, offerIds: list.map((o) => o.id),
         });
+        if (!/^\/s\/[A-Za-z0-9_-]{12}$/.test(r.url || '')) throw new Error('Gözlənilməz cavab');
         const url = location.origin + r.url;
         $('#shareOut').innerHTML = `<div class="share-link"><input id="shareUrl" readonly value="${esc(url)}" aria-label="URL">
           <button class="btn secondary sm" id="shareCopy">${esc(t('b2b_copy'))}</button>
-          <a class="btn secondary sm" style="display:inline-flex;align-items:center" target="_blank" rel="noopener" href="${esc(r.url)}">${esc(t('b2b_open'))}</a>
-          <a class="btn sm primary" style="display:inline-flex;align-items:center" target="_blank" rel="noopener" id="shareWa">WhatsApp</a></div>`;
+          <a class="btn secondary sm" style="display:inline-flex;align-items:center" target="_blank" rel="noopener noreferrer" href="${esc(r.url)}">${esc(t('b2b_open'))}</a>
+          <a class="btn sm primary" style="display:inline-flex;align-items:center" target="_blank" rel="noopener noreferrer" id="shareWa">WhatsApp</a></div>`;
         $('#shareWa').href = 'https://wa.me/?text=' + encodeURIComponent(url);
         $('#shareCopy').addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('Kopyalandı'); } catch { $('#shareUrl').select(); } });
         ev.target.hidden = true;
-      } catch (err) { toast(err.message); ev.target.disabled = false; }
+      } catch (err) { if (!onAuthError(err)) toast(err.message); ev.target.disabled = false; }
     });
   });
 
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) $('#modal').classList.remove('open'); });
 
+  // CSV/formula injection qorunması: =,+,-,@ ilə başlayan xanalar Excel-də formul kimi icra olunmasın
+  const csvCell = (c) => { let v = String(c ?? ''); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return v.replace(/"/g, '""'); };
   $('#csvBtn').addEventListener('click', () => {
     if (!state.data || !state.data.offers.length) return toast('Əvvəlcə axtarış edin');
     const head = ['Otel/Tur', 'İstiqamət', 'Operator', 'Tarix', 'Gecə', 'Qida', 'Ulduz', 'Net qiymət (AZN)', 'Müştəri qiyməti (AZN)', 'Erkən rez.', 'Status'];
     const rows = state.data.offers.map((o) => [o.name, o.destination.name, o.providerName, o.checkIn, o.nights, o.board || '', o.stars, o.price, withMarkup(o.price), o.earlyBooking ? 'bəli' : '', o.availability]);
-    const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${csvCell(c)}"`).join(';')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = `turtap-${state.data.query.checkIn}.csv`;

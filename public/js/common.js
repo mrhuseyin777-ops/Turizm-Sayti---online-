@@ -152,7 +152,7 @@ Object.assign(I18N.az, {
   s_notfound: 'Link tapılmadı və ya müddəti bitib.', s_price_note: 'Qiymətlər cəmidir ({pax} nəfər) və yerlərin mövcudluğundan asılı olaraq dəyişə bilər.', s_made: 'TurTap ilə hazırlanıb', s_contact: 'Əlaqə',
   b2b_share: '🔗 Seçim linki', b2b_share_title: 'Müştəri üçün seçim linki', b2b_share_note: 'Linkdə agentliyinizin adı görünür; operator adları və net qiymət gizlidir — yalnız müştəri qiyməti (komissiya daxil).',
   b2b_copy: 'Kopyala', b2b_open: 'Aç', b2b_leads: 'Müraciətlər', b2b_leads_empty: 'Hələ müraciət yoxdur. Seçim linkini müştəriyə göndərin.', b2b_reload: 'Yenilə',
-  b2b_leads_demo: 'DEMO: müraciətlər agentlik adına görə göstərilir; real giriş (autentifikasiya) sonra əlavə olunacaq.', b2b_terms: 'Şərtlər', b2b_msg: 'Müştəriyə qeyd (istəyə görə)', b2b_create: 'Link yarat', b2b_need_select: 'Seçilməyibsə, ən ucuz 3 variant götürülür.',
+  b2b_leads_demo: 'Yalnız agentliyinizin seçim linklərindən gələn müraciətlər göstərilir.', b2b_terms: 'Şərtlər', b2b_msg: 'Müştəriyə qeyd (istəyə görə)', b2b_create: 'Link yarat', b2b_need_select: 'Seçilməyibsə, ən ucuz 3 variant götürülür.',
 });
 Object.assign(I18N.en, {
   explore_btn: 'Where can I go?', explore_hint: 'Leave the destination empty to see every destination that fits your budget and dates, cheapest first.',
@@ -174,7 +174,7 @@ Object.assign(I18N.en, {
   s_notfound: 'Link not found or expired.', s_price_note: 'Prices are totals ({pax} guests) and may change depending on availability.', s_made: 'Made with TurTap', s_contact: 'Contact',
   b2b_share: '🔗 Selection link', b2b_share_title: 'Selection link for the client', b2b_share_note: 'The link shows your agency name; operator names and net prices are hidden — only the client price (incl. commission).',
   b2b_copy: 'Copy', b2b_open: 'Open', b2b_leads: 'Requests', b2b_leads_empty: 'No requests yet. Send the selection link to your client.', b2b_reload: 'Reload',
-  b2b_leads_demo: 'DEMO: requests are filtered by agency name; real authentication comes later.', b2b_terms: 'Terms', b2b_msg: 'Note to the client (optional)', b2b_create: 'Create link', b2b_need_select: 'If nothing is selected, the 3 cheapest options are used.',
+  b2b_leads_demo: 'Only requests from your agency’s selection links are shown.', b2b_terms: 'Terms', b2b_msg: 'Note to the client (optional)', b2b_create: 'Create link', b2b_need_select: 'If nothing is selected, the 3 cheapest options are used.',
 });
 Object.assign(I18N.ru, {
   explore_btn: 'Куда можно поехать?', explore_hint: 'Оставьте направление пустым — покажем все направления под ваш бюджет и даты, от дешёвых к дорогим.',
@@ -196,15 +196,38 @@ Object.assign(I18N.ru, {
   s_notfound: 'Ссылка не найдена или устарела.', s_price_note: 'Цены итоговые ({pax} чел.) и могут меняться в зависимости от наличия мест.', s_made: 'Сделано в TurTap', s_contact: 'Контакт',
   b2b_share: '🔗 Ссылка-подборка', b2b_share_title: 'Ссылка-подборка для клиента', b2b_share_note: 'В ссылке видно название вашего агентства; операторы и нетто-цены скрыты — только цена для клиента (с комиссией).',
   b2b_copy: 'Копировать', b2b_open: 'Открыть', b2b_leads: 'Заявки', b2b_leads_empty: 'Заявок пока нет. Отправьте ссылку клиенту.', b2b_reload: 'Обновить',
-  b2b_leads_demo: 'ДЕМО: заявки фильтруются по названию агентства; настоящая авторизация будет позже.', b2b_terms: 'Условия', b2b_msg: 'Комментарий для клиента', b2b_create: 'Создать ссылку', b2b_need_select: 'Если ничего не выбрано, берутся 3 самых дешёвых варианта.',
+  b2b_leads_demo: 'Показаны только заявки по ссылкам вашего агентства.', b2b_terms: 'Условия', b2b_msg: 'Комментарий для клиента', b2b_create: 'Создать ссылку', b2b_need_select: 'Если ничего не выбрано, берутся 3 самых дешёвых варианта.',
 });
 
+// B2B sessiyası: httpOnly cookie-dədir (JS onu oxuya bilmir). Sessiya vəziyyəti və CSRF token
+// serverdən (/api/b2b/me) alınır; localStorage-də heç bir giriş məlumatı saxlanılmır.
+let B2B_CSRF = null;
+async function b2bMe() {
+  try {
+    const r = await fetch('/api/b2b/me', { credentials: 'same-origin', cache: 'no-store' });
+    const d = await r.json();
+    B2B_CSRF = d && d.authenticated ? d.csrfToken : null;
+    return d && d.authenticated ? d : null;
+  } catch { B2B_CSRF = null; return null; }
+}
+function setCsrf(token) { B2B_CSRF = token || null; }
+
 async function postJson(path, body) {
-  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const headers = { 'Content-Type': 'application/json' };
+  if (B2B_CSRF) headers['X-CSRF-Token'] = B2B_CSRF;
+  const r = await fetch(path, { method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(body || {}) });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || 'Xəta');
+  if (!r.ok) { const e = new Error(data.error || 'Xəta'); e.status = r.status; throw e; }
   return data;
 }
+
+// Yalnız http(s) linklərinə icazə (javascript:, data: və s. URL-lər bloklanır)
+function safeUrl(u, fallback = '#') {
+  try { const x = new URL(String(u), location.origin); return ['http:', 'https:'].includes(x.protocol) ? x.href : fallback; } catch { return fallback; }
+}
+
+// Gizli honeypot sahəsi (bot qoruması): insan görmür, bot doldurursa server müraciəti atır
+const HONEYPOT_HTML = '<input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">';
 
 // "X dəq əvvəl yoxlanılıb" — server vaxtına nisbətən (istifadəçinin saat fərqindən asılı olmasın)
 function checkedAgo(checkedAt, serverTime) {
@@ -275,7 +298,7 @@ function callbackFormHtml(id) {
     <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}" aria-label="${esc(t('lead_name'))}">
     <input name="phone" required maxlength="30" inputmode="tel" placeholder="${esc(t('lead_phone'))}" aria-label="${esc(t('lead_phone'))}">
     <select name="preferredTime" aria-label="${esc(t('cb_time'))}">${['now', 'morning', 'afternoon', 'evening'].map((k) => `<option value="${k}">${esc(t('cb_' + k))}</option>`).join('')}</select>
-    <button class="btn sm primary">${esc(t('cb_send'))}</button></form>`;
+    ${HONEYPOT_HTML}<button class="btn sm primary">${esc(t('cb_send'))}</button></form>`;
 }
 function bindCallbackForm(form, contextFn) {
   form.addEventListener('submit', async (e) => {

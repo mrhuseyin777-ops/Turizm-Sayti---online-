@@ -2,7 +2,10 @@
 // Operator adları və net qiymət serverdən heç gəlmir — yalnız müştəri qiyməti.
 (async function () {
   const $ = (s) => document.querySelector(s);
-  const id = (location.pathname.match(/^\/s\/([A-Za-z0-9_-]{12})$/) || [])[1] || new URLSearchParams(location.search).get('id') || '';
+  const ID_RE = /^[A-Za-z0-9_-]{12}$/;
+  const fromPath = (location.pathname.match(/^\/s\/([A-Za-z0-9_-]{12})$/) || [])[1];
+  const fromQuery = new URLSearchParams(location.search).get('id') || '';
+  const id = fromPath || (ID_RE.test(fromQuery) ? fromQuery : '');
   let sel = null;
 
   function render() {
@@ -28,6 +31,7 @@
 
   document.addEventListener('langchange', render);
   try {
+    if (!id) throw new Error('bad id');
     sel = await api('/api/selections/' + encodeURIComponent(id));
   } catch (e) {
     $('#agency').textContent = '—';
@@ -43,7 +47,7 @@
       <form id="wantForm">
         <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}">
         <input name="phone" required maxlength="30" inputmode="tel" placeholder="${esc(t('lead_phone'))}">
-        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>
+        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>${HONEYPOT_HTML}
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>✕</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
       </form>`;
     $('#modal').classList.add('open');

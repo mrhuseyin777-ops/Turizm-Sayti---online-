@@ -8,6 +8,7 @@ const { providers } = require('../src/providers');
 const { createSelection, publicSelection, createLead, leadsForAgency, getSelectionRecord, LIMITS } = require('../src/leads');
 const config = require('../src/config');
 const app = require('../server');
+const { startServer, createAccount, login, client } = require('./_helpers');
 
 const future = (days) => { const d = new Date(); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const daysTo = (iso) => Math.round((Date.parse(iso + 'T00:00:00Z') - Date.parse(future(0) + 'T00:00:00Z')) / 864e5);
@@ -149,47 +150,64 @@ test('uşaq yaşları: əmsallar, validasiya və geriyə uyğunluq', async () =>
   await assert.rejects(() => search({ ...base, childAges: '25' }));
 });
 
-test('B2B seçim: id təsadüfi, operator/net gizli, limitlər', () => {
+// Seçim testləri üçün stub: serverin "öz axtarışı" əvəzinə sabit təkliflər (qiymət SERVERDƏN gəlir)
+const stubOffer = (over = {}) => ({ id: 'summer:x', name: 'Otel A', destination: { name: 'Antalya' }, stars: 5, checkIn: future(30), nights: 7, board: 'AI', boardLabel: 'Hər şey daxil', providerName: 'Summer Tour', price: 1000, prepayment: 'none', ...over });
+const stubResolver = (catalog) => async (query, ids) => ({ pax: { adults: 2, children: 0 }, offers: ids.map((id) => catalog[id] || null) });
+const account = (name = 'Test Agentlik', agencyId = 'ag_test') => ({ agencyId, agencyName: name, managerName: 'Aysel' });
+
+test('B2B seçim: id təsadüfi, operator/net gizli, qiymət serverdən, limitlər', async () => {
   const store = new Map();
-  const item = { id: 'summer:x', name: 'Otel A', destination: 'Antalya', stars: 5, checkIn: future(30), nights: 7, board: 'AI', providerName: 'Summer Tour', price: 1000, prepayment: 'none' };
-  const sel = createSelection({ agency: 'Test Agentlik', manager: 'Aysel', markup: 10, items: [item, { ...item, price: 2000 }] }, store);
+  const catalog = { 'summer:x': stubOffer(), 'summer:y': stubOffer({ id: 'summer:y', price: 2000 }) };
+  const opts = { account: account(), store, resolveOffers: stubResolver(catalog) };
+  // Klientin göndərdiyi qiymət/ad/agentlik NƏZƏRƏ ALINMIR
+  const sel = await createSelection({ agency: 'Saxta', markup: 10, query: {}, offerIds: ['summer:x', 'summer:y'], items: [{ price: 1 }] }, opts);
   assert.match(sel.id, /^[A-Za-z0-9_-]{12}$/);
-  const ids = new Set(Array.from({ length: 200 }, () => createSelection({ agency: 'A', items: [item] }, store).id));
+  assert.strictEqual(sel.agency, 'Test Agentlik');
+  assert.strictEqual(sel.items[0].netPrice, 1000);
+  const ids = new Set(await Promise.all(Array.from({ length: 200 }, async () => (await createSelection({ query: {}, offerIds: ['summer:x'] }, opts)).id)));
   assert.strictEqual(ids.size, 200);
   const pub = publicSelection(sel);
   assert.strictEqual(pub.items[0].clientPrice, 1100);
   const json = JSON.stringify(pub);
-  for (const secret of ['Summer Tour', 'providerName', 'netPrice', 'summer:x', 'markup']) assert.ok(!json.includes(secret), `${secret} gizli olmalıdır`);
-  assert.throws(() => createSelection({ agency: '', items: [item] }, store));
-  assert.throws(() => createSelection({ agency: 'A', items: [] }, store));
-  assert.throws(() => createSelection({ agency: 'A', items: Array(LIMITS.selectionItems + 1).fill(item) }, store));
-  assert.throws(() => createSelection({ agency: 'A', markup: 500, items: [item] }, store));
-  assert.throws(() => createSelection({ agency: 'A', items: [{ ...item, price: -5 }] }, store));
-  assert.throws(() => createSelection({ agency: 'A', items: [{ ...item, checkIn: 'x' }] }, store));
+  for (const secret of ['Summer Tour', 'providerName', 'netPrice', 'summer:x', 'markup', 'agencyId', 'ag_test']) assert.ok(!json.includes(secret), `${secret} gizli olmalıdır`);
+  await assert.rejects(() => createSelection({ query: {}, offerIds: ['summer:x'] }, { ...opts, account: null }));
+  await assert.rejects(() => createSelection({ query: {}, offerIds: [] }, opts));
+  await assert.rejects(() => createSelection({ query: {}, offerIds: Array.from({ length: LIMITS.selectionItems + 1 }, (_, i) => 'id' + i) }, opts));
+  await assert.rejects(() => createSelection({ query: {}, markup: 500, offerIds: ['summer:x'] }, opts));
+  await assert.rejects(() => createSelection({ query: {}, offerIds: ['yoxdur'] }, opts), /mövcud deyil/);
+  await assert.rejects(() => createSelection({ offerIds: ['summer:x'] }, opts), /query/);
+  await assert.rejects(() => createSelection({ query: {}, offerIds: [{ $gt: '' }] }, opts));
   assert.strictEqual(getSelectionRecord('../../etc', store), null);
   assert.strictEqual(getSelectionRecord('AAAAAAAAAAAA', store), null);
 });
 
-test('leads: callback və seçim leadi agentliyə bağlanır', () => {
+test('leads: callback və seçim leadi agentliyə (agencyId) bağlanır', async () => {
   const store = new Map();
-  const sel = createSelection({ agency: 'Lead Agentlik', manager: 'Murad', client: 'Elvin', items: [{ name: 'Otel B', checkIn: future(20), nights: 3, providerName: 'Funsun Travel', price: 500 }] }, store);
+  const sel = await createSelection({ client: 'Elvin', query: {}, offerIds: ['f:b'] }, {
+    account: account('Lead Agentlik', 'ag_lead'), store,
+    resolveOffers: stubResolver({ 'f:b': stubOffer({ id: 'f:b', name: 'Otel B', checkIn: future(20), nights: 3, providerName: 'Funsun Travel', price: 500 }) }),
+  });
   const lead = createLead({ type: 'selection', selectionId: sel.id, itemIndex: 0, name: 'Nigar', phone: '+994 50 111 22 33' }, { selections: store });
   assert.strictEqual(lead.agency, 'Lead Agentlik');
+  assert.strictEqual(lead.agencyId, 'ag_lead');
   assert.strictEqual(lead.item.clientPrice, 500);
-  assert.throws(() => createLead({ type: 'selection', selectionId: sel.id, itemIndex: 5, name: 'N', phone: '+99450' }, { selections: store }));
-  assert.throws(() => createLead({ type: 'selection', selectionId: 'nope', itemIndex: 0, name: 'N', phone: '+99450' }, { selections: store }));
-  assert.ok(leadsForAgency('lead agentlik').some((l) => l.id === lead.id));
-  assert.deepStrictEqual(leadsForAgency('Başqa'), []);
+  assert.throws(() => createLead({ type: 'selection', selectionId: sel.id, itemIndex: 5, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
+  assert.throws(() => createLead({ type: 'selection', selectionId: 'nope', itemIndex: 0, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
+  assert.ok(leadsForAgency('ag_lead').some((l) => l.id === lead.id));
+  assert.deepStrictEqual(leadsForAgency('Lead Agentlik'), [], 'ad ilə yox, yalnız agencyId ilə');
+  assert.deepStrictEqual(leadsForAgency('ag_basqa'), []);
   const cb = createLead({ type: 'callback', name: 'Kamran', phone: '0501234567', preferredTime: 'evening', context: 'Antalya' });
   assert.strictEqual(cb.type, 'callback');
   assert.strictEqual(cb.preferredTime, 'evening');
-  assert.throws(() => createLead({ name: 'X', phone: '<script>' }));
+  assert.throws(() => createLead({ name: 'Xan', phone: '<script>' }));
   assert.throws(() => createLead({ name: '', phone: '0501234567' }));
+  assert.throws(() => createLead({ name: '<img src=x>', phone: '0501234567' }), /Ad/);
+  assert.throws(() => createLead({ name: 'Kamran', phone: '12345' }), /Telefon/);
 });
 
-test('HTTP: explore, config.trust, leads, selections axını', async () => {
-  const srv = app.listen(0);
-  const url = `http://127.0.0.1:${srv.address().port}`;
+test('HTTP: explore, config.trust, leads, selections axını (B2B giriş ilə)', async () => {
+  const { base, close } = await startServer(app);
+  const url = base;
   const post = (p, body) => fetch(url + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   try {
     const cfg = await (await fetch(`${url}/api/config`)).json();
@@ -208,25 +226,38 @@ test('HTTP: explore, config.trust, leads, selections axını', async () => {
     // köhnə format (type olmadan) hələ də işləyir
     assert.strictEqual((await post('/api/leads', { name: 'Test', phone: '+994501112233', offerId: 'x' })).status, 201);
 
-    const cr = await post('/api/selections', { agency: 'HTTP Agentlik', manager: 'M', markup: 5, items: [{ id: 'kompas:z', name: 'Otel <b>C</b>', destination: 'Dubay', checkIn: future(25), nights: 5, providerName: 'Kompas Travel', price: 2000 }] });
+    // Girişsiz seçim yaratmaq mümkün deyil
+    assert.strictEqual((await post('/api/selections', { query: {}, offerIds: ['x'] })).status, 401);
+
+    await createAccount({ agency: 'HTTP Agentlik', username: 'http-agent', displayName: 'M' });
+    const s = await login(url, 'http-agent', 'Test-Parol-Uzun-2026');
+    assert.strictEqual(s.res.status, 200);
+    const api = client(url, s);
+
+    // Real axtarış → təklif id-ləri; qiymət serverdə yenidən hesablanır
+    const query = { q: 'Dubay', type: 'package', checkIn: future(25), nights: '5', adults: '2', children: '0', flat: '1' };
+    const sr = await (await fetch(`${url}/api/search?${new URLSearchParams(query)}`)).json();
+    const offer = sr.offers[0];
+    const cr = await api.post('/api/selections', { markup: 5, query, offerIds: [offer.id], items: [{ id: offer.id, price: 1 }] });
     assert.strictEqual(cr.status, 201);
     const { id, url: link } = await cr.json();
     assert.strictEqual(link, `/s/${id}`);
     const g = await (await fetch(`${url}/api/selections/${id}`)).json();
     assert.strictEqual(g.agency, 'HTTP Agentlik');
-    assert.strictEqual(g.items[0].clientPrice, 2100);
-    assert.ok(!JSON.stringify(g).includes('Kompas'));
+    assert.strictEqual(g.items[0].clientPrice, Math.round(offer.price * 1.05), 'klientin qiyməti (1) yox, serverin qiyməti');
+    assert.ok(!JSON.stringify(g).includes(offer.providerName));
     assert.strictEqual((await fetch(`${url}/api/selections/xxxxxxxxxxxx`)).status, 404);
     const page = await fetch(`${url}/s/${id}`);
     assert.strictEqual(page.status, 200);
     assert.match(await page.text(), /s\.js/);
 
     assert.strictEqual((await post('/api/leads', { type: 'selection', selectionId: id, itemIndex: 0, name: 'Müştəri', phone: '+994551234567' })).status, 201);
-    const leads = await (await fetch(`${url}/api/b2b/leads?agency=${encodeURIComponent('HTTP Agentlik')}`)).json();
+    const leads = await (await api.get('/api/b2b/leads')).json();
     assert.strictEqual(leads.leads.length, 1);
-    assert.strictEqual(leads.leads[0].item.providerName, 'Kompas Travel'); // agentlik öz operatorunu görür
-    assert.deepStrictEqual((await (await fetch(`${url}/api/b2b/leads`)).json()).leads, []);
+    assert.strictEqual(leads.leads[0].item.providerName, offer.providerName); // agentlik öz operatorunu görür
+    // Girişsiz: 401 (agency parametri heç nə vermir)
+    assert.strictEqual((await fetch(`${url}/api/b2b/leads?agency=${encodeURIComponent('HTTP Agentlik')}`)).status, 401);
   } finally {
-    srv.close();
+    await close();
   }
 });

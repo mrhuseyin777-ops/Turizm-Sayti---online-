@@ -2,75 +2,67 @@
 // B2B paylaşılan seçim linkləri. server.js bu faylı avtomatik qoşur.
 const express = require('express');
 const path = require('path');
-const { explore } = require('../search');
-const { InputError, createLead, leadsForAgency, createSelection, getSelectionRecord, publicSelection } = require('../leads');
+const { explore, QueryError } = require('../search');
+const { InputError, createLead, createSelection, getSelectionRecord, publicSelection } = require('../leads');
+const { requireAuth, requireCsrf } = require('../auth');
+const { rateLimit } = require('../security/rateLimit');
+const { honeypot } = require('../security/http');
 
 const router = express.Router();
 
-// Sadə yaddaşdaxili limit: bir IP-dən pəncərədə maks. N yazma sorğusu
-function limiter(max, windowMs) {
-  const hits = new Map();
-  return (req, res, next) => {
-    const now = Date.now();
-    const arr = (hits.get(req.ip) || []).filter((ts) => now - ts < windowMs);
-    arr.push(now);
-    hits.set(req.ip, arr);
-    if (hits.size > 5000) hits.clear();
-    if (arr.length > max) return res.status(429).json({ error: 'Çox sayda sorğu. Bir az sonra yenidən cəhd edin.' });
-    next();
-  };
-}
-const json = express.json({ limit: '32kb' });
-const requireJson = (req, res, next) => (req.is('application/json') ? next() : res.status(415).json({ error: 'Content-Type application/json olmalıdır' }));
-const fail = (res, e) => {
+const fail = (res, e, next) => {
   if (e instanceof InputError) return res.status(400).json({ error: e.message });
-  console.error('[tours]', e);
-  return res.status(500).json({ error: 'Daxili xəta' });
+  return next(e); // daxili xəta → mərkəzləşdirilmiş handler (mesaj göstərilmir)
 };
 
 // "Hara gedə bilərəm?" — istiqamət göstərilmədən büdcə/tarixə görə istiqamətlər (ucuzdan bahalıya).
 // /api/search?anywhere=1 də eyni nəticəni qaytarır.
-router.get('/api/explore', async (req, res) => {
+router.get('/api/explore', async (req, res, next) => {
   try {
     res.json(await explore(req.query));
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    if (e instanceof QueryError) return res.status(400).json({ error: e.message });
+    next(e);
   }
 });
 
 // Müraciət: type = 'offer' (kartdan) | 'callback' ("Sizə zəng edək") | 'selection' (paylaşılan linkdən)
-router.post('/api/leads', limiter(20, 10 * 60 * 1000), json, requireJson, (req, res) => {
+// Qorunma: IP limiti, honeypot sahəsi, ağ siyahı + uzunluq + telefon formatı (src/leads.js)
+router.post('/api/leads', rateLimit({ name: 'leads', windowMs: 10 * 60 * 1000, max: 20 }), honeypot, (req, res, next) => {
   try {
     const lead = createLead(req.body);
     res.status(201).json({ ok: true, id: lead.id });
-  } catch (e) { fail(res, e); }
+  } catch (e) { fail(res, e, next); }
 });
 
-// B2B: seçilmiş təkliflərdən paylaşılan link yarat
-router.post('/api/selections', limiter(30, 10 * 60 * 1000), json, requireJson, (req, res) => {
-  try {
-    const sel = createSelection(req.body);
-    res.status(201).json({ ok: true, id: sel.id, url: `/s/${sel.id}` });
-  } catch (e) { fail(res, e); }
-});
+// B2B: seçilmiş təkliflərdən paylaşılan link yarat.
+// Tələb: daxil olmuş agentlik istifadəçisi + CSRF token. Agentlik/menecer adı sessiyadan,
+// qiymətlər serverin öz axtarışından götürülür (klientin qiymətinə etibar edilmir).
+router.post('/api/selections',
+  requireAuth,
+  requireCsrf,
+  rateLimit({ name: 'selections', windowMs: 10 * 60 * 1000, max: 30, key: (req) => req.auth.user.id }),
+  async (req, res, next) => {
+    try {
+      const { user, agency } = req.auth;
+      const sel = await createSelection(req.body, { account: { agencyId: agency.id, agencyName: agency.name, managerName: user.displayName } });
+      res.status(201).json({ ok: true, id: sel.id, url: `/s/${sel.id}` });
+    } catch (e) { fail(res, e, next); }
+  });
 
-// Müştəri görünüşü (operator adları və net qiymət gizli)
+// Müştəri görünüşü (operator adları və net qiymət gizli). Link = 72 bitlik təsadüfi id (capability URL).
 router.get('/api/selections/:id', (req, res) => {
   const sel = getSelectionRecord(req.params.id);
   if (!sel) return res.status(404).json({ error: 'Seçim tapılmadı və ya müddəti bitib' });
-  res.set('Cache-Control', 'no-store');
   res.json(publicSelection(sel));
 });
 
-// B2B "Müraciətlər" bölməsi.
-// DEMO: agentlik adına görə filtr, autentifikasiya YOXDUR. Real versiyada agentlik hesabı
-// ilə giriş (sessiya/JWT) tələb olunmalı və agency sorğudan yox, sessiyadan götürülməlidir.
-router.get('/api/b2b/leads', (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  res.json({ leads: leadsForAgency(typeof req.query.agency === 'string' ? req.query.agency : '') });
-});
+// B2B "Müraciətlər": src/routes/b2b.js (GET /api/b2b/leads — autentifikasiya ilə)
 
 // Qısa paylaşma linki: /s/<id> → public/s.html (id səhifədə oxunur)
-router.get('/s/:id', (req, res) => res.sendFile(path.join(__dirname, '..', '..', 'public', 's.html')));
+router.get('/s/:id', (req, res) => {
+  if (!/^[A-Za-z0-9_-]{12}$/.test(req.params.id)) return res.status(404).json({ error: 'Tapılmadı' });
+  res.sendFile(path.join(__dirname, '..', '..', 'public', 's.html'), { headers: { 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' } });
+});
 
 module.exports = router;

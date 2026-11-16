@@ -1,6 +1,9 @@
 // Qiymətləndirmə köməkçiləri: uşaq yaşına görə əmsallar və kartdakı ödəniş planı (DEMO).
 const config = require('./config');
 
+// Sorğu parametrləri səhvi (istifadəçiyə göstərilə bilən mesaj → HTTP 400)
+class QueryError extends Error {}
+
 // Bir uşaq yaşı üçün əmsal (null/undefined = yaş bilinmir → defaultChildAge)
 function childBand(age) {
   const a = Number.isInteger(age) ? age : config.defaultChildAge;
@@ -19,9 +22,9 @@ function childFactors(ages) {
 function parseChildAges(raw) {
   if (raw === undefined || raw === null || raw === '') return null;
   const parts = String(raw).slice(0, 60).split(',').map((x) => x.trim()).filter((x) => x !== '');
-  if (parts.length > 6) throw new Error('Uşaq sayı 6-dan çox ola bilməz');
+  if (parts.length > 6) throw new QueryError('Uşaq sayı 6-dan çox ola bilməz');
   return parts.map((p) => {
-    if (!/^\d{1,2}$/.test(p) || Number(p) > 17) throw new Error('Uşaq yaşı 0–17 arasında tam ədəd olmalıdır');
+    if (!/^\d{1,2}$/.test(p) || Number(p) > 17) throw new QueryError('Uşaq yaşı 0–17 arasında tam ədəd olmalıdır');
     return Number(p);
   });
 }
@@ -39,4 +42,4 @@ function paymentPlan(price) {
   };
 }
 
-module.exports = { childBand, childFactors, parseChildAges, paymentPlan };
+module.exports = { QueryError, childBand, childFactors, parseChildAges, paymentPlan };

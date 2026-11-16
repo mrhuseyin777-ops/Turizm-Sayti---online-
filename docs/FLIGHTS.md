@@ -34,7 +34,7 @@ aviaşirkət adları yalnız illüstrasiya üçündür və həmin şirkətlərin
 
 ## B2B agent rejimi
 
-`localStorage.b2bSession` varsa (B2B girişi, `/b2b`) səhifədə "Agent rejimi" paneli görünür: komissiya %, net qiymət,
+B2B agentlik hesabı ilə daxil olunubsa (`/b2b`, server sessiyası — `/api/b2b/me`) səhifədə "Agent rejimi" paneli görünür: komissiya %, net qiymət,
 komissiya məbləği və müştəri qiyməti; seçilmiş uçuşlardan müştəriyə hazır mətn (mənbə adı və net qiymət gizli) —
 Kopyala / WhatsApp. Qeyd: B2C görünüşündə də mənbə adları göstərilir (müqayisə məhsulun özüdür); agent rejimi əlavə olaraq
 net/komissiyanı göstərir.

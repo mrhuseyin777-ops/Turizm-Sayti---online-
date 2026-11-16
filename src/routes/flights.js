@@ -7,6 +7,8 @@ const { searchAirports } = require('../flights/airports');
 const { searchFlights, ValidationError } = require('../flights/search');
 const { createRequest, RequestValidationError } = require('../flights/requests');
 const { flightProviders } = require('../flights/providers');
+const { rateLimit } = require('../security/rateLimit');
+const { honeypot, maskPhone, maskEmail, maskName, maskIp } = require('../security/http');
 
 const router = express.Router();
 
@@ -19,35 +21,24 @@ router.get('/api/flights/sources', (req, res) => {
   res.json(flightProviders.map(({ id, name, color, kind, demo }) => ({ id, name, color, kind, demo })));
 });
 
-router.get('/api/flights/search', async (req, res) => {
+router.get('/api/flights/search', async (req, res, next) => {
   try {
     res.json(await searchFlights(req.query));
   } catch (e) {
     if (e instanceof ValidationError) return res.status(400).json({ error: e.message });
-    console.error('flights search', e);
-    res.status(500).json({ error: 'Axtarış zamanı xəta baş verdi' });
+    next(e);
   }
 });
 
-// Sadə sui-istifadə qoruması: hər IP üçün 10 dəqiqədə ən çox 10 müraciət
-const hits = new Map();
-function rateLimited(ip) {
-  const now = Date.now();
-  const arr = (hits.get(ip) || []).filter((t) => now - t < 10 * 60 * 1000);
-  arr.push(now);
-  hits.set(ip, arr);
-  if (hits.size > 10000) hits.clear();
-  return arr.length > 10;
-}
-
-router.post('/api/flights/requests', express.json({ limit: '10kb' }), (req, res) => {
-  if (rateLimited(req.ip)) return res.status(429).json({ error: 'Çox sayda müraciət. Bir az sonra yenidən cəhd edin.' });
+// Sui-istifadə qoruması: hər IP üçün 10 dəqiqədə ən çox 10 müraciət + honeypot
+router.post('/api/flights/requests', rateLimit({ name: 'flights-req', windowMs: 10 * 60 * 1000, max: 10, message: 'Çox sayda müraciət. Bir az sonra yenidən cəhd edin.' }), honeypot, (req, res, next) => {
   try {
-    const r = createRequest(req.body, { ip: req.ip });
+    const r = createRequest(req.body, { ip: maskIp(req.ip) });
+    console.info('[flights] yeni müraciət', { id: r.id, name: maskName(r.name), phone: maskPhone(r.phone), email: r.email ? maskEmail(r.email) : null });
     res.status(201).json({ ok: true, id: r.id });
   } catch (e) {
     if (e instanceof RequestValidationError) return res.status(400).json({ error: e.message, fields: e.errors });
-    res.status(500).json({ error: 'Xəta baş verdi' });
+    next(e);
   }
 });
 

@@ -44,7 +44,7 @@ Kataloqda olub avtomobil nöqtəsi olmayan istiqamət (məs. Maldiv) üçün mə
 
 ## B2B
 
-`localStorage.b2bSession` varsa agent rejimi: komissiya % (`b2bCarMarkup`), şirkət adı + net qiymət, müştəri qiyməti
+B2B hesabı ilə daxil olunubsa (server sessiyası, `/api/b2b/me`) agent rejimi: komissiya % (`b2bCarMarkup`), şirkət adı + net qiymət, müştəri qiyməti
 və müştəriyə hazır mətn (şirkət adı gizli) — Kopyala / WhatsApp.
 
 ## Real inteqrasiya yolları

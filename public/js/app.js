@@ -250,7 +250,7 @@
       <form id="leadForm">
         <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}">
         <input name="phone" required maxlength="30" placeholder="${esc(t('lead_phone'))}" inputmode="tel">
-        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>
+        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>${HONEYPOT_HTML}
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>✕</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
       </form>`;
     $('#modal').classList.add('open');

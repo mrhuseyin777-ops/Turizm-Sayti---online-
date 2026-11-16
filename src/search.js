@@ -1,7 +1,7 @@
 const config = require('./config');
 const { destinations, boardLabels } = require('./data/catalog');
 const { providers } = require('./providers');
-const { parseChildAges, paymentPlan } = require('./pricing');
+const { parseChildAges, paymentPlan, QueryError } = require('./pricing');
 
 const norm = (s) => String(s || '').toLocaleLowerCase('az').normalize('NFKD').replace(/[̀-ͯ]/g, '').trim();
 
@@ -29,7 +29,7 @@ const clampInt = (v, min, max, def) => {
 function parseQuery(raw, { anywhere = false } = {}) {
   const type = ['package', 'hotel', 'tour'].includes(raw.type) ? raw.type : 'package';
   const checkIn = /^\d{4}-\d{2}-\d{2}$/.test(raw.checkIn || '') ? raw.checkIn : null;
-  if (!checkIn || Number.isNaN(Date.parse(checkIn + 'T00:00:00Z'))) throw new Error('Tarix (checkIn) düzgün deyil. Format: YYYY-MM-DD');
+  if (!checkIn || Number.isNaN(Date.parse(checkIn + 'T00:00:00Z'))) throw new QueryError('Tarix (checkIn) düzgün deyil. Format: YYYY-MM-DD');
   const q = typeof raw.q === 'string' ? raw.q.slice(0, 80) : '';
   const destinationIds = anywhere
     ? destinations.map((d) => d.id)
@@ -270,4 +270,4 @@ function publicQuery(q) {
   return { ...rest, checkIn: q.checkIn.toISOString().slice(0, 10) };
 }
 
-module.exports = { search, explore, suggest, resolveDestinations, parseQuery, _cache: cache };
+module.exports = { QueryError, search, explore, suggest, resolveDestinations, parseQuery, _cache: cache };

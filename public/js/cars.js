@@ -95,7 +95,9 @@ Object.assign(I18N.ru, {
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const cfg = await api('/api/config');
-  const b2b = store.get('b2bSession', null);
+  // Agent (B2B) rejimi yalnız serverdə təsdiqlənmiş sessiya ilə (/api/b2b/me), localStorage ilə yox
+  const me = await b2bMe();
+  const b2b = me ? { agency: me.agency.name, manager: me.user.displayName } : null;
   const state = {
     mode: 'rental', tmode: 'transfer', currency: store.get('currency', 'AZN'),
     rental: null, rentalReq: null, transfer: null, transferReq: null, companies: new Map(),
@@ -119,7 +121,7 @@ Object.assign(I18N.ru, {
   const cap = (s) => s.charAt(0).toLocaleUpperCase(LANG) + s.slice(1);
   const clsLabel = (id) => t('cls_' + id);
 
-  // Agent (B2B) rejimi: localStorage b2bSession varsa
+  // Agent (B2B) rejimi: daxil olmuş agentlik istifadəçisi üçün
   const markupEls = ['#markup', '#markupT'];
   const markup = () => Math.max(0, Math.min(100, Number(store.get('b2bCarMarkup', 0)) || 0));
   const withMarkup = (p) => Math.round(p * (1 + markup() / 100));
@@ -370,7 +372,7 @@ Object.assign(I18N.ru, {
       <textarea class="quote" id="clientText" rows="9">${esc(text)}</textarea>
       <div class="modal-actions">
         <button type="button" class="btn secondary sm" id="copyText">${esc(t('car_copy'))}</button>
-        <a class="btn sm primary wa" id="waText" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">${esc(t('car_wa') || 'WhatsApp')}</a>
+        <a class="btn sm primary wa" id="waText" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${encodeURIComponent(text)}">${esc(t('car_wa') || 'WhatsApp')}</a>
       </div>
     </div>`;
   }
@@ -381,7 +383,7 @@ Object.assign(I18N.ru, {
       <p class="muted small">${esc(t('car_request_hint'))}</p>
       <input name="name" required minlength="2" maxlength="80" autocomplete="name" placeholder="${esc(t('lead_name'))}">
       <input name="phone" required maxlength="24" inputmode="tel" autocomplete="tel" placeholder="${esc(t('lead_phone'))}">
-      <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>
+      <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>${HONEYPOT_HTML}
       <p class="muted small">🔒 ${esc(t('car_no_docs'))}</p>
       <div class="form-err" id="leadErr" hidden></div>
       <div class="modal-actions"><button type="button" class="btn secondary sm" data-close>✕</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
@@ -396,7 +398,7 @@ Object.assign(I18N.ru, {
       const btn = ev.target.querySelector('button:not([data-close])'); btn.disabled = true;
       try {
         const query = Object.fromEntries(Object.entries(req).filter(([, v]) => v !== '' && v != null));
-        const r = await fetch('/api/cars/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: fd.name, phone: fd.phone, note: fd.note, kind, query, offerId }) });
+        const r = await fetch('/api/cars/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: fd.name, phone: fd.phone, note: fd.note, website: fd.website || '', kind, query, offerId }) });
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data.error || 'Xəta');
         $('#modal').classList.remove('open');

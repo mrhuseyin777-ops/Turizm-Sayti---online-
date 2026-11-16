@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test"
+    "test": "node --test \"test/**/*.test.js\"",
+    "create-agency": "node scripts/create-agency.js",
+    "audit": "npm audit --omit=dev"
   },
   "repository": {
     "type": "git",
@@ -22,7 +24,10 @@
   },
   "homepage": "https://github.com/mrhuseyin777-ops/Turizm-Sayti---online-#readme",
   "dependencies": {
-    "express": "^4.22.3"
+    "express": "4.22.3"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  }
 }

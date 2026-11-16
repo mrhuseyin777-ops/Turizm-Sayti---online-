@@ -22,14 +22,14 @@
   </header>
 
   <div class="container" id="loginView" hidden>
-    <form class="panel login" id="loginForm">
+    <form class="panel login" id="loginForm" method="post" action="/api/b2b/login" autocomplete="on">
       <h2 style="margin-top:0">Agentlik girişi</h2>
       <p class="muted">Tur menecerləri üçün: bütün operatorların qiymətləri bir cədvəldə, müştəriyə hazır təklif bir kliklə.</p>
-      <input name="agency" required placeholder="Agentlik adı">
-      <input name="manager" required placeholder="Menecerin adı">
-      <input name="code" placeholder="Giriş kodu (demo: boş buraxın)">
-      <button class="btn primary" style="width:100%">Daxil ol</button>
-      <div class="demo-note">DEMO giriş. Real versiyada hər agentliyə ayrıca hesab, rol (admin/menecer) və təhlükəsiz giriş olacaq.</div>
+      <input name="username" required maxlength="64" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="İstifadəçi adı" aria-label="İstifadəçi adı">
+      <input name="password" type="password" required maxlength="256" autocomplete="current-password" placeholder="Parol" aria-label="Parol">
+      <div class="err" id="loginErr" role="alert"></div>
+      <button class="btn primary" style="width:100%" id="loginBtn">Daxil ol</button>
+      <div class="demo-note">Hesab agentlik üçün administrator tərəfindən yaradılır (<code>npm run create-agency</code>). Parolunuzu heç kimlə paylaşmayın.</div>
     </form>
   </div>
 

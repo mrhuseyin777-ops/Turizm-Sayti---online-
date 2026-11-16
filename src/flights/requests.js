@@ -59,9 +59,11 @@ function validateRequest(body) {
 }
 
 const requests = [];
+let seq = 0;
 function createRequest(body, meta = {}) {
   const data = validateRequest(body);
-  const r = { id: requests.length + 1, ...data, createdAt: new Date().toISOString(), ip: meta.ip || null };
+  // ip: maskalanmış (son oktet gizli) — sui-istifadə araşdırması üçün kifayətdir, tam IP saxlanılmır
+  const r = { id: ++seq, ...data, createdAt: new Date().toISOString(), ip: meta.ip || null };
   requests.push(r);
   if (requests.length > 5000) requests.shift();
   return r;

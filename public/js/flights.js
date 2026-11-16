@@ -112,7 +112,10 @@ Object.assign(I18N.ru, {
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const color = (c) => (/^#[0-9a-f]{3,8}$/i.test(c || '') ? c : '#64748b');
   const PAGE = 20;
-  const session = store.get('b2bSession', null);
+  // Agent rejimi yalnız serverdə təsdiqlənmiş B2B sessiyası olanda (httpOnly cookie → /api/b2b/me).
+  // localStorage-dəki köhnə "b2bSession" artıq heç nəyə icazə vermir.
+  const me = await b2bMe();
+  const session = me ? { agency: me.agency.name, manager: me.user.displayName } : null;
   const state = {
     trip: 'round', currency: store.get('currency', 'AZN'), sort: 'price', data: null, shown: PAGE,
     agent: !!session && store.get('flightsAgentMode', true),
@@ -475,7 +478,7 @@ Object.assign(I18N.ru, {
         <input name="name" required maxlength="80" autocomplete="name" placeholder="${esc(t('lead_name'))}"><div class="err" data-err="name" hidden></div>
         <input name="phone" required maxlength="22" inputmode="tel" autocomplete="tel" placeholder="${esc(t('lead_phone'))}"><div class="err" data-err="phone" hidden></div>
         <input name="email" type="email" maxlength="120" autocomplete="email" placeholder="${esc(t('fl_req_email'))}"><div class="err" data-err="email" hidden></div>
-        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea><div class="err" data-err="note" hidden></div>
+        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea><div class="err" data-err="note" hidden></div>${HONEYPOT_HTML}
         <div class="err" data-err="flightId" hidden></div>
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
       </form>`;
@@ -491,7 +494,7 @@ Object.assign(I18N.ru, {
       try {
         const r = await fetch('/api/flights/requests', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: fd.name, phone: fd.phone, email: fd.email, note: fd.note, flightId: g.id, offerId: offer.id }),
+          body: JSON.stringify({ name: fd.name, phone: fd.phone, email: fd.email, note: fd.note, website: fd.website || '', flightId: g.id, offerId: offer.id }),
         });
         const data = await r.json().catch(() => ({}));
         if (r.ok) { $('#modal').classList.remove('open'); toast(t('fl_req_ok')); return; }
@@ -558,7 +561,7 @@ Object.assign(I18N.ru, {
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
         <button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button>
         <button type="button" class="btn secondary sm" id="copyQuote">${esc(t('fl_copy'))}</button>
-        <a class="btn sm primary" id="waQuote" target="_blank" rel="noopener" style="display:inline-flex;align-items:center">${esc(t('fl_whatsapp'))}</a>
+        <a class="btn sm primary" id="waQuote" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center">${esc(t('fl_whatsapp'))}</a>
       </div>`;
     const sync = () => { $('#waQuote').href = 'https://wa.me/?text=' + encodeURIComponent($('#quoteText').value); };
     sync(); $('#quoteText').addEventListener('input', sync);

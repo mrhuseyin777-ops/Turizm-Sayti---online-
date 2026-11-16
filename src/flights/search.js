@@ -2,6 +2,7 @@
 // (eyni seqmentlər) qruplaşdırılır, filtr və sıralama tətbiq olunur, qiymət təqvimi qurulur.
 
 const config = require('../config');
+const env = require('../env');
 const { getAirport, publicAirport, resolveCodes } = require('./airports');
 const { getCarrier } = require('./carriers');
 const { flightProviders } = require('./providers');
@@ -32,7 +33,8 @@ function parseQuery(raw = {}) {
   if (!toCodes) throw new ValidationError('İstiqamət (to) tapılmadı — IATA kodu göndərin, məs. IST');
   if (fromCodes.some((c) => toCodes.includes(c))) throw new ValidationError('Uçuş yeri və istiqamət eyni ola bilməz');
 
-  const today = raw.today && isDate(raw.today) ? raw.today : todayIso();
+  // `today` parametri yalnız dev/test üçündür (deterministik testlər); production-da server tarixi
+  const today = !env.isProd && raw.today && isDate(raw.today) ? raw.today : todayIso();
   if (!isDate(raw.depart)) throw new ValidationError('Gediş tarixi (depart) düzgün deyil. Format: YYYY-MM-DD');
   const ahead = dayIndex(raw.depart) - dayIndex(today);
   if (ahead < 0) throw new ValidationError('Gediş tarixi keçmişdə ola bilməz');

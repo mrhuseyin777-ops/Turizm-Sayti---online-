@@ -249,3 +249,7 @@ button.op:hover, button.op[aria-expanded="true"] { border-color: var(--primary);
 }
 :root[data-theme="dark"] .badge.hot { background: #3b1414; color: #fca5a5; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge.hot { background: #3b1414; color: #fca5a5; } }
+
+/* Honeypot (bot qoruması): ekrandan kənar, ekran oxuyucularından gizli */
+.hp { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
+.login .err { color: #b91c1c; font-size: 14px; min-height: 1.2em; margin: 4px 0; }
