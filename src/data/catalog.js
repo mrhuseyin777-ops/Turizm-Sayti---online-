@@ -23,10 +23,41 @@ const destinations = [
   { id: 'naftalan', name: 'Naftalan', country: 'Azərbaycan', region: 'domestic', flight: 0, base: 55, aliases: ['naftalan', 'нафталан'] },
 ];
 
+// Kurort daxilində rayonlar (operator saytlarındakı "şəhər/rayon" filtri kimi). Hər otel bir rayona bağlıdır.
+const DISTRICTS = {
+  alanya: ['Avsallar', 'Konaklı', 'Mahmutlar', 'İncekum', 'Okurcalar', 'Kestel', 'Mərkəz'],
+  antalya: ['Lara', 'Kundu', 'Belek', 'Konyaaltı'],
+  kemer: ['Beldibi', 'Göynük', 'Kiriş', 'Çamyuva', 'Tekirova'],
+  side: ['Kumköy', 'Çolaklı', 'Titreyengöl', 'Evrenseki'],
+  bodrum: ['Turgutreis', 'Gümbet', 'Yalıkavak', 'Bitez'],
+  istanbul: ['Sultanahmet', 'Taksim', 'Şişli', 'Kadıköy'],
+  dubai: ['Marina', 'Jumeirah', 'Deira', 'Palm'],
+  sharm: ['Naama Bay', 'Nabq', 'Ras Nasrani'],
+  batumi: ['Mərkəz', 'Köhnə Batumi', 'Qonio', 'Mahincauri'],
+  tbilisi: ['Köhnə Tbilisi', 'Rustaveli', 'Vake', 'Saburtalo'],
+  maldives: ['Male atollu', 'Ari atollu', 'Baa atollu'],
+  qabala: ['Mərkəz', 'Vəndam', 'Nohurqışlaq'],
+  shahdag: ['Şahdağ kurortu', 'Qusar', 'Laza'],
+  sheki: ['Mərkəz', 'Kiş', 'Marxal'],
+  lankaran: ['Mərkəz', 'Hirkan', 'Astara yolu'],
+  baku: ['Mərkəz', 'Dənizkənarı bulvar', 'Şıxov', 'Mərdəkan'],
+  naftalan: ['Mərkəz', 'Sanatoriya zonası'],
+};
+// "Konaklı" → "konakli" (URL/filtr üçün ASCII id)
+const slug = (s) => s.toLocaleLowerCase('tr').replace(/ə/g, 'e').replace(/ı/g, 'i').normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+for (const d of destinations) {
+  d.districts = (DISTRICTS[d.id] || ['Mərkəz']).map((name) => ({ id: `${d.id}.${slug(name)}`, name }));
+}
+
 const suffixes = ['Resort & Spa', 'Beach Hotel', 'Palace', 'Garden Resort', 'Premium', 'Club Hotel', 'Boutique', 'Family Resort'];
 const prefixes = ['Blue Wave', 'Golden Sand', 'Royal', 'Sunrise', 'Palm Bay', 'Crystal', 'Grand Aurora', 'Silver Coast', 'Mountain View', 'Green Valley'];
 const domesticSuffixes = ['Resort & Spa', 'Mountain Resort', 'Hotel', 'Palace', 'Garden Hotel', 'Boutique', 'Family Resort', 'Lodge'];
 const domesticPrefixes = ['Dağ Ətəyi', 'Meşə', 'Qafqaz Mənzərə', 'Çinar', 'Göy Göl', 'Karvan', 'Bulaq', 'Yaşıl Vadi'];
+
+// Dəniz kurortları (AI/UAI, "yalnız böyüklər" otelləri, dəniz mənzərəli otaqlar)
+const BEACH = ['antalya', 'alanya', 'kemer', 'side', 'bodrum', 'sharm', 'dubai', 'maldives', 'batumi'];
+const CITY = ['istanbul', 'tbilisi', 'baku'];
 
 function hash(str) {
   let h = 2166136261;
@@ -37,9 +68,27 @@ function hash(str) {
   return h >>> 0;
 }
 
+// Otaq tipləri (operator saytlarındakı kimi ingiliscə adlar) və qiymət əmsalı.
+// family: true → 4+ nəfərlik (və ya 3 böyük + uşaq) yerləşmə üçün
+const ROOM_TYPES = {
+  'Standard Room': { factor: 1 },
+  'Standard Land View': { factor: 1 },
+  'Standard Sea View': { factor: 1.12 },
+  'Standard City View': { factor: 1 },
+  'Superior Room': { factor: 1.15 },
+  'Deluxe Room': { factor: 1.18 },
+  'Family Room': { factor: 1.25, family: true },
+};
+function roomsFor(d, stars) {
+  if (d.region === 'domestic' && !CITY.includes(d.id)) return ['Standard Room', 'Deluxe Room', 'Family Room'];
+  if (CITY.includes(d.id)) return ['Standard City View', 'Superior Room', 'Family Room'];
+  return stars >= 4 ? ['Standard Land View', 'Standard Sea View', 'Family Room'] : ['Standard Room', 'Family Room'];
+}
+
 // Hər istiqamət üçün 7 otel generasiya edirik (deterministik)
 const hotels = [];
 for (const d of destinations) {
+  const dOff = hash(d.id) % d.districts.length;
   for (let i = 0; i < 7; i++) {
     const h = hash(d.id + i);
     const stars = [3, 4, 4, 5, 5, 5, 4][i];
@@ -51,20 +100,33 @@ for (const d of destinations) {
       : stars === 5 && ['antalya', 'alanya', 'kemer', 'side', 'bodrum', 'sharm'].includes(d.id)
         ? ['AI', 'UAI']
         : ['BB', 'HB', 'AI'];
+    const rating = Math.round((7.4 + ((h >>> 8) % 24) / 10) * 10) / 10; // 7.4 – 9.7
+    // Atributlar (DEMO, deterministik). Real inteqrasiyada operatorun otel kataloqundan gəlir.
+    const adultsOnly = BEACH.includes(d.id) && i === 5; // hər dəniz kurortunda bir "adults only" 5* otel
+    let tags = [
+      (h & 1) ? 'Aquapark' : null,
+      (h & 2) ? 'Uşaq klubu' : null,
+      (h & 4) ? 'Öz çimərliyi' : null,
+      (h & 8) ? 'SPA' : null,
+      d.region === 'domestic' && (h & 16) ? 'Hovuz' : null,
+    ].filter(Boolean);
+    if (adultsOnly) tags = tags.filter((x) => x !== 'Aquapark' && x !== 'Uşaq klubu');
+    const family = !adultsOnly && ((tags.includes('Uşaq klubu') && tags.includes('Aquapark')) || suf === 'Family Resort');
+    const chdFree = !adultsOnly && d.region === 'intl' && ((h >>> 20) % 3 === 0 || (family && stars === 5));
+    const recommended = rating >= 9.3 || (h >>> 24) % 7 === 0;
+    const district = d.districts[(dOff + i) % d.districts.length];
     hotels.push({
       id: `${d.id}-h${i + 1}`,
       name: `${pre} ${suf}${i > 3 ? ' ' + d.name.split(' ')[0] : ''}`,
       destinationId: d.id,
+      districtId: district.id,
+      district: district.name,
       stars,
-      rating: Math.round((7.4 + ((h >>> 8) % 24) / 10) * 10) / 10, // 7.4 – 9.7
+      rating,
       boards,
-      tags: [
-        (h & 1) ? 'Aquapark' : null,
-        (h & 2) ? 'Uşaq klubu' : null,
-        (h & 4) ? 'Öz çimərliyi' : null,
-        (h & 8) ? 'SPA' : null,
-        d.region === 'domestic' && (h & 16) ? 'Hovuz' : null,
-      ].filter(Boolean),
+      tags,
+      attrs: [chdFree && 'chdFree', adultsOnly && 'adultsOnly', recommended && 'recommended', family && 'family'].filter(Boolean),
+      rooms: roomsFor(d, stars),
       priceFactor: (0.75 + stars * 0.18) * (0.9 + ((h >>> 12) % 30) / 100),
     });
   }
@@ -90,4 +152,7 @@ const boardLabels = {
   UAI: 'Ultra hər şey daxil',
 };
 
-module.exports = { destinations, hotels, tours, boardLabels, hash };
+// Otel atributları (filtr/nişan açarları)
+const HOTEL_ATTRS = ['chdFree', 'adultsOnly', 'recommended', 'family'];
+
+module.exports = { destinations, hotels, tours, boardLabels, hash, ROOM_TYPES, HOTEL_ATTRS };

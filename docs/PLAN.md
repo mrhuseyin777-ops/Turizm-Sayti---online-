@@ -18,7 +18,7 @@ Ad `src/config.js` faylındadır — dəyişmək bir sətirdir. Domen seçilənd
 **B2C (müştəri):**
 - 3 axtarış növü: tur paketi (uçuş + otel), yalnız otel, ekskursiya turları
 - Xarici / Daxili (Azərbaycan) seçimi
-- İstiqamət, tarix (±3 gün çevik), gecə sayı, böyük/uşaq, **büdcə**
+- İstiqamət, **tarix aralığı "gediş -dan / -dək"** (maks. 14 gün; qısa yollar: dəqiq tarix, ±3, +7, +14 gün; köhnə `flex` ±gün linkləri işləyir), **gecə aralığı "-dan / -dək"** (maks. 7 fərq), böyük/uşaq, **büdcə**. Server limiti: tarix × gecə kombinasiyası ≤ 60, gediş ≤ 730 gün sonra (`config.searchLimits`)
 - Nəticələr **ən ucuzdan bahalıya**; hər otel kartında bütün operatorların qiyməti yan-yana, ən ucuzu yaşıl
 - "Nə qədər qənaət edirsən" göstəricisi, **erkən rezervasiya** nişanı və köhnə qiymət
 - Filtrlər: qiymət, ulduz, qidalanma, operator, yalnız erkən rezervasiya
@@ -33,11 +33,22 @@ Ad `src/config.js` faylındadır — dəyişmək bir sətirdir. Domen seçilənd
 - **Operator etibar bloku** — operator adına klik → lisenziya / üzvlük / fəaliyyət ili; bilinməyənlər "təsdiqlənməyib" (uydurma məlumat yoxdur; Summer Tour IATA/ATAA — "operatorun öz məlumatına görə")
 - **Hər uşağın yaşı** (0–17) — qiymət yaşa görə: 0–1 pulsuz otel, 2–6 / 7–11 endirimli, 12+ böyük kimi (`childAges`; köhnə `children` işləyir)
 - **"Sizə zəng edək"** — ana səhifədə və boş nəticədə geri zəng sorğusu (`/api/leads`, `type: 'callback'`)
+- **Operator saytları səviyyəsində axtarış (SAMO-tour analoqu, DEMO məlumat):**
+  - **Kurort rayonları** (Alanya: Avsallar, Konaklı, Mahmutlar…; Antalya: Lara, Kundu, Belek, Konyaaltı; Kemer, Side, Bodrum, Dubay, Şarm və s.) — hər otel bir rayonda; axtarışlı multi-select ("Hamısı" + saylar)
+  - **Otel adına görə multi-select** (axtarış, "Yalnız seçilmişlər")
+  - **Otel atributları:** CHD FREE (ilk 2–11 yaş uşaq otelə pulsuz), Yalnız böyüklər üçün (uşaqlı axtarışda avtomatik gizlədilir), Tövsiyə edirik, Ailəvi — nişanlar + filtrlər
+  - Təklifdə **otaq tipi** (Standard Land View / Sea View / Family Room…) və **yerləşmə kodu** (DBL, DBL+1CHD(2-11.99), TRPL, +INF) pax-a görə avtomatik; 4+ nəfər → Family Room
+  - **Qiymət növü** ("Erkən rezervasiya 2027" / SPO / Standart), **tur adı** ("Antalya 2027"), paketlərdə **uçuş saatı** və **sinif** (Ekonom/Biznes)
+  - **Yer statusu:** otel (çox/az/yox/sorğu ilə), reys gediş/dönüş; **stop-sale**. Filtrlər: "reyslərdə yer var", "satış dayandırılmayıb" (B2C-də default), "ani təsdiq"
+  - **Kartlar / Cədvəl** görünüşü (cədvəl: tarix+uçuş, tur, gecə, otel (rayon), yer, qida, otaq/yerləşmə, qiymət, qiymət növü, operator) + **"Qruplaşdır"** (otel üzrə ən ucuz)
+  - **Ağıllı boş nəticə:** "Bu istiqamət üçün ekskursiya turu yoxdur" + "Tur paketinə bax" / "Yalnız otelə bax" + ekskursiya turu olan istiqamətlər; filtrlər sıfırlayanda hansı filtrin səbəb olduğu və tövsiyə ("Büdcəni 1300-ə qaldırsanız 6 təklif var")
+  - **Operator məzənnəsi** ("Operator məzənnəsi 13.11.2026: USD/AZN 1.7055") — `config.operatorRate`, DEMO; USD qiymət də göstərilir. TODO: CBAR / operatorun gündəlik məzənnəsi ilə avtomatik yeniləmə
 - **Ödəniş üsulları zolağı** — kart, taksit kartları, nağd (planlaşdırılır/demo) + "ödəniş birbaşa operatora gedir" izahı
 
 **B2B (agentlik / tur menecer):** `/b2b`
 - **Matris görünüşü:** sətirdə otel, sütunda operator — hansı operatorda ən ucuz olduğu bir baxışda
-- Bütün təkliflər cədvəli, sütunlara görə sıralama
+- Bütün təkliflər cədvəli, sütunlara görə sıralama — operator saytındakı sütunlar: tarix/uçuş saatı, tur, otel (rayon), yer statusu, otaq/yerləşmə, operator qiyməti (USD), qiymət növü, stop-sale
+- Tarix/gecə aralığı, rayon və otel multi-select-ləri, otel atributları, yer/satış filtrləri; matrisdə otaq və qiymət növü (tooltip); boş nəticədə alternativlər; CSV-də yeni sütunlar
 - **Komissiya / əlavə %** — müştəri qiyməti avtomatik hesablanır
 - Seçilmiş variantlardan **müştəriyə hazır mətn** (operator adı gizli) → Kopyala / WhatsApp
 - CSV (Excel) ixracı

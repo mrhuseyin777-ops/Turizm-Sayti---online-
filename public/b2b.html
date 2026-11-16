@@ -44,15 +44,19 @@
       </div>
       <div class="fields b2b-fields">
         <div class="field"><label>İstiqamət / otel</label><input id="dest" required placeholder="Antalya, Kemer, Dubay..."></div>
-        <div class="field"><label>Tarix</label><input id="checkIn" type="date" required></div>
-        <div class="field"><label>± gün</label><select id="flex"><option>0</option><option>1</option><option>2</option><option selected>3</option><option>5</option><option>7</option></select></div>
-        <div class="field"><label>Gecə</label><input id="nights" type="number" min="1" max="28" value="7"></div>
+        <div class="field"><label for="checkIn" data-i18n="f_date_from">Gediş -dan</label><input id="checkIn" type="date" required></div>
+        <div class="field"><label for="checkInTo" data-i18n="f_date_to">Gediş -dək</label><input id="checkInTo" type="date"></div>
+        <div class="field"><label for="nights" data-i18n="f_nights_from">Gecə -dan</label><input id="nights" type="number" min="1" max="28" value="7"></div>
+        <div class="field"><label for="nightsTo" data-i18n="f_nights_to">Gecə -dək</label><input id="nightsTo" type="number" min="1" max="28" value="7"></div>
         <div class="field"><label>Böyük</label><input id="adults" type="number" min="1" max="8" value="2"></div>
         <div class="field"><label>Uşaq</label><input id="children" type="number" min="0" max="6" value="0"></div>
         <div class="field"><label>Büdcə maks.</label><input id="maxPrice" type="number" min="0" step="50" placeholder="—"></div>
         <button class="btn primary">Axtar</button>
       </div>
       <div class="child-ages" id="childAges" hidden></div>
+      <div class="date-quick" id="dateQuick"><span class="muted" data-i18n="dq_title"></span>
+        <button type="button" data-span="0" data-i18n="dq_exact"></button><button type="button" data-span="pm3" data-i18n="dq_pm3"></button>
+        <button type="button" data-span="7" data-i18n="dq_7"></button><button type="button" data-span="14" data-i18n="dq_14"></button></div>
     </form>
 
     <div class="b2b-bar">
@@ -68,6 +72,16 @@
       <button type="button" class="btn secondary sm" id="csvBtn">CSV / Excel</button>
       <button type="button" class="btn secondary sm" id="shareBtn" data-i18n="b2b_share"></button>
       <button type="button" class="btn sm" id="quoteBtn">Müştəriyə təklif (<span id="selCount">0</span>)</button>
+    </div>
+    <div class="b2b-bar b2b-filters" id="advFilters">
+      <div id="districtMs"></div>
+      <div id="hotelMs"></div>
+      <span id="attrFilter" class="muted" style="display:inline-flex;gap:10px;flex-wrap:wrap"></span>
+      <label class="muted"><input type="checkbox" id="seatsOnly"> <span data-i18n="f_seats"></span></label>
+      <label class="muted"><input type="checkbox" id="noStopSale"> <span data-i18n="f_no_stop"></span></label>
+      <label class="muted"><input type="checkbox" id="instantOnly"> <span data-i18n="f_instant"></span></label>
+      <span style="flex:1"></span>
+      <span id="rateLine"></span>
     </div>
 
     <div class="kpis" id="kpis" hidden></div>

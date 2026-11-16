@@ -50,6 +50,9 @@ app.get('/api/config', (req, res) => {
     providers: providers.map(({ id, name, color, kind, demo, sells, trust }) => ({ id, name, color, kind, demo, sells, trust })),
     installment: config.installment,
     lastMinuteDays: config.lastMinuteDays,
+    // Operator məzənnəsi (USD/AZN, tarix) — DEMO; tarix/gecə aralığı limitləri (UI validasiyası üçün)
+    operatorRate: config.operatorRate,
+    searchLimits: { maxDateRangeDays: config.searchLimits.maxDateRangeDays, maxNightsSpan: config.searchLimits.maxNightsSpan, maxCombos: config.searchLimits.maxCombos },
   });
 });
 

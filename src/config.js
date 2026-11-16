@@ -5,12 +5,24 @@ module.exports = {
     slogan: 'Bütün tur operatorları bir axtarışda — ən ucuzdan bahalıya.',
     domain: 'turtap.az', // hələ alınmayıb, nümunədir
   },
-  // Valyuta məzənnələri (AZN bazası). Real versiyada CBAR-dan gündəlik çəkilməlidir.
-  rates: { AZN: 1, USD: 0.588, EUR: 0.54, TRY: 20.1, RUB: 52 },
+  // Operator məzənnəsi: Azərbaycan operatorları (SAMO-tour) xarici turları adətən USD ilə qiymətləndirir
+  // və "Gündəlik məzənnə DD.MM.YYYY USD/AZN X" göstərir. DEMO dəyər.
+  // TODO: CBAR (cbar.az/currencies/DD.MM.YYYY.xml) və ya operatorun öz gündəlik məzənnəsi ilə avtomatik yenilə.
+  operatorRate: { pair: 'USD/AZN', value: 1.7055, date: '2026-11-13', source: 'demo' },
+  // Valyuta məzənnələri (AZN bazası). USD operator məzənnəsindən hesablanır ki, ikisi uyğun gəlsin.
+  rates: { AZN: 1, USD: Math.round((1 / 1.7055) * 10000) / 10000, EUR: 0.54, TRY: 20.1, RUB: 52 },
   defaultCurrency: 'AZN',
   departureCity: 'Bakı',
-  // Axtarışda tarix çevikliyi (± gün)
+  // Axtarışda tarix çevikliyi (± gün) — checkInTo verilmədikdə qısa yol kimi işləyir
   flexibleDays: 3,
+  // Tarix və gecə aralığı limitləri (DoS qorunması: hər tarix × gecə kombinasiyası ayrıca hesablanır)
+  searchLimits: {
+    maxDateRangeDays: 14, // "gediş -dan / -dək" arası maks. gün
+    maxNightsSpan: 7, // "gecə -dan / -dək" arası maks. fərq
+    maxCombos: 60, // tarix sayı × gecə variantı sayı
+    maxDaysAhead: 730, // ən uzaq gediş tarixi (gün)
+    maxFlatOffers: 1000, // flat=1 cavabında maks. təklif sayı
+  },
   // "Son dəqiqə": gediş tarixi bu qədər gün ərzindədirsə təklif son dəqiqə sayılır
   lastMinuteDays: 14,
   // Kartda göstərilən hissə-hissə ödəniş (DEMO vitrin; bank inteqrasiyası hələ yoxdur)

@@ -49,9 +49,11 @@
       </div>
       <div class="fields">
         <div class="field"><label for="dest" data-i18n="f_dest"></label><input id="dest" maxlength="80" data-i18n-ph="f_dest_ph"></div>
-        <div class="field"><label for="checkIn" data-i18n="f_date"></label><input id="checkIn" type="date" required></div>
-        <div class="field"><label for="nights" data-i18n="f_nights"></label>
-          <select id="nights"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>14</option></select>
+        <div class="field wide"><label for="checkIn" data-i18n="f_date_range"></label>
+          <div class="pair"><input id="checkIn" type="date" required data-i18n-title="f_date_from"><input id="checkInTo" type="date" data-i18n-title="f_date_to"></div>
+        </div>
+        <div class="field"><label for="nights" data-i18n="f_nights_range"></label>
+          <div class="pair"><select id="nights" data-i18n-title="f_nights_from"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select><select id="nightsTo" data-i18n-title="f_nights_to"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select></div>
         </div>
         <div class="field"><label data-i18n="f_pax"></label>
           <div class="pax">
@@ -63,6 +65,9 @@
         <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
       </div>
       <div class="child-ages" id="childAges" hidden></div>
+      <div class="date-quick" id="dateQuick"><span class="muted" data-i18n="dq_title"></span>
+        <button type="button" data-span="0" data-i18n="dq_exact"></button><button type="button" data-span="pm3" data-i18n="dq_pm3"></button>
+        <button type="button" data-span="7" data-i18n="dq_7"></button><button type="button" data-span="14" data-i18n="dq_14"></button></div>
       <div class="popular">
         <button type="button" class="explore-link" id="exploreBtn" data-i18n="explore_btn"></button>
         <button type="button" class="explore-link" id="lastMinBtn" data-i18n="lastmin_btn"></button>
@@ -100,6 +105,13 @@
         <div class="group"><b data-i18n="stars"></b><div id="starFilter"></div></div>
         <div class="group"><b data-i18n="board"></b><div id="boardFilter"></div></div>
         <div class="group"><b data-i18n="operators"></b><div id="opFilter"></div></div>
+        <div class="group"><div id="districtMs" class="inline"></div></div>
+        <div class="group"><div id="hotelMs" class="inline"></div></div>
+        <div class="group"><b data-i18n="attr_title"></b><div id="attrFilter"></div></div>
+        <div class="group"><b data-i18n="avail_title"></b>
+          <label class="chk"><input type="checkbox" id="seatsOnly"> <span data-i18n="f_seats"></span></label>
+          <label class="chk"><input type="checkbox" id="noStopSale" checked> <span data-i18n="f_no_stop"></span></label>
+          <label class="chk"><input type="checkbox" id="instantOnly"> <span data-i18n="f_instant"></span></label></div>
         <div class="group"><label class="chk"><input type="checkbox" id="earlyOnly"> <span data-i18n="early_only"></span></label>
           <label class="chk"><input type="checkbox" id="lastMinuteOnly"> <span id="lastMinLabel"></span></label></div>
         <div class="group"><b data-i18n="f_terms"></b>
@@ -112,7 +124,9 @@
       <main>
         <div class="results-head">
           <div><h2 id="resTitle"></h2><div class="muted" id="resSub"></div></div>
-          <div style="display:flex;gap:8px">
+          <div class="res-tools">
+            <div class="seg" id="viewSeg"><button type="button" class="active" data-view="cards" data-i18n="view_cards"></button><button type="button" data-view="table" data-i18n="view_table"></button></div>
+            <label class="chk group-chk" id="groupWrap" hidden><input type="checkbox" id="groupBy" checked> <span data-i18n="group_by"></span></label>
             <button class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
             <select id="sort" class="btn secondary sm" aria-label="Sort">
               <option value="price" data-i18n="sort_price"></option><option value="price_desc" data-i18n="sort_price_desc"></option>
@@ -121,6 +135,7 @@
           </div>
         </div>
         <div class="sources" id="sources"></div>
+        <div class="rate-wrap" id="rateLine"></div>
         <div id="results"></div>
         <div class="demo-note" data-i18n="demo_note"></div>
       </main>
