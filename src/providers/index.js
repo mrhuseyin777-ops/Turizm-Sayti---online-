@@ -3,6 +3,30 @@
 // həmin operatorun real adapteri ilə əvəz edin (məs. require('./summerTour')).
 
 const { createMockProvider } = require('./mockProvider');
+const { buildOperatorSearchUrl, getOperator, createSamoProvider } = require('./samo');
+
+// SAMO operatorları (Summer Tour, Kompas, Funsun): hər təklifin `url`-i operatorun öz ictimai
+// axtarış səhifəsinə (eyni tarix/gecə/nəfərlə) keçid olur. Bu sadəcə linkdir — qiymət çəkilmir.
+function withDeeplink(p) {
+  if (!getOperator(p.id)) return p;
+  return {
+    ...p,
+    async search(q) {
+      const offers = await p.search(q);
+      return offers.map((o) => {
+        const url = buildOperatorSearchUrl(p.id, { ...q, checkIn: new Date(o.checkIn + 'T00:00:00Z'), nights: o.nights, nightsFrom: o.nights, nightsTo: o.nights, flex: 0, checkInTo: null });
+        return url ? { ...o, url, operatorLink: true } : o;
+      });
+    },
+  };
+}
+
+// Rəsmi API girişi env ilə aktivləşdirilibsə real SAMO adapteri, əks halda demo + deeplink.
+function samoOrMock(mock) {
+  if (!getOperator(mock.id)) return mock;
+  const real = createSamoProvider(mock.id, { color: mock.color, trust: mock.trust });
+  return real.status().enabled ? real : withDeeplink(mock);
+}
 
 // Operator etibar bloku (trust). QAYDA: real şirkətlər haqqında məlumat UYDURULMUR.
 // Təsdiqlənməmiş sahə null qalır və UI-da "təsdiqlənməyib" kimi göstərilir.
@@ -28,6 +52,6 @@ const providers = [
   // Yalnız otel satan mənbələr (Booking tipli / birbaşa otel müqavilələri)
   createMockProvider({ id: 'hotels-direct', name: 'Otel (birbaşa)', color: '#8b5cf6', kind: 'hotel', bias: 1.06, coverage: 0.9, sells: ['hotel'], trust: unverified() }),
   createMockProvider({ id: 'local-az', name: 'Yerli otellər AZ', color: '#14b8a6', kind: 'hotel', bias: 0.95, coverage: 1, sells: ['hotel', 'tour'], regions: ['domestic'], trust: unverified() }),
-];
+].map(samoOrMock);
 
 module.exports = { providers };

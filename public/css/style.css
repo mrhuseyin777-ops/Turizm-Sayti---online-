@@ -48,7 +48,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: grid; place-items: center; color: #fff; font-size: 16px; }
 .logo b { color: var(--primary); }
 .nav { display: flex; gap: 6px; margin-left: auto; align-items: center; }
-.nav a, .nav select { padding: 7px 12px; border-radius: 10px; color: var(--text); background: transparent; border: 1px solid transparent; }
+.nav a, .nav select { white-space: nowrap; padding: 7px 12px; border-radius: 10px; color: var(--text); background: transparent; border: 1px solid transparent; }
 .nav a:hover { background: var(--surface-2); }
 .nav a.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
 .nav select { border-color: var(--border); background: var(--surface); }
@@ -181,7 +181,11 @@ textarea.quote { width: 100%; min-height: 220px; border: 1px solid var(--border)
   .card .img { min-height: 110px; }
   .card .price { border-left: 0; border-top: 1px solid var(--border); flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; }
   .features, .kpis { grid-template-columns: 1fr 1fr; }
-  .nav .hide-sm { display: none; }
+  /* Mobil: menyu ikinci sətirdə, üfüqi sürüşdürülən zolaq — bütün bölmələr əlçatan qalır */
+  .topbar .container { height: auto; flex-wrap: wrap; row-gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+  .nav { width: 100%; margin-left: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a, .nav span { white-space: nowrap; flex: 0 0 auto; }
 }
 @media (max-width: 520px) {
   .fields, .fields.b2b-fields { grid-template-columns: 1fr; }
@@ -330,3 +334,7 @@ table.grid small.old { text-decoration: line-through; color: var(--muted); }
   :root:not([data-theme="light"]) .badge.attr-family { background: #13264a; color: #93c5fd; }
   :root:not([data-theme="light"]) .badge.spo { background: #1e1b4b; color: #a5b4fc; }
 }
+
+/* Operator saytına keçid linki */
+.op-link { font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.op-link:hover { color: var(--primary); }

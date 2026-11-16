@@ -197,7 +197,7 @@
     $('#results').innerHTML = data.groups.slice(0, 60).map((g, i) => {
       const b = g.best;
       return `<article class="card">
-        <div class="img" style="background:${gradFor(g.itemId)}"><span class="rank">#${i + 1}</span>${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}, ${esc(g.destination.country)}</div>
+        <div class="img" data-gslot="${i}" style="background:${gradFor(g.itemId)}"><span class="rank">#${i + 1}</span><span class="img-cap">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}, ${esc(g.destination.country)}</span></div>
         <div class="body">
           <h3>${esc(g.name)} <span class="stars">${starStr(g.stars)}</span></h3>
           <div class="muted" style="font-size:14px">${fmtDate(b.checkIn)} · ${esc(t('nights_n', { n: b.nights }))}${b.boardLabel ? ' · ' + esc(b.boardLabel) : ''}${g.includesFlight ? ' · ✈ ' + esc(t('flight_incl')) : ''}</div>
@@ -226,10 +226,27 @@
             ${planHtml(b.plan, cur)}
           </div>
           <button class="btn sm" data-book="${i}">${esc(t('book'))}</button>
+          ${opLinkHtml(b)}
           <a style="font-size:13px" href="/cars.html?loc=${encodeURIComponent(g.destination.id)}&amp;from=${esc(b.checkIn)}&amp;to=${new Date(Date.parse(b.checkIn) + Math.max(1, b.nights) * 864e5).toISOString().slice(0, 10)}">🚗 Maşın əlavə et</a>
         </div>
       </article>`;
     }).join('');
+    mountGalleries(data.groups.slice(0, 60));
+  }
+
+  // Otel qalereyası (illüstrasiya; real foto feed-dən gələndə g.images ilə avtomatik əvəzlənir)
+  function mountGalleries(shown) {
+    if (!window.mountGallery) return;
+    document.querySelectorAll('#results [data-gslot]').forEach((el) => {
+      const g = shown[+el.dataset.gslot];
+      if (g) window.mountGallery(el, { id: g.itemId, destinationId: g.destination.id, region: g.destination.region, stars: g.stars, tags: g.tags, name: g.name, images: g.images });
+    });
+  }
+
+  // "Operatorun saytında yoxla" — yalnız operatorun ictimai axtarış səhifəsinə link (qiymət fərqli ola bilər)
+  function opLinkHtml(o) {
+    if (!o || !o.operatorLink || !/^https:\/\//.test(o.url || '')) return '';
+    return `<a class="op-link" href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener noreferrer" title="${esc(t('op_link_hint'))}">${esc(t('op_link', { op: o.providerName }))} ↗</a>`;
   }
 
   // Cədvəl görünüşü (operator saytlarındakı kimi): tarix+uçuş, tur, gecə, otel (rayon), yer, qida,
@@ -251,7 +268,7 @@
         <td class="wrap"><small>${esc(roomText(o))}</small></td>
         <td class="num"><b>${money(o.price, cur)}</b>${o.oldPrice ? `<br><small class="old">${money(o.oldPrice, cur)}</small>` : ''}${o.opCurrency && o.opCurrency !== cur ? `<br><small class="muted">${money(o.opPrice, o.opCurrency)}</small>` : ''}</td>
         <td class="wrap"><small>${esc(priceTypeText(o))}</small></td>
-        <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td>
+        <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}${o.operatorLink ? '<br>' + opLinkHtml(o) : ''}</td>
         <td><button type="button" class="btn sm" data-book-row="${i}">${esc(t('book'))}</button></td>
       </tr>`).join('')}</tbody></table></div>
       ${rows.length > TABLE_LIMIT || data.offersTruncated ? `<p class="muted" style="font-size:13px">${esc(t('table_more', { n: TABLE_LIMIT }))}</p>` : ''}`;
