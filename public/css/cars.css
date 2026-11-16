@@ -1,0 +1,86 @@
+/* Avtomobil səhifəsi — style.css token-lərindən istifadə edir (işıqlı/qaranlıq tema avtomatik) */
+:root { --demo-bg: #eef2ff; --demo-ink: #4338ca; --err-bg: #fef2f2; --err-ink: #b91c1c; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --demo-bg: #1e1b4b; --demo-ink: #c7d2fe; --err-bg: #3b1212; --err-ink: #fca5a5; }
+}
+:root[data-theme="dark"] { --demo-bg: #1e1b4b; --demo-ink: #c7d2fe; --err-bg: #3b1212; --err-ink: #fca5a5; }
+
+[hidden] { display: none !important; }
+.cars-hero { padding-bottom: 84px; }
+.cars-card .tabs { align-items: center; }
+.agent-pill { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+
+.fields.car-fields { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, .8fr) auto; }
+.fields.car-fields.with-drop { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, .8fr) auto; }
+.fields.tr-fields { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1fr) auto; }
+.fields .field { min-width: 0; }
+.dt { display: flex; gap: 6px; }
+.dt input[type="date"] { flex: 1 1 60%; min-width: 0; }
+.dt input[type="time"] { flex: 1 1 40%; min-width: 0; padding: 0 8px; }
+.pax input { min-width: 0; }
+
+.car-opts { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 12px; font-size: 14px; }
+.car-opts .chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.car-opts select { height: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 0 6px; }
+.car-opts .opt-sep { margin-left: 8px; }
+.tr-hint { font-size: 13px; margin: 10px 0 0; }
+
+.head-actions { display: flex; gap: 8px; }
+.agent-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--primary-soft); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; }
+.agent-bar input { width: 70px; height: 34px; border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; background: var(--surface); }
+
+/* Nəticə kartı */
+.car-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.car-card.recommended { border-color: var(--good); box-shadow: 0 0 0 1px var(--good) inset; }
+.car-head { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 14px; padding: 14px 16px; align-items: center; }
+.car-ico { width: 72px; height: 72px; border-radius: 14px; display: grid; place-items: center; font-size: 34px; }
+.car-info h3 { margin: 0; font-size: 17px; }
+.car-info h3 small { font-weight: 500; font-size: 13px; }
+.car-cat { font-size: 13px; }
+.specs { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin-top: 6px; color: var(--text); }
+.car-best { text-align: right; }
+.car-best .from { font-size: 12px; color: var(--muted); }
+.car-best .amount { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+.car-best .save { color: var(--good); font-size: 13px; font-weight: 700; }
+
+.offer-list { border-top: 1px solid var(--border); }
+.offer-row { display: grid; grid-template-columns: minmax(150px, 1.1fr) minmax(0, 2.4fr) minmax(110px, auto) auto; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px dashed var(--border); }
+.offer-row:first-child { border-top: 0; }
+.offer-row.best { background: var(--good-soft); }
+.offer-row .co { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.offer-row .dot, #companyFilter .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.offer-row .pol { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.offer-row .pr { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.offer-row .pr b { font-size: 17px; }
+.offer-row .pr small { font-size: 12px; }
+.badge.good { background: var(--good-soft); color: var(--good); font-weight: 600; }
+.offer-row.best .badge.good { background: var(--surface); }
+.badge.demo { background: var(--demo-bg); color: var(--demo-ink); font-weight: 700; font-size: 10px; letter-spacing: .4px; padding: 2px 6px; }
+
+/* Modal */
+.modal h4 { margin: 14px 0 4px; }
+.modal .small, .small { font-size: 13px; }
+.modal tr.total td { border-bottom: 0; padding-top: 10px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.modal .wa { display: inline-flex; align-items: center; }
+.agent-quote { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin: 8px 0 4px; }
+.agent-quote textarea.quote { min-height: 180px; margin: 6px 0 8px; }
+.form-err { background: var(--err-bg); color: var(--err-ink); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-bottom: 10px; }
+
+@media (max-width: 980px) {
+  .fields.car-fields, .fields.car-fields.with-drop, .fields.tr-fields { grid-template-columns: 1fr 1fr; }
+  .fields .f-loc { grid-column: 1 / -1; }
+  .offer-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .offer-row .pol { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 520px) {
+  .topbar .container { gap: 8px; }
+  .nav { gap: 2px; }
+  .nav a, .nav select { padding: 7px 7px; }
+  .fields.car-fields, .fields.car-fields.with-drop, .fields.tr-fields { grid-template-columns: 1fr; }
+  .car-head { grid-template-columns: 52px minmax(0, 1fr); }
+  .car-ico { width: 52px; height: 52px; font-size: 26px; border-radius: 12px; }
+  .car-best { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; text-align: left; }
+  .offer-row { padding: 10px 12px; }
+  .car-opts .opt-sep { margin-left: 0; flex-basis: 100%; }
+}

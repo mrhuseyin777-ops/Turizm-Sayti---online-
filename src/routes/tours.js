@@ -1,0 +1,68 @@
+// Tur/otel modulunun əlavə API-ləri: istiqamətsiz axtarış, müraciətlər (lead / geri zəng),
+// B2B paylaşılan seçim linkləri. server.js bu faylı avtomatik qoşur.
+const express = require('express');
+const path = require('path');
+const { explore, QueryError } = require('../search');
+const { InputError, createLead, createSelection, getSelectionRecord, publicSelection } = require('../leads');
+const { requireAuth, requireCsrf } = require('../auth');
+const { rateLimit } = require('../security/rateLimit');
+const { honeypot } = require('../security/http');
+
+const router = express.Router();
+
+const fail = (res, e, next) => {
+  if (e instanceof InputError) return res.status(400).json({ error: e.message });
+  return next(e); // daxili xəta → mərkəzləşdirilmiş handler (mesaj göstərilmir)
+};
+
+// "Hara gedə bilərəm?" — istiqamət göstərilmədən büdcə/tarixə görə istiqamətlər (ucuzdan bahalıya).
+// /api/search?anywhere=1 də eyni nəticəni qaytarır.
+router.get('/api/explore', async (req, res, next) => {
+  try {
+    res.json(await explore(req.query));
+  } catch (e) {
+    if (e instanceof QueryError) return res.status(400).json({ error: e.message });
+    next(e);
+  }
+});
+
+// Müraciət: type = 'offer' (kartdan) | 'callback' ("Sizə zəng edək") | 'selection' (paylaşılan linkdən)
+// Qorunma: IP limiti, honeypot sahəsi, ağ siyahı + uzunluq + telefon formatı (src/leads.js)
+router.post('/api/leads', rateLimit({ name: 'leads', windowMs: 10 * 60 * 1000, max: 20 }), honeypot, (req, res, next) => {
+  try {
+    const lead = createLead(req.body);
+    res.status(201).json({ ok: true, id: lead.id });
+  } catch (e) { fail(res, e, next); }
+});
+
+// B2B: seçilmiş təkliflərdən paylaşılan link yarat.
+// Tələb: daxil olmuş agentlik istifadəçisi + CSRF token. Agentlik/menecer adı sessiyadan,
+// qiymətlər serverin öz axtarışından götürülür (klientin qiymətinə etibar edilmir).
+router.post('/api/selections',
+  requireAuth,
+  requireCsrf,
+  rateLimit({ name: 'selections', windowMs: 10 * 60 * 1000, max: 30, key: (req) => req.auth.user.id }),
+  async (req, res, next) => {
+    try {
+      const { user, agency } = req.auth;
+      const sel = await createSelection(req.body, { account: { agencyId: agency.id, agencyName: agency.name, managerName: user.displayName } });
+      res.status(201).json({ ok: true, id: sel.id, url: `/s/${sel.id}` });
+    } catch (e) { fail(res, e, next); }
+  });
+
+// Müştəri görünüşü (operator adları və net qiymət gizli). Link = 72 bitlik təsadüfi id (capability URL).
+router.get('/api/selections/:id', (req, res) => {
+  const sel = getSelectionRecord(req.params.id);
+  if (!sel) return res.status(404).json({ error: 'Seçim tapılmadı və ya müddəti bitib' });
+  res.json(publicSelection(sel));
+});
+
+// B2B "Müraciətlər": src/routes/b2b.js (GET /api/b2b/leads — autentifikasiya ilə)
+
+// Qısa paylaşma linki: /s/<id> → public/s.html (id səhifədə oxunur)
+router.get('/s/:id', (req, res) => {
+  if (!/^[A-Za-z0-9_-]{12}$/.test(req.params.id)) return res.status(404).json({ error: 'Tapılmadı' });
+  res.sendFile(path.join(__dirname, '..', '..', 'public', 's.html'), { headers: { 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' } });
+});
+
+module.exports = router;

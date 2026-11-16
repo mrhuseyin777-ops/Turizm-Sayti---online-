@@ -1,0 +1,72 @@
+{
+  "_note": "HİPOTETİK fixture. Bu, heç bir operatorun real cavabı DEYİL. TurTap-ın daxili aralıq formatıdır (SamoItem, bax src/providers/samo/samoProvider.js). Otel adları uydurmadır.",
+  "items": [
+    {
+      "tour": { "id": 1001, "name": "HYPOTHETICAL tour" },
+      "hotel": { "id": 501, "name": "Hypothetical Beach Resort", "stars": 5 },
+      "town": { "id": 1, "name": "Hypothetical Town" },
+      "room": "Standard Room",
+      "accommodation": "DBL",
+      "meal": "AI",
+      "checkIn": "2027-06-15",
+      "nights": 7,
+      "adults": 2,
+      "children": 0,
+      "price": { "amount": 1176, "currency": "USD", "oldAmount": 1300 },
+      "hotelAvailability": "available",
+      "stopSale": false,
+      "flight": { "included": true, "availability": "available" }
+    },
+    {
+      "tour": { "id": 1001, "name": "HYPOTHETICAL tour" },
+      "hotel": { "id": 502, "name": "Hypothetical Garden Hotel", "stars": 4 },
+      "room": "Family Room",
+      "accommodation": "DBL+CHD",
+      "meal": "Ultra All Inclusive",
+      "checkIn": "2027-06-15",
+      "nights": 7,
+      "adults": 2,
+      "children": 1,
+      "price": { "amount": 1000, "currency": 2 },
+      "hotelAvailability": "request",
+      "stopSale": false,
+      "flight": { "included": true, "availability": "available" }
+    },
+    {
+      "_case": "stop-sale → atılmalıdır",
+      "hotel": { "id": 503, "name": "Hypothetical Stop Sale", "stars": 3 },
+      "meal": "BB", "checkIn": "2027-06-15", "nights": 7,
+      "price": { "amount": 500, "currency": "USD" },
+      "hotelAvailability": "available", "stopSale": true, "flight": null
+    },
+    {
+      "_case": "yer yoxdur → atılmalıdır",
+      "hotel": { "id": 504, "name": "Hypothetical Full", "stars": 3 },
+      "meal": "BB", "checkIn": "2027-06-15", "nights": 7,
+      "price": { "amount": 500, "currency": "USD" },
+      "hotelAvailability": "none", "stopSale": false, "flight": null
+    },
+    {
+      "_case": "uçuşda yer yoxdur → atılmalıdır",
+      "hotel": { "id": 505, "name": "Hypothetical No Seats", "stars": 4 },
+      "meal": "HB", "checkIn": "2027-06-15", "nights": 7,
+      "price": { "amount": 700, "currency": "USD" },
+      "hotelAvailability": "available", "stopSale": false,
+      "flight": { "included": true, "availability": "none" }
+    },
+    {
+      "_case": "naməlum valyuta → atılmalıdır",
+      "hotel": { "id": 506, "name": "Hypothetical KZT", "stars": 4 },
+      "meal": "HB", "checkIn": "2027-06-15", "nights": 7,
+      "price": { "amount": 300000, "currency": "KZT" },
+      "hotelAvailability": "available", "stopSale": false, "flight": null
+    },
+    {
+      "_case": "mənfi qiymət / səhv tarix → atılmalıdır",
+      "hotel": { "id": 507, "name": "Hypothetical Broken", "stars": 4 },
+      "meal": "HB", "checkIn": "15.06.2027", "nights": 7,
+      "price": { "amount": -5, "currency": "USD" },
+      "hotelAvailability": "available", "stopSale": false, "flight": null
+    }
+  ]
+}
