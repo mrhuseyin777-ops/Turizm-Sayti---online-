@@ -1,10 +1,10 @@
 // Ortaq köməkçilər: dil (AZ/EN/RU), API, avtomatik tamamlama, formatlama
 const I18N = {
   az: {
-    nav_search: 'Axtarış', nav_b2b: 'Agentliklər üçün (B2B)', tab_package: 'Tur paketi (uçuş + otel)', tab_hotel: 'Yalnız otel', tab_tour: 'Ekskursiya turları',
+    nav_search: 'Turlar və otellər', nav_flights: 'Aviabilet', nav_cars: 'Avtomobil', nav_b2b: 'Agentliklər üçün (B2B)', tab_package: 'Tur paketi (uçuş + otel)', tab_hotel: 'Yalnız otel', tab_tour: 'Ekskursiya turları',
     reg_all: 'Hamısı', reg_intl: 'Xarici', reg_domestic: 'Daxili', f_dest: 'Hara?', f_dest_ph: 'Antalya, Dubay, Qəbələ...', f_date: 'Gediş tarixi', f_nights: 'Gecə', f_pax: 'Böyük / Uşaq',
     f_budget: 'Büdcə (maks.)', f_budget_ph: 'Limitsiz', btn_search: 'Axtar', hero_title: 'Bütün tur operatorları — bir axtarışda',
-    hero_sub: 'Summer Tour, Funsun, Kompas, Samatur və digərlərinin qiymətlərini müqayisə et. Ən ucuzdan bahalıya.',
+    hero_sub: 'Summer Tour, Funsun, Kompas və digərlərinin qiymətlərini müqayisə et. Ən ucuzdan bahalıya.',
     step1: 'İstiqamət və tarix seç', step2: 'Büdcəni yaz', step3: 'Ən sərfəli təklifi götür',
     filters: 'Filtrlər', price: 'Qiymət', stars: 'Ulduz', board: 'Qidalanma', operators: 'Operatorlar', early_only: 'Yalnız erkən rezervasiya',
     sort_price: 'Ən ucuz əvvəl', sort_price_desc: 'Ən baha əvvəl', sort_rating: 'Reytinq', sort_stars: 'Ulduz', sort_savings: 'Ən çox qənaət',
@@ -17,10 +17,10 @@ const I18N = {
     feat3_t: 'Büdcəyə görə', feat3_d: 'Büdcəni yaz — uyğun otellər ucuzdan bahalıya düzülür.', feat4_t: 'Agentliklər üçün B2B', feat4_d: 'Menecerlər üçün müqayisə cədvəli, kommersiya təklifi və CSV.',
   },
   en: {
-    nav_search: 'Search', nav_b2b: 'For agencies (B2B)', tab_package: 'Package (flight + hotel)', tab_hotel: 'Hotel only', tab_tour: 'Guided tours',
+    nav_search: 'Tours & hotels', nav_flights: 'Flights', nav_cars: 'Cars', nav_b2b: 'For agencies (B2B)', tab_package: 'Package (flight + hotel)', tab_hotel: 'Hotel only', tab_tour: 'Guided tours',
     reg_all: 'All', reg_intl: 'International', reg_domestic: 'Domestic', f_dest: 'Where to?', f_dest_ph: 'Antalya, Dubai, Gabala...', f_date: 'Departure', f_nights: 'Nights', f_pax: 'Adults / Kids',
     f_budget: 'Budget (max)', f_budget_ph: 'No limit', btn_search: 'Search', hero_title: 'Every tour operator — one search',
-    hero_sub: 'Compare prices from Summer Tour, Funsun, Kompas, Samatur and more. Cheapest first.',
+    hero_sub: 'Compare prices from Summer Tour, Funsun, Kompas and more. Cheapest first.',
     step1: 'Pick destination & date', step2: 'Set your budget', step3: 'Grab the best deal',
     filters: 'Filters', price: 'Price', stars: 'Stars', board: 'Board', operators: 'Operators', early_only: 'Early booking only',
     sort_price: 'Cheapest first', sort_price_desc: 'Most expensive first', sort_rating: 'Rating', sort_stars: 'Stars', sort_savings: 'Biggest savings',
@@ -33,10 +33,10 @@ const I18N = {
     feat3_t: 'Budget first', feat3_d: 'Enter a budget — matching hotels sorted cheapest first.', feat4_t: 'B2B for agencies', feat4_d: 'Comparison grid, client quotes and CSV export for managers.',
   },
   ru: {
-    nav_search: 'Поиск', nav_b2b: 'Для агентств (B2B)', tab_package: 'Тур (перелёт + отель)', tab_hotel: 'Только отель', tab_tour: 'Экскурсионные туры',
+    nav_search: 'Туры и отели', nav_flights: 'Авиабилеты', nav_cars: 'Авто', nav_b2b: 'Для агентств (B2B)', tab_package: 'Тур (перелёт + отель)', tab_hotel: 'Только отель', tab_tour: 'Экскурсионные туры',
     reg_all: 'Все', reg_intl: 'Зарубежные', reg_domestic: 'По Азербайджану', f_dest: 'Куда?', f_dest_ph: 'Анталья, Дубай, Габала...', f_date: 'Дата вылета', f_nights: 'Ночей', f_pax: 'Взрослые / Дети',
     f_budget: 'Бюджет (макс.)', f_budget_ph: 'Без лимита', btn_search: 'Найти', hero_title: 'Все туроператоры — в одном поиске',
-    hero_sub: 'Сравните цены Summer Tour, Funsun, Kompas, Samatur и других. Сначала дешёвые.',
+    hero_sub: 'Сравните цены Summer Tour, Funsun, Kompas и других. Сначала дешёвые.',
     step1: 'Выберите направление и дату', step2: 'Укажите бюджет', step3: 'Берите лучшее предложение',
     filters: 'Фильтры', price: 'Цена', stars: 'Звёзды', board: 'Питание', operators: 'Операторы', early_only: 'Только раннее бронирование',
     sort_price: 'Сначала дешёвые', sort_price_desc: 'Сначала дорогие', sort_rating: 'Рейтинг', sort_stars: 'Звёзды', sort_savings: 'Макс. экономия',

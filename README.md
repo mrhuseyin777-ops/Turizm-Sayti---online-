@@ -1,6 +1,6 @@
 # TurTap — tur və otel müqayisə platforması
 
-Azərbaycandakı tur operatorlarının (Summer Tour, Funsun, Kompas, Samatur və s.) tur və otel
+Azərbaycandakı tur operatorlarının (Summer Tour, Funsun, Kompas və s.) tur və otel
 qiymətlərini bir axtarışda toplayıb **ən ucuzdan bahalıya** düzən platforma. İki hissə var:
 
 - **B2C** (`/`) — müştəri istiqamət, tarix və büdcə seçir, bütün operatorların təklifləri müqayisə olunur.

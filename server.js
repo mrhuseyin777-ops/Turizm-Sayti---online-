@@ -38,6 +38,16 @@ app.post('/api/leads', (req, res) => {
   res.json({ ok: true, id: lead.id });
 });
 
+// Modullar (aviabilet, avtomobil və s.): src/routes/*.js faylları avtomatik qoşulur.
+// Hər fayl express.Router() export edir və öz yollarını (/api/<modul>/...) özü təyin edir.
+const fs = require('fs');
+const routesDir = path.join(__dirname, 'src', 'routes');
+if (fs.existsSync(routesDir)) {
+  for (const f of fs.readdirSync(routesDir).filter((x) => x.endsWith('.js')).sort()) {
+    app.use(require(path.join(routesDir, f)));
+  }
+}
+
 app.get('/b2b', (req, res) => res.sendFile(path.join(__dirname, 'public', 'b2b.html')));
 
 if (require.main === module) {
