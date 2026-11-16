@@ -4,6 +4,7 @@
 // Offer formatı: aşağıdakı offers.push({...}) obyektinə baxın.
 
 const { destinations, hotels, tours, hash } = require('../data/catalog');
+const { childFactors } = require('../pricing');
 
 const SEASON = [0.7, 0.7, 0.75, 0.85, 1.0, 1.25, 1.45, 1.5, 1.2, 0.95, 0.75, 0.85]; // Yan–Dek
 const DOMESTIC_SEASON = [1.1, 1.15, 0.8, 0.85, 0.95, 1.15, 1.3, 1.3, 1.0, 0.9, 0.85, 1.2];
@@ -20,6 +21,7 @@ function createMockProvider(opts) {
   const {
     id, name, color, kind = 'operator', bias = 1, coverage = 0.75,
     early = null, // { minDaysAhead, discount }
+    trust = null, // operator etibar məlumatı (bax: providers/index.js)
     sells = ['package', 'hotel', 'tour'],
     regions = ['intl', 'domestic'],
   } = opts;
@@ -39,10 +41,25 @@ function createMockProvider(opts) {
     return days >= early.minDaysAhead ? early.discount : 0;
   }
 
+  // DEMO ödəniş/ləğv şərtləri: təklif açarına görə deterministik.
+  // Real adapterdə bu sahələr operatorun cavabından gəlməlidir.
+  function terms(key, checkIn, today, domestic) {
+    const h = hash(id + '|terms|' + key);
+    const prepayment = domestic ? ['none', 'none', '50', 'full'][h % 4] : ['none', '50', '50', 'full'][h % 4];
+    let freeCancelUntil = null;
+    if ((h >>> 3) % 3 !== 0) {
+      const d = addDays(checkIn, -(3 + ((h >>> 6) % 19))); // gedişdən 3–21 gün əvvələdək
+      if (d >= today) freeCancelUntil = iso(d);
+    }
+    return { prepayment, freeCancelUntil };
+  }
+
   async function search(q) {
     const today = new Date(new Date().toISOString().slice(0, 10));
     const offers = [];
-    const pax = q.adults + q.children * 0.5;
+    const cf = childFactors(q.childAges || Array(q.children).fill(null));
+    const pax = q.adults + cf.hotel;
+    const flightPax = q.adults + cf.flight;
     const dests = destinations.filter((d) => q.destinationIds.includes(d.id) && regions.includes(d.region));
 
     for (let off = -q.flex; off <= q.flex; off++) {
@@ -62,7 +79,7 @@ function createMockProvider(opts) {
               const key = `${h.id}|${iso(checkIn)}|${q.nights}|${board}`;
               const perNight = (d.base * h.priceFactor + BOARD_ADD[board]) * season * jitter(key) * bias;
               let price = perNight * q.nights * pax;
-              if (q.type === 'package') price += d.flight * (q.adults + q.children * 0.75) * jitter('f' + iso(checkIn));
+              if (q.type === 'package') price += d.flight * flightPax * jitter('f' + iso(checkIn));
               const disc = earlyDiscount(checkIn, today);
               const oldPrice = disc ? Math.round(price) : null;
               price = Math.round(price * (1 - disc));
@@ -88,6 +105,7 @@ function createMockProvider(opts) {
                 currency: 'AZN',
                 earlyBooking: !!disc,
                 availability: hash(key + id) % 9 === 0 ? 'request' : 'instant',
+                ...terms(key, checkIn, today, d.region === 'domestic'),
                 url: `#demo-${id}-${h.id}`,
               });
             }
@@ -129,6 +147,7 @@ function createMockProvider(opts) {
             currency: 'AZN',
             earlyBooking: !!disc,
             availability: 'instant',
+            ...terms(key, checkIn, today, t.region === 'domestic'),
             url: `#demo-${id}-${t.id}`,
           });
         }
@@ -137,7 +156,7 @@ function createMockProvider(opts) {
     return offers;
   }
 
-  return { id, name, color, kind, demo: true, sells, search };
+  return { id, name, color, kind, demo: true, sells, trust, search };
 }
 
 module.exports = { createMockProvider };

@@ -130,3 +130,161 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sel) { sel.value = LANG; sel.addEventListener('change', () => setLang(sel.value)); }
   applyI18n();
 });
+
+// ---- P1 funksiyaları (istiqamətsiz axtarış, şərtlər, taksit, etibar, geri zəng, B2B seçim linki) ----
+Object.assign(I18N.az, {
+  explore_btn: 'Hara gedə bilərəm?', explore_hint: 'İstiqamət yazmasanız, büdcə və tarixə uyğun bütün istiqamətlər ucuzdan bahalıya göstərilir.',
+  explore_title: 'Hara gedə bilərəm? · {date} ±{flex} · {n} gecə', explore_sub: '{n} istiqamət · {budget}', budget_upto: 'büdcə: {b}-dək', budget_none: 'büdcə limitsiz',
+  dest_meta: '{h} otel/tur · {p} operator', dest_go: 'Variantlara bax', from_price: 'başlayan',
+  lastmin_title: 'Son dəqiqə turları', lastmin_sub: 'Yaxın {n} gündə çıxış — istiqamətlər üzrə ən ucuz', lastmin_btn: '🔥 Son dəqiqə', lastmin_badge: 'Son dəqiqə', lastmin_all: 'Hamısı',
+  f_lastmin: 'Son dəqiqə ({n} gün)', f_terms: 'Ödəniş və ləğv', f_prepay_none: 'İlkin ödənişsiz', f_prepay_50: 'İlkin ödəniş ≤ 50%', f_free_cancel: 'Pulsuz ləğv',
+  pay_monthly: '≈ {m}/ay × {n}', pay_upfront: 'və ya indi {pct}% ödə: {v}', pay_demo: 'demo', pay_demo_t: 'Taksit nümunədir: bank inteqrasiyası planlaşdırılır, faiz {i}%.',
+  prepay_none: 'İlkin ödənişsiz', prepay_50: '50% ilkin ödəniş', prepay_full: 'Tam ilkin ödəniş', free_cancel: 'Pulsuz ləğv {d}-ə qədər',
+  checked_now: 'indicə yoxlanılıb', checked_min: '{n} dəq əvvəl yoxlanılıb', checked_h: '{n} saat əvvəl yoxlanılıb', refresh: '↻ Yenilə',
+  trust_title: 'Operator haqqında', trust_license: 'Lisenziya', trust_members: 'Üzvlük', trust_since: 'Fəaliyyət ili', trust_unverified: 'təsdiqlənməyib',
+  trust_claim: 'operatorun öz məlumatına görə', trust_note: 'TurTap bu məlumatları hələ rəsmi sənədlə yoxlamayıb (DEMO). Ödəniş birbaşa operatora edilir.', trust_hint: 'Operator haqqında məlumat üçün klikləyin',
+  child_ages: 'Uşaqların yaşı:', child_n: '{n}-ci uşaq', age_y: '{n} yaş', age_infant: '0–1 yaş',
+  cb_title: 'Sizə zəng edək', cb_sub: 'Uyğun variant tapmadınız və ya sualınız var? Menecer qiyməti sizin üçün dəqiqləşdirsin.', cb_time: 'Nə vaxt?', cb_now: 'İndi',
+  cb_morning: 'Səhər', cb_afternoon: 'Günorta', cb_evening: 'Axşam', cb_send: 'Zəng sifariş et', cb_ok: 'Sorğunuz qəbul edildi — menecer sizə zəng edəcək.',
+  paym_title: 'Ödəniş üsulları:', paym_card: '💳 Bank kartı', paym_inst: '🗓 Taksit kartları', paym_cash: '💵 Nağd — operatorun ofisində', paym_planned: 'planlaşdırılır · demo',
+  paym_direct: 'TurTap ödəniş qəbul etmir: rezervasiya və ödəniş birbaşa seçdiyiniz tur operatoruna gedir. Biz qiymətləri müqayisə edir və müraciətinizi ötürürük.',
+  s_title: 'Sizin üçün seçilmiş variantlar', s_by: '{agency} tərəfindən hazırlanıb', s_want: 'Bu variantı istəyirəm', s_ok: 'Müraciətiniz {agency} agentliyinə göndərildi. Tezliklə əlaqə saxlanılacaq.',
+  s_notfound: 'Link tapılmadı və ya müddəti bitib.', s_price_note: 'Qiymətlər cəmidir ({pax} nəfər) və yerlərin mövcudluğundan asılı olaraq dəyişə bilər.', s_made: 'TurTap ilə hazırlanıb', s_contact: 'Əlaqə',
+  b2b_share: '🔗 Seçim linki', b2b_share_title: 'Müştəri üçün seçim linki', b2b_share_note: 'Linkdə agentliyinizin adı görünür; operator adları və net qiymət gizlidir — yalnız müştəri qiyməti (komissiya daxil).',
+  b2b_copy: 'Kopyala', b2b_open: 'Aç', b2b_leads: 'Müraciətlər', b2b_leads_empty: 'Hələ müraciət yoxdur. Seçim linkini müştəriyə göndərin.', b2b_reload: 'Yenilə',
+  b2b_leads_demo: 'DEMO: müraciətlər agentlik adına görə göstərilir; real giriş (autentifikasiya) sonra əlavə olunacaq.', b2b_terms: 'Şərtlər', b2b_msg: 'Müştəriyə qeyd (istəyə görə)', b2b_create: 'Link yarat', b2b_need_select: 'Seçilməyibsə, ən ucuz 3 variant götürülür.',
+});
+Object.assign(I18N.en, {
+  explore_btn: 'Where can I go?', explore_hint: 'Leave the destination empty to see every destination that fits your budget and dates, cheapest first.',
+  explore_title: 'Where can I go? · {date} ±{flex} · {n} nights', explore_sub: '{n} destinations · {budget}', budget_upto: 'budget up to {b}', budget_none: 'no budget limit',
+  dest_meta: '{h} hotels/tours · {p} operators', dest_go: 'See options', from_price: 'from',
+  lastmin_title: 'Last-minute deals', lastmin_sub: 'Departures within {n} days — cheapest per destination', lastmin_btn: '🔥 Last minute', lastmin_badge: 'Last minute', lastmin_all: 'Show all',
+  f_lastmin: 'Last minute ({n} days)', f_terms: 'Payment & cancellation', f_prepay_none: 'No prepayment', f_prepay_50: 'Prepayment ≤ 50%', f_free_cancel: 'Free cancellation',
+  pay_monthly: '≈ {m}/mo × {n}', pay_upfront: 'or pay {pct}% now: {v}', pay_demo: 'demo', pay_demo_t: 'Instalments are illustrative: bank integration is planned, interest {i}%.',
+  prepay_none: 'No prepayment', prepay_50: '50% prepayment', prepay_full: 'Full prepayment', free_cancel: 'Free cancellation until {d}',
+  checked_now: 'checked just now', checked_min: 'checked {n} min ago', checked_h: 'checked {n} h ago', refresh: '↻ Refresh',
+  trust_title: 'About the operator', trust_license: 'Licence', trust_members: 'Memberships', trust_since: 'Operating since', trust_unverified: 'not verified',
+  trust_claim: 'according to the operator', trust_note: 'TurTap has not yet verified this with official documents (DEMO). You pay the operator directly.', trust_hint: 'Click for operator details',
+  child_ages: 'Children ages:', child_n: 'Child {n}', age_y: '{n} y', age_infant: '0–1 y',
+  cb_title: 'Request a call back', cb_sub: 'Did not find a match or have a question? A manager will check the price for you.', cb_time: 'When?', cb_now: 'Now',
+  cb_morning: 'Morning', cb_afternoon: 'Afternoon', cb_evening: 'Evening', cb_send: 'Call me back', cb_ok: 'Request received — a manager will call you.',
+  paym_title: 'Payment methods:', paym_card: '💳 Bank card', paym_inst: '🗓 Instalment cards', paym_cash: '💵 Cash at the operator office', paym_planned: 'planned · demo',
+  paym_direct: 'TurTap does not take payments: booking and payment go directly to the tour operator you choose. We compare prices and pass on your request.',
+  s_title: 'Options selected for you', s_by: 'Prepared by {agency}', s_want: 'I want this option', s_ok: 'Your request was sent to {agency}. They will contact you shortly.',
+  s_notfound: 'Link not found or expired.', s_price_note: 'Prices are totals ({pax} guests) and may change depending on availability.', s_made: 'Made with TurTap', s_contact: 'Contact',
+  b2b_share: '🔗 Selection link', b2b_share_title: 'Selection link for the client', b2b_share_note: 'The link shows your agency name; operator names and net prices are hidden — only the client price (incl. commission).',
+  b2b_copy: 'Copy', b2b_open: 'Open', b2b_leads: 'Requests', b2b_leads_empty: 'No requests yet. Send the selection link to your client.', b2b_reload: 'Reload',
+  b2b_leads_demo: 'DEMO: requests are filtered by agency name; real authentication comes later.', b2b_terms: 'Terms', b2b_msg: 'Note to the client (optional)', b2b_create: 'Create link', b2b_need_select: 'If nothing is selected, the 3 cheapest options are used.',
+});
+Object.assign(I18N.ru, {
+  explore_btn: 'Куда можно поехать?', explore_hint: 'Оставьте направление пустым — покажем все направления под ваш бюджет и даты, от дешёвых к дорогим.',
+  explore_title: 'Куда поехать? · {date} ±{flex} · {n} ночей', explore_sub: '{n} направлений · {budget}', budget_upto: 'бюджет до {b}', budget_none: 'без лимита бюджета',
+  dest_meta: '{h} отелей/туров · {p} операторов', dest_go: 'Смотреть варианты', from_price: 'от',
+  lastmin_title: 'Горящие туры', lastmin_sub: 'Вылет в ближайшие {n} дней — самые дешёвые по направлениям', lastmin_btn: '🔥 Горящие', lastmin_badge: 'Горящий', lastmin_all: 'Все',
+  f_lastmin: 'Горящие ({n} дней)', f_terms: 'Оплата и отмена', f_prepay_none: 'Без предоплаты', f_prepay_50: 'Предоплата ≤ 50%', f_free_cancel: 'Бесплатная отмена',
+  pay_monthly: '≈ {m}/мес × {n}', pay_upfront: 'или {pct}% сейчас: {v}', pay_demo: 'демо', pay_demo_t: 'Рассрочка для примера: интеграция с банками планируется, ставка {i}%.',
+  prepay_none: 'Без предоплаты', prepay_50: 'Предоплата 50%', prepay_full: 'Полная предоплата', free_cancel: 'Бесплатная отмена до {d}',
+  checked_now: 'проверено только что', checked_min: 'проверено {n} мин назад', checked_h: 'проверено {n} ч назад', refresh: '↻ Обновить',
+  trust_title: 'Об операторе', trust_license: 'Лицензия', trust_members: 'Членство', trust_since: 'Работает с', trust_unverified: 'не подтверждено',
+  trust_claim: 'по данным самого оператора', trust_note: 'TurTap ещё не проверил эти данные по официальным документам (ДЕМО). Оплата идёт напрямую оператору.', trust_hint: 'Нажмите, чтобы узнать об операторе',
+  child_ages: 'Возраст детей:', child_n: 'Ребёнок {n}', age_y: '{n} лет', age_infant: '0–1 год',
+  cb_title: 'Перезвоним вам', cb_sub: 'Не нашли подходящий вариант или есть вопрос? Менеджер уточнит цену для вас.', cb_time: 'Когда?', cb_now: 'Сейчас',
+  cb_morning: 'Утром', cb_afternoon: 'Днём', cb_evening: 'Вечером', cb_send: 'Заказать звонок', cb_ok: 'Заявка принята — менеджер вам перезвонит.',
+  paym_title: 'Способы оплаты:', paym_card: '💳 Банковская карта', paym_inst: '🗓 Карты рассрочки', paym_cash: '💵 Наличными в офисе оператора', paym_planned: 'планируется · демо',
+  paym_direct: 'TurTap не принимает платежи: бронирование и оплата идут напрямую выбранному туроператору. Мы сравниваем цены и передаём вашу заявку.',
+  s_title: 'Варианты, подобранные для вас', s_by: 'Подготовлено: {agency}', s_want: 'Хочу этот вариант', s_ok: 'Заявка отправлена в {agency}. С вами скоро свяжутся.',
+  s_notfound: 'Ссылка не найдена или устарела.', s_price_note: 'Цены итоговые ({pax} чел.) и могут меняться в зависимости от наличия мест.', s_made: 'Сделано в TurTap', s_contact: 'Контакт',
+  b2b_share: '🔗 Ссылка-подборка', b2b_share_title: 'Ссылка-подборка для клиента', b2b_share_note: 'В ссылке видно название вашего агентства; операторы и нетто-цены скрыты — только цена для клиента (с комиссией).',
+  b2b_copy: 'Копировать', b2b_open: 'Открыть', b2b_leads: 'Заявки', b2b_leads_empty: 'Заявок пока нет. Отправьте ссылку клиенту.', b2b_reload: 'Обновить',
+  b2b_leads_demo: 'ДЕМО: заявки фильтруются по названию агентства; настоящая авторизация будет позже.', b2b_terms: 'Условия', b2b_msg: 'Комментарий для клиента', b2b_create: 'Создать ссылку', b2b_need_select: 'Если ничего не выбрано, берутся 3 самых дешёвых варианта.',
+});
+
+async function postJson(path, body) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'Xəta');
+  return data;
+}
+
+// "X dəq əvvəl yoxlanılıb" — server vaxtına nisbətən (istifadəçinin saat fərqindən asılı olmasın)
+function checkedAgo(checkedAt, serverTime) {
+  if (!checkedAt) return '';
+  const min = Math.max(0, Math.floor((Date.parse(serverTime || new Date().toISOString()) - Date.parse(checkedAt)) / 60000));
+  if (min < 1) return t('checked_now');
+  if (min < 60) return t('checked_min', { n: min });
+  return t('checked_h', { n: Math.floor(min / 60) });
+}
+
+const shortDate = (iso) => fmtDate(iso).slice(0, 5);
+
+// Ödəniş/ləğv şərtləri nişanları
+function termBadges(o) {
+  const out = [];
+  if (o.prepayment === 'none') out.push(`<span class="badge good">${esc(t('prepay_none'))}</span>`);
+  else if (o.prepayment === '50') out.push(`<span class="badge">${esc(t('prepay_50'))}</span>`);
+  else if (o.prepayment === 'full') out.push(`<span class="badge">${esc(t('prepay_full'))}</span>`);
+  if (o.freeCancelUntil) out.push(`<span class="badge good">${esc(t('free_cancel', { d: shortDate(o.freeCancelUntil) }))}</span>`);
+  return out.join('');
+}
+
+// Kartda aylıq ödəniş (taksit vitrini — DEMO)
+function planHtml(plan, cur) {
+  if (!plan || !plan.months || !plan.months.length) return '';
+  const months = plan.months.map((m) => t('pay_monthly', { m: money(m.monthly, cur), n: m.n })).join(' · ');
+  return `<div class="plan" title="${esc(t('pay_demo_t', { i: plan.interestPct }))}"><b>${esc(months)}</b><span class="demo-tag">${esc(t('pay_demo'))}</span><br>${esc(t('pay_upfront', { pct: plan.upfrontPct, v: money(plan.upfront, cur) }))}</div>`;
+}
+
+// Operator etibar paneli. Bilinməyən sahə → "təsdiqlənməyib"; operatorun öz iddiası ayrıca qeyd olunur.
+function trustPanelHtml(p) {
+  const tr = (p && p.trust) || {};
+  const unv = `<span class="unv">${esc(t('trust_unverified'))}</span>`;
+  const members = (tr.memberships || []).length
+    ? tr.memberships.map((m) => `${esc(m.name)}${m.claim === 'verified' ? ' ✓' : ` <small class="muted">(${esc(t('trust_claim'))}${m.source ? ': ' + esc(m.source) : ''})</small>`}`).join(', ')
+    : unv;
+  return `<div class="trust-panel" role="region" aria-label="${esc(t('trust_title'))}">
+    <b><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(p.color)}"></span> ${esc(p.name)} — ${esc(t('trust_title'))}</b>
+    <dl><dt>${esc(t('trust_license'))}</dt><dd>${tr.licenseNo ? esc(tr.licenseNo) : unv}</dd>
+    <dt>${esc(t('trust_members'))}</dt><dd>${members}</dd>
+    <dt>${esc(t('trust_since'))}</dt><dd>${tr.since ? esc(tr.since) : unv}</dd></dl>
+    <small class="muted">${esc(t('trust_note'))}</small></div>`;
+}
+
+// Uşaq yaşı seçimləri (0–17). prev = əvvəlki dəyərlər saxlanılır.
+function renderChildAges(container, count, prev = []) {
+  const n = Math.max(0, Math.min(6, parseInt(count, 10) || 0));
+  const opts = (sel) => Array.from({ length: 18 }, (_, a) => `<option value="${a}" ${a === sel ? 'selected' : ''}>${a === 0 ? esc(t('age_infant')) : esc(t('age_y', { n: a }))}</option>`).join('');
+  container.hidden = n === 0;
+  container.innerHTML = n ? `<span class="muted">${esc(t('child_ages'))}</span>` + Array.from({ length: n }, (_, i) => {
+    const v = Number.isInteger(prev[i]) ? prev[i] : 7;
+    return `<label>${esc(t('child_n', { n: i + 1 }))} <select data-child-age="${i}" aria-label="${esc(t('child_n', { n: i + 1 }))}">${opts(v)}</select></label>`;
+  }).join('') : '';
+}
+const readChildAges = (container) => [...container.querySelectorAll('[data-child-age]')].map((s) => Number(s.value));
+
+// Ödəniş üsulları zolağı (footer): hələ heç biri real deyil — "planlaşdırılır/demo"
+function paymentStripHtml() {
+  return `<div class="pay-strip"><b>${esc(t('paym_title'))}</b>
+    <span class="pm">${esc(t('paym_card'))}</span><span class="pm">${esc(t('paym_inst'))}</span><span class="pm">${esc(t('paym_cash'))}</span>
+    <span class="badge">${esc(t('paym_planned'))}</span>
+    <span class="note">${esc(t('paym_direct'))}</span></div>`;
+}
+
+// "Sizə zəng edək" forması (mövcud /api/leads, type:'callback')
+function callbackFormHtml(id) {
+  return `<form class="callback" id="${esc(id)}">
+    <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}" aria-label="${esc(t('lead_name'))}">
+    <input name="phone" required maxlength="30" inputmode="tel" placeholder="${esc(t('lead_phone'))}" aria-label="${esc(t('lead_phone'))}">
+    <select name="preferredTime" aria-label="${esc(t('cb_time'))}">${['now', 'morning', 'afternoon', 'evening'].map((k) => `<option value="${k}">${esc(t('cb_' + k))}</option>`).join('')}</select>
+    <button class="btn sm primary">${esc(t('cb_send'))}</button></form>`;
+}
+function bindCallbackForm(form, contextFn) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(form));
+    const btn = form.querySelector('button'); btn.disabled = true;
+    try {
+      await postJson('/api/leads', { ...fd, type: 'callback', context: contextFn ? contextFn() : '' });
+      form.reset(); toast(t('cb_ok'));
+    } catch (err) { toast(err.message); } finally { btn.disabled = false; }
+  });
+}

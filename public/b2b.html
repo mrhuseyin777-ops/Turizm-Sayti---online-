@@ -52,6 +52,7 @@
         <div class="field"><label>Büdcə maks.</label><input id="maxPrice" type="number" min="0" step="50" placeholder="—"></div>
         <button class="btn primary">Axtar</button>
       </div>
+      <div class="child-ages" id="childAges" hidden></div>
     </form>
 
     <div class="b2b-bar">
@@ -59,16 +60,28 @@
       <label class="muted">Ulduz: <select id="stars" class="btn secondary sm"><option value="">Hamısı</option><option>5</option><option>4</option><option>3</option></select></label>
       <label class="muted">Qida: <select id="board" class="btn secondary sm"><option value="">Hamısı</option><option>BB</option><option>HB</option><option>FB</option><option>AI</option><option>UAI</option></select></label>
       <label class="muted"><input type="checkbox" id="earlyOnly"> Erkən rezervasiya</label>
+      <label class="muted"><input type="checkbox" id="lastMinute"> <span data-i18n="lastmin_badge"></span></label>
+      <label class="muted"><input type="checkbox" id="prepayNone"> <span data-i18n="f_prepay_none"></span></label>
+      <label class="muted"><input type="checkbox" id="freeCancel"> <span data-i18n="f_free_cancel"></span></label>
       <span style="flex:1"></span>
       <label class="muted">Komissiya/əlavə %: <input id="markup" type="number" value="0" min="0" max="100" style="width:64px;height:36px;border:1px solid var(--border);border-radius:8px;padding:0 6px;background:var(--surface)"></label>
       <button type="button" class="btn secondary sm" id="csvBtn">CSV / Excel</button>
+      <button type="button" class="btn secondary sm" id="shareBtn" data-i18n="b2b_share"></button>
       <button type="button" class="btn sm" id="quoteBtn">Müştəriyə təklif (<span id="selCount">0</span>)</button>
     </div>
 
     <div class="kpis" id="kpis" hidden></div>
     <div style="display:grid;grid-template-columns:1fr 240px;gap:16px" id="mainGrid">
       <div class="table-wrap" id="tableWrap"><div class="empty muted">Sorğunu daxil edin — bütün operatorlar eyni anda yoxlanılacaq.</div></div>
-      <aside class="panel side-list"><b>Son sorğular</b><div id="history"></div></aside>
+      <aside>
+        <div class="panel side-list"><b>Son sorğular</b><div id="history"></div></div>
+        <div class="panel side-list lead-list" style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b><span data-i18n="b2b_leads"></span> <span class="badge" id="leadCount">0</span></b>
+            <button type="button" class="btn secondary sm" id="leadsReload" data-i18n="b2b_reload"></button></div>
+          <div id="leads"></div>
+          <small class="muted" data-i18n="b2b_leads_demo"></small>
+        </div>
+      </aside>
     </div>
     <div class="demo-note">DEMO: qiymətlər nümunədir. Real inteqrasiyadan sonra operatorların canlı qiymətləri və rezervasiya linkləri göstəriləcək.</div>
   </div>

@@ -48,7 +48,7 @@
         </div>
       </div>
       <div class="fields">
-        <div class="field"><label for="dest" data-i18n="f_dest"></label><input id="dest" required data-i18n-ph="f_dest_ph"></div>
+        <div class="field"><label for="dest" data-i18n="f_dest"></label><input id="dest" maxlength="80" data-i18n-ph="f_dest_ph"></div>
         <div class="field"><label for="checkIn" data-i18n="f_date"></label><input id="checkIn" type="date" required></div>
         <div class="field"><label for="nights" data-i18n="f_nights"></label>
           <select id="nights"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>14</option></select>
@@ -62,7 +62,11 @@
         <div class="field"><label for="budget" data-i18n="f_budget"></label><input id="budget" type="number" min="0" step="50" data-i18n-ph="f_budget_ph"></div>
         <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
       </div>
-      <div class="popular"><span class="muted" data-i18n="popular"></span>
+      <div class="child-ages" id="childAges" hidden></div>
+      <div class="popular">
+        <button type="button" class="explore-link" id="exploreBtn" data-i18n="explore_btn"></button>
+        <button type="button" class="explore-link" id="lastMinBtn" data-i18n="lastmin_btn"></button>
+        <span class="muted" data-i18n="popular"></span>
         <button type="button" data-q="antalya">Antalya</button><button type="button" data-q="dubai">Dubay</button>
         <button type="button" data-q="sharm">Şarm-əl-Şeyx</button><button type="button" data-q="qabala">Qəbələ</button>
         <button type="button" data-q="shahdag">Şahdağ</button><button type="button" data-q="tbilisi">Tbilisi</button>
@@ -70,12 +74,21 @@
     </form>
 
     <div id="intro">
+      <section id="lastMinSection" hidden>
+        <div class="section-head"><div><h2 data-i18n="lastmin_title"></h2><div class="muted" id="lastMinSub"></div></div>
+          <button type="button" class="btn secondary sm" id="lastMinAll" data-i18n="lastmin_all"></button></div>
+        <div class="dest-grid" id="lastMinGrid"></div>
+      </section>
       <div class="features">
         <div class="feature"><b data-i18n="feat1_t"></b><p data-i18n="feat1_d"></p></div>
         <div class="feature"><b data-i18n="feat2_t"></b><p data-i18n="feat2_d"></p></div>
         <div class="feature"><b data-i18n="feat3_t"></b><p data-i18n="feat3_d"></p></div>
         <div class="feature"><b data-i18n="feat4_t"></b><p data-i18n="feat4_d"></p></div>
       </div>
+      <section class="panel callback-card" id="homeCallback">
+        <h3 data-i18n="cb_title"></h3><p class="muted" style="margin:0" data-i18n="cb_sub"></p>
+        <div id="homeCallbackForm"></div>
+      </section>
     </div>
 
     <div class="layout" id="resultsLayout" hidden>
@@ -87,14 +100,21 @@
         <div class="group"><b data-i18n="stars"></b><div id="starFilter"></div></div>
         <div class="group"><b data-i18n="board"></b><div id="boardFilter"></div></div>
         <div class="group"><b data-i18n="operators"></b><div id="opFilter"></div></div>
-        <div class="group"><label class="chk"><input type="checkbox" id="earlyOnly"> <span data-i18n="early_only"></span></label></div>
+        <div class="group"><label class="chk"><input type="checkbox" id="earlyOnly"> <span data-i18n="early_only"></span></label>
+          <label class="chk"><input type="checkbox" id="lastMinuteOnly"> <span id="lastMinLabel"></span></label></div>
+        <div class="group"><b data-i18n="f_terms"></b>
+          <label class="chk"><input type="radio" name="prepay" value="" checked> <span data-i18n="reg_all"></span></label>
+          <label class="chk"><input type="radio" name="prepay" value="none"> <span data-i18n="f_prepay_none"></span></label>
+          <label class="chk"><input type="radio" name="prepay" value="upto50"> <span data-i18n="f_prepay_50"></span></label>
+          <label class="chk"><input type="checkbox" id="freeCancel"> <span data-i18n="f_free_cancel"></span></label>
+        </div>
       </aside>
       <main>
         <div class="results-head">
           <div><h2 id="resTitle"></h2><div class="muted" id="resSub"></div></div>
           <div style="display:flex;gap:8px">
             <button class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
-            <select id="sort" class="btn secondary sm">
+            <select id="sort" class="btn secondary sm" aria-label="Sort">
               <option value="price" data-i18n="sort_price"></option><option value="price_desc" data-i18n="sort_price_desc"></option>
               <option value="rating" data-i18n="sort_rating"></option><option value="stars" data-i18n="sort_stars"></option><option value="savings" data-i18n="sort_savings"></option>
             </select>
@@ -109,7 +129,7 @@
 
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
 
-  <footer><div class="container">© <span id="year"></span> TurTap · Tur operatorlarının qiymət müqayisəsi platforması</div></footer>
+  <footer><div class="container"><div id="payStrip"></div>© <span id="year"></span> TurTap · Tur operatorlarının qiymət müqayisəsi platforması</div></footer>
   <script src="/js/common.js"></script>
   <script src="/js/app.js"></script>
 </body>

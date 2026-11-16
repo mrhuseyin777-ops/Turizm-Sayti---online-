@@ -14,7 +14,9 @@ app.get('/api/config', (req, res) => {
     brand: config.brand,
     currencies: Object.keys(config.rates),
     boards: boardLabels,
-    providers: providers.map(({ id, name, color, kind, demo, sells }) => ({ id, name, color, kind, demo, sells })),
+    providers: providers.map(({ id, name, color, kind, demo, sells, trust }) => ({ id, name, color, kind, demo, sells, trust })),
+    installment: config.installment,
+    lastMinuteDays: config.lastMinuteDays,
   });
 });
 
@@ -28,15 +30,7 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-// Sorğu / müraciət (B2C müştəri "Müraciət et" düyməsi). Real versiyada DB + e-poçt/WhatsApp bildirişi.
-const leads = [];
-app.post('/api/leads', (req, res) => {
-  const { name, phone, offerId, note } = req.body || {};
-  if (!name || !phone) return res.status(400).json({ error: 'Ad və telefon tələb olunur' });
-  const lead = { id: leads.length + 1, name: String(name).slice(0, 80), phone: String(phone).slice(0, 30), offerId, note: String(note || '').slice(0, 500), createdAt: new Date().toISOString() };
-  leads.push(lead);
-  res.json({ ok: true, id: lead.id });
-});
+// Müraciətlər (/api/leads), B2B seçim linkləri və /api/explore: src/routes/tours.js
 
 // Modullar (aviabilet, avtomobil və s.): src/routes/*.js faylları avtomatik qoşulur.
 // Hər fayl express.Router() export edir və öz yollarını (/api/<modul>/...) özü təyin edir.

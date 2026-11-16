@@ -25,6 +25,15 @@ Ad `src/config.js` faylındadır — dəyişmək bir sətirdir. Domen seçilənd
 - Valyuta: AZN / USD / EUR / TRY / RUB; dil: AZ / EN / RU
 - "Müraciət et" forması (lead) — agentlik/menecerə gedir
 - Paylaşıla bilən axtarış linki
+- **"Hara gedə bilərəm?"** — istiqamət boş qalanda büdcə/tarixə uyğun bütün istiqamətlər ən ucuz təkliflə, ucuzdan bahalıya (kart → həmin istiqamətə axtarış). API: `/api/explore` (və ya `/api/search?anywhere=1`)
+- **Son dəqiqə** — 14 gün ərzində çıxış: ana səhifədə bölmə, düymə, filtr və nişan
+- **Aylıq ödəniş göstəricisi** ("≈ X ₼/ay × 6 / 12", "indi 20% ödə") — DEMO vitrin, parametrlər `src/config.js` → `installment`
+- **Ödəniş/ləğv şərtləri** — "İlkin ödənişsiz", "50% ilkin", "Pulsuz ləğv DD.MM-ə qədər" nişanları və filtrləri (demo məlumat, deterministik)
+- **Qiymət təzəliyi** — hər mənbə üçün "X dəq əvvəl yoxlanılıb" (30 dəq yaddaş keşi) + "Yenilə"
+- **Operator etibar bloku** — operator adına klik → lisenziya / üzvlük / fəaliyyət ili; bilinməyənlər "təsdiqlənməyib" (uydurma məlumat yoxdur; Summer Tour IATA/ATAA — "operatorun öz məlumatına görə")
+- **Hər uşağın yaşı** (0–17) — qiymət yaşa görə: 0–1 pulsuz otel, 2–6 / 7–11 endirimli, 12+ böyük kimi (`childAges`; köhnə `children` işləyir)
+- **"Sizə zəng edək"** — ana səhifədə və boş nəticədə geri zəng sorğusu (`/api/leads`, `type: 'callback'`)
+- **Ödəniş üsulları zolağı** — kart, taksit kartları, nağd (planlaşdırılır/demo) + "ödəniş birbaşa operatora gedir" izahı
 
 **B2B (agentlik / tur menecer):** `/b2b`
 - **Matris görünüşü:** sətirdə otel, sütunda operator — hansı operatorda ən ucuz olduğu bir baxışda
@@ -33,6 +42,9 @@ Ad `src/config.js` faylındadır — dəyişmək bir sətirdir. Domen seçilənd
 - Seçilmiş variantlardan **müştəriyə hazır mətn** (operator adı gizli) → Kopyala / WhatsApp
 - CSV (Excel) ixracı
 - Son sorğular tarixçəsi (müştəri adı ilə)
+- Uşaq yaşları, "son dəqiqə", "ilkin ödənişsiz", "pulsuz ləğv" filtrləri; cədvəldə şərtlər sütunu
+- **Brendli seçim linki** (`/s/<id>`): agentlik adı ilə, operator adları və net qiymət gizli, yalnız müştəri qiyməti (komissiya daxil); müştəri "Bu variantı istəyirəm" → ad/telefon → lead agentliyə bağlanır. Id kriptoqrafik təsadüfi (72 bit), yaddaşda 30 gün, maks. 1000 seçim × 10 variant
+- **"Müraciətlər"** bölməsi — seçim linklərindən gələn leadlər (DEMO: agentlik adına görə filtr; real autentifikasiya sonra)
 
 ## 3. Real qiymətləri necə gətiririk (ən vacib addım)
 
