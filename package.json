@@ -1,0 +1,28 @@
+{
+  "name": "turtap",
+  "version": "1.0.0",
+  "description": "Tur operatorları və otellər üçün qiymət müqayisə platforması (B2C + B2B)",
+  "main": "server.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrhuseyin777-ops/Turizm-Sayti---online-.git"
+  },
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/mrhuseyin777-ops/Turizm-Sayti---online-/issues"
+  },
+  "homepage": "https://github.com/mrhuseyin777-ops/Turizm-Sayti---online-#readme",
+  "dependencies": {
+    "express": "^4.22.3"
+  },
+  "private": true
+}

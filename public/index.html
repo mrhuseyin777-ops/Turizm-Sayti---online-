@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurTap — tur və otel müqayisəsi</title>
+  <meta name="description" content="Azərbaycanın bütün tur operatorlarının tur və otel qiymətlərini bir axtarışda müqayisə edin.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="logo" href="/"><span class="logo-mark">✈</span><span>Tur<b>Tap</b></span></a>
+      <nav class="nav">
+        <a href="/" class="active" data-i18n="nav_search">Axtarış</a>
+        <a href="/b2b" class="hide-sm" data-i18n="nav_b2b">Agentliklər üçün (B2B)</a>
+        <select id="currency" aria-label="Valyuta"></select>
+        <select id="lang" aria-label="Dil"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1 data-i18n="hero_title">Bütün tur operatorları — bir axtarışda</h1>
+      <p data-i18n="hero_sub"></p>
+      <div class="steps">
+        <span><b>1</b><i data-i18n="step1"></i></span>
+        <span><b>2</b><i data-i18n="step2"></i></span>
+        <span><b>3</b><i data-i18n="step3"></i></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <form class="search-card" id="searchForm" autocomplete="off">
+      <div class="tabs" id="typeTabs">
+        <button type="button" class="tab active" data-type="package" data-i18n="tab_package"></button>
+        <button type="button" class="tab" data-type="hotel" data-i18n="tab_hotel"></button>
+        <button type="button" class="tab" data-type="tour" data-i18n="tab_tour"></button>
+        <span class="sep"></span>
+        <div class="seg" id="regionSeg">
+          <button type="button" class="active" data-region="" data-i18n="reg_all"></button>
+          <button type="button" data-region="intl" data-i18n="reg_intl"></button>
+          <button type="button" data-region="domestic" data-i18n="reg_domestic"></button>
+        </div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="dest" data-i18n="f_dest"></label><input id="dest" required data-i18n-ph="f_dest_ph"></div>
+        <div class="field"><label for="checkIn" data-i18n="f_date"></label><input id="checkIn" type="date" required></div>
+        <div class="field"><label for="nights" data-i18n="f_nights"></label>
+          <select id="nights"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>14</option></select>
+        </div>
+        <div class="field"><label data-i18n="f_pax"></label>
+          <div class="pax">
+            <select id="adults" aria-label="Böyük"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+            <select id="children" aria-label="Uşaq"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+          </div>
+        </div>
+        <div class="field"><label for="budget" data-i18n="f_budget"></label><input id="budget" type="number" min="0" step="50" data-i18n-ph="f_budget_ph"></div>
+        <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
+      </div>
+      <div class="popular"><span class="muted" data-i18n="popular"></span>
+        <button type="button" data-q="antalya">Antalya</button><button type="button" data-q="dubai">Dubay</button>
+        <button type="button" data-q="sharm">Şarm-əl-Şeyx</button><button type="button" data-q="qabala">Qəbələ</button>
+        <button type="button" data-q="shahdag">Şahdağ</button><button type="button" data-q="tbilisi">Tbilisi</button>
+      </div>
+    </form>
+
+    <div id="intro">
+      <div class="features">
+        <div class="feature"><b data-i18n="feat1_t"></b><p data-i18n="feat1_d"></p></div>
+        <div class="feature"><b data-i18n="feat2_t"></b><p data-i18n="feat2_d"></p></div>
+        <div class="feature"><b data-i18n="feat3_t"></b><p data-i18n="feat3_d"></p></div>
+        <div class="feature"><b data-i18n="feat4_t"></b><p data-i18n="feat4_d"></p></div>
+      </div>
+    </div>
+
+    <div class="layout" id="resultsLayout" hidden>
+      <aside class="panel filters" id="filters">
+        <h3 data-i18n="filters"></h3>
+        <div class="group"><b data-i18n="price"></b>
+          <div class="range" style="margin-top:8px"><input id="minPrice" type="number" placeholder="min"><input id="maxPrice" type="number" placeholder="max"></div>
+        </div>
+        <div class="group"><b data-i18n="stars"></b><div id="starFilter"></div></div>
+        <div class="group"><b data-i18n="board"></b><div id="boardFilter"></div></div>
+        <div class="group"><b data-i18n="operators"></b><div id="opFilter"></div></div>
+        <div class="group"><label class="chk"><input type="checkbox" id="earlyOnly"> <span data-i18n="early_only"></span></label></div>
+      </aside>
+      <main>
+        <div class="results-head">
+          <div><h2 id="resTitle"></h2><div class="muted" id="resSub"></div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
+            <select id="sort" class="btn secondary sm">
+              <option value="price" data-i18n="sort_price"></option><option value="price_desc" data-i18n="sort_price_desc"></option>
+              <option value="rating" data-i18n="sort_rating"></option><option value="stars" data-i18n="sort_stars"></option><option value="savings" data-i18n="sort_savings"></option>
+            </select>
+          </div>
+        </div>
+        <div class="sources" id="sources"></div>
+        <div id="results"></div>
+        <div class="demo-note" data-i18n="demo_note"></div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
+
+  <footer><div class="container">© <span id="year"></span> TurTap · Tur operatorlarının qiymət müqayisəsi platforması</div></footer>
+  <script src="/js/common.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

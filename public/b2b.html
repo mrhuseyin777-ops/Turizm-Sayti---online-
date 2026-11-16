@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurTap B2B — agentlik paneli</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="logo" href="/"><span class="logo-mark">✈</span><span>Tur<b>Tap</b> <small class="muted" style="font-weight:600;font-size:13px">B2B</small></span></a>
+      <nav class="nav">
+        <a href="/" class="hide-sm" data-i18n="nav_search">Axtarış</a>
+        <a href="/b2b" class="active">B2B</a>
+        <span id="agencyName" class="muted hide-sm"></span>
+        <a href="#" id="logout" hidden>Çıxış</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container" id="loginView" hidden>
+    <form class="panel login" id="loginForm">
+      <h2 style="margin-top:0">Agentlik girişi</h2>
+      <p class="muted">Tur menecerləri üçün: bütün operatorların qiymətləri bir cədvəldə, müştəriyə hazır təklif bir kliklə.</p>
+      <input name="agency" required placeholder="Agentlik adı">
+      <input name="manager" required placeholder="Menecerin adı">
+      <input name="code" placeholder="Giriş kodu (demo: boş buraxın)">
+      <button class="btn primary" style="width:100%">Daxil ol</button>
+      <div class="demo-note">DEMO giriş. Real versiyada hər agentliyə ayrıca hesab, rol (admin/menecer) və təhlükəsiz giriş olacaq.</div>
+    </form>
+  </div>
+
+  <div class="container" id="appView" hidden style="padding-bottom:60px">
+    <form class="panel" id="b2bForm" style="margin-top:16px" autocomplete="off">
+      <div class="tabs" id="typeTabs">
+        <button type="button" class="tab active" data-type="package">Tur paketi</button>
+        <button type="button" class="tab" data-type="hotel">Yalnız otel</button>
+        <button type="button" class="tab" data-type="tour">Ekskursiya turu</button>
+        <span class="sep"></span>
+        <input id="client" placeholder="Müştəri adı / sorğu №" style="height:36px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:var(--surface)">
+      </div>
+      <div class="fields b2b-fields">
+        <div class="field"><label>İstiqamət / otel</label><input id="dest" required placeholder="Antalya, Kemer, Dubay..."></div>
+        <div class="field"><label>Tarix</label><input id="checkIn" type="date" required></div>
+        <div class="field"><label>± gün</label><select id="flex"><option>0</option><option>1</option><option>2</option><option selected>3</option><option>5</option><option>7</option></select></div>
+        <div class="field"><label>Gecə</label><input id="nights" type="number" min="1" max="28" value="7"></div>
+        <div class="field"><label>Böyük</label><input id="adults" type="number" min="1" max="8" value="2"></div>
+        <div class="field"><label>Uşaq</label><input id="children" type="number" min="0" max="6" value="0"></div>
+        <div class="field"><label>Büdcə maks.</label><input id="maxPrice" type="number" min="0" step="50" placeholder="—"></div>
+        <button class="btn primary">Axtar</button>
+      </div>
+    </form>
+
+    <div class="b2b-bar">
+      <div class="seg" id="viewSeg"><button type="button" class="active" data-view="matrix">Matris (otel × operator)</button><button type="button" data-view="list">Bütün təkliflər</button></div>
+      <label class="muted">Ulduz: <select id="stars" class="btn secondary sm"><option value="">Hamısı</option><option>5</option><option>4</option><option>3</option></select></label>
+      <label class="muted">Qida: <select id="board" class="btn secondary sm"><option value="">Hamısı</option><option>BB</option><option>HB</option><option>FB</option><option>AI</option><option>UAI</option></select></label>
+      <label class="muted"><input type="checkbox" id="earlyOnly"> Erkən rezervasiya</label>
+      <span style="flex:1"></span>
+      <label class="muted">Komissiya/əlavə %: <input id="markup" type="number" value="0" min="0" max="100" style="width:64px;height:36px;border:1px solid var(--border);border-radius:8px;padding:0 6px;background:var(--surface)"></label>
+      <button type="button" class="btn secondary sm" id="csvBtn">CSV / Excel</button>
+      <button type="button" class="btn sm" id="quoteBtn">Müştəriyə təklif (<span id="selCount">0</span>)</button>
+    </div>
+
+    <div class="kpis" id="kpis" hidden></div>
+    <div style="display:grid;grid-template-columns:1fr 240px;gap:16px" id="mainGrid">
+      <div class="table-wrap" id="tableWrap"><div class="empty muted">Sorğunu daxil edin — bütün operatorlar eyni anda yoxlanılacaq.</div></div>
+      <aside class="panel side-list"><b>Son sorğular</b><div id="history"></div></aside>
+    </div>
+    <div class="demo-note">DEMO: qiymətlər nümunədir. Real inteqrasiyadan sonra operatorların canlı qiymətləri və rezervasiya linkləri göstəriləcək.</div>
+  </div>
+
+  <div class="modal-bg" id="modal"><div class="modal" id="modalBody" style="max-width:640px"></div></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/b2b.js"></script>
+</body>
+</html>
