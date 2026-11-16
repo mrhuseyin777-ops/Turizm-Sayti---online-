@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurTap — otel qalereyası (dizayn demosu)</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/gallery.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="logo" href="/"><span class="logo-mark">✈</span><span>Tur<b>Tap</b></span></a>
+      <nav class="nav">
+        <a href="/" data-i18n="nav_search">Axtarış</a>
+        <a href="/flights.html" class="hide-sm" data-i18n="nav_flights">Aviabilet</a>
+        <a href="/cars.html" class="hide-sm" data-i18n="nav_cars">Avtomobil</a>
+        <a href="/b2b" class="hide-sm" data-i18n="nav_b2b">Agentliklər üçün (B2B)</a>
+        <select id="currency" aria-label="Valyuta"><option>AZN</option></select>
+        <select id="lang" aria-label="Dil"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="gd-head">
+      <h1>Otel qalereyası — dizayn demosu</h1>
+      <p>Real otel fotoları hələ yoxdur (operator feed-lərindən lisenziya ilə gələcək). O vaxta qədər hər otel üçün kənar resurssuz, deterministik SVG illüstrasiyalar göstərilir: istiqamət tipinə, ulduza, tag-lara (Aquapark, Öz çimərliyi, SPA) və otelin id-sinə görə rəng/günün vaxtı/detal variasiyası.</p>
+    </div>
+    <div class="gd-legend">
+      <span class="badge">Dəniz: Antalya, Alanya, Kemer, Side, Bodrum, Şarm, Maldiv</span>
+      <span class="badge">Şəhər: İstanbul, Dubay, Bakı, Tbilisi</span>
+      <span class="badge">Dağ: Qəbələ, Şahdağ, Şəki, Batumi</span>
+      <span class="badge">Təbiət/kurort: Lənkəran, Naftalan</span>
+    </div>
+
+    <h2 class="gd-section">Nəticə kartları — bütün istiqamətlər</h2>
+    <div id="cards">
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #f97316,#facc15)" data-gallery data-hotel-id="antalya-h4" data-dest="antalya" data-region="intl" data-stars="5" data-tags="Uşaq klubu" data-name="Mountain View Premium"><span class="rank">#1</span><span class="img-cap">Antalya, Türkiyə</span></div>
+        <div class="body">
+          <h3>Mountain View Premium <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: taurus · gündüz · Hər şey daxil</div>
+          <div class="badges">
+            <span class="badge rating">8.8</span>
+            <span class="badge">Uşaq klubu</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #1e3a8a,#0ea5e9)" data-gallery data-hotel-id="alanya-h7" data-dest="alanya" data-region="intl" data-stars="4" data-tags="Aquapark,Öz çimərliyi" data-name="Silver Coast Beach Hotel Alanya"><span class="rank">#2</span><span class="img-cap">Alanya, Türkiyə</span></div>
+        <div class="body">
+          <h3>Silver Coast Beach Hotel Alanya <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: castle · gündüz · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.6</span>
+            <span class="badge">Aquapark</span><span class="badge">Öz çimərliyi</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #1e3a8a,#0ea5e9)" data-gallery data-hotel-id="kemer-h3" data-dest="kemer" data-region="intl" data-stars="4" data-tags="Aquapark,Uşaq klubu,Öz çimərliyi,SPA" data-name="Golden Sand Resort &amp; Spa"><span class="rank">#3</span><span class="img-cap">Kemer, Türkiyə</span></div>
+        <div class="body">
+          <h3>Golden Sand Resort &amp; Spa <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: pine · səhər · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.7</span>
+            <span class="badge">Aquapark</span><span class="badge">Uşaq klubu</span><span class="badge">Öz çimərliyi</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #9333ea,#f472b6)" data-gallery data-hotel-id="side-h6" data-dest="side" data-region="intl" data-stars="5" data-tags="Aquapark" data-name="Crystal Family Resort Side"><span class="rank">#4</span><span class="img-cap">Side, Türkiyə</span></div>
+        <div class="body">
+          <h3>Crystal Family Resort Side <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: ruins · gündüz · Hər şey daxil</div>
+          <div class="badges">
+            <span class="badge rating">8.4</span>
+            <span class="badge">Aquapark</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #1e3a8a,#0ea5e9)" data-gallery data-hotel-id="bodrum-h2" data-dest="bodrum" data-region="intl" data-stars="4" data-tags="Aquapark" data-name="Crystal Club Hotel"><span class="rank">#5</span><span class="img-cap">Bodrum, Türkiyə</span></div>
+        <div class="body">
+          <h3>Crystal Club Hotel <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: cubes · gündüz · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.2</span>
+            <span class="badge">Aquapark</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #15803d,#84cc16)" data-gallery data-hotel-id="istanbul-h5" data-dest="istanbul" data-region="intl" data-stars="5" data-tags="Aquapark,SPA" data-name="Crystal Resort &amp; Spa İstanbul"><span class="rank">#6</span><span class="img-cap">İstanbul, Türkiyə</span></div>
+        <div class="body">
+          <h3>Crystal Resort &amp; Spa İstanbul <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Şəhər · motiv: domes · gecə · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.6</span>
+            <span class="badge">Aquapark</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #15803d,#84cc16)" data-gallery data-hotel-id="dubai-h1" data-dest="dubai" data-region="intl" data-stars="3" data-tags="Uşaq klubu,SPA" data-name="Royal Palace"><span class="rank">#7</span><span class="img-cap">Dubay, BƏƏ</span></div>
+        <div class="body">
+          <h3>Royal Palace <span class="stars">★★★</span></h3>
+          <div class="muted" style="font-size:14px">Şəhər · motiv: towers · gündüz · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">9.4</span>
+            <span class="badge">Uşaq klubu</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="sharm-h4" data-dest="sharm" data-region="intl" data-stars="5" data-tags="Aquapark,SPA" data-name="Golden Sand Boutique"><span class="rank">#8</span><span class="img-cap">Şarm-əl-Şeyx, Misir</span></div>
+        <div class="body">
+          <h3>Golden Sand Boutique <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: desert · gündüz · Hər şey daxil</div>
+          <div class="badges">
+            <span class="badge rating">7.8</span>
+            <span class="badge">Aquapark</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #f97316,#facc15)" data-gallery data-hotel-id="batumi-h7" data-dest="batumi" data-region="intl" data-stars="4" data-tags="Aquapark,SPA" data-name="Sunrise Family Resort Batumi"><span class="rank">#9</span><span class="img-cap">Batumi, Gürcüstan</span></div>
+        <div class="body">
+          <h3>Sunrise Family Resort Batumi <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dağ · motiv: coast · qürub · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.9</span>
+            <span class="badge">Aquapark</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #9333ea,#f472b6)" data-gallery data-hotel-id="tbilisi-h3" data-dest="tbilisi" data-region="intl" data-stars="4" data-tags="Aquapark" data-name="Green Valley Garden Resort"><span class="rank">#10</span><span class="img-cap">Tbilisi, Gürcüstan</span></div>
+        <div class="body">
+          <h3>Green Valley Garden Resort <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Şəhər · motiv: oldtown · səhər · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.9</span>
+            <span class="badge">Aquapark</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #f97316,#facc15)" data-gallery data-hotel-id="maldives-h6" data-dest="maldives" data-region="intl" data-stars="5" data-tags="Aquapark,Uşaq klubu,SPA" data-name="Silver Coast Resort &amp; Spa Maldiv"><span class="rank">#11</span><span class="img-cap">Maldiv adaları, Maldiv</span></div>
+        <div class="body">
+          <h3>Silver Coast Resort &amp; Spa Maldiv <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dəniz / çimərlik · motiv: atoll · səhər · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">7.5</span>
+            <span class="badge">Aquapark</span><span class="badge">Uşaq klubu</span><span class="badge">SPA</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #15803d,#84cc16)" data-gallery data-hotel-id="qabala-h2" data-dest="qabala" data-region="domestic" data-stars="4" data-tags="SPA,Hovuz" data-name="Dağ Ətəyi Mountain Resort"><span class="rank">#12</span><span class="img-cap">Qəbələ, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Dağ Ətəyi Mountain Resort <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dağ · motiv: green · gündüz · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.8</span>
+            <span class="badge">SPA</span><span class="badge">Hovuz</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #0e7c86,#38bdf8)" data-gallery data-hotel-id="shahdag-h5" data-dest="shahdag" data-region="domestic" data-stars="5" data-tags="Aquapark,Uşaq klubu" data-name="Çinar Resort &amp; Spa Qusar"><span class="rank">#13</span><span class="img-cap">Qusar / Şahdağ, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Çinar Resort &amp; Spa Qusar <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dağ · motiv: snow · gündüz · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">9.4</span>
+            <span class="badge">Aquapark</span><span class="badge">Uşaq klubu</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="sheki-h1" data-dest="sheki" data-region="domestic" data-stars="3" data-tags="Aquapark,Uşaq klubu,Öz çimərliyi,SPA,Hovuz" data-name="Yaşıl Vadi Mountain Resort"><span class="rank">#14</span><span class="img-cap">Şəki, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Yaşıl Vadi Mountain Resort <span class="stars">★★★</span></h3>
+          <div class="muted" style="font-size:14px">Dağ · motiv: hills · səhər · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.4</span>
+            <span class="badge">Aquapark</span><span class="badge">Uşaq klubu</span><span class="badge">Öz çimərliyi</span><span class="badge">SPA</span><span class="badge">Hovuz</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #b45309,#f59e0b)" data-gallery data-hotel-id="lankaran-h4" data-dest="lankaran" data-region="domestic" data-stars="5" data-tags="Uşaq klubu,Öz çimərliyi,Hovuz" data-name="Bulaq Palace"><span class="rank">#15</span><span class="img-cap">Lənkəran, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Bulaq Palace <span class="stars">★★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Təbiət / kurort · motiv: tea · qürub · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.5</span>
+            <span class="badge">Uşaq klubu</span><span class="badge">Öz çimərliyi</span><span class="badge">Hovuz</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #9333ea,#f472b6)" data-gallery data-hotel-id="baku-h7" data-dest="baku" data-region="domestic" data-stars="4" data-tags="Uşaq klubu,Hovuz" data-name="Qafqaz Mənzərə Lodge Bakı"><span class="rank">#16</span><span class="img-cap">Bakı, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Qafqaz Mənzərə Lodge Bakı <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Şəhər · motiv: flames · səhər · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">9</span>
+            <span class="badge">Uşaq klubu</span><span class="badge">Hovuz</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+      <article class="card">
+        <div class="img" style="background:linear-gradient(135deg, #15803d,#84cc16)" data-gallery data-hotel-id="naftalan-h3" data-dest="naftalan" data-region="domestic" data-stars="4" data-tags="Uşaq klubu,SPA,Hovuz" data-name="Qafqaz Mənzərə Boutique"><span class="rank">#17</span><span class="img-cap">Naftalan, Azərbaycan</span></div>
+        <div class="body">
+          <h3>Qafqaz Mənzərə Boutique <span class="stars">★★★★</span></h3>
+          <div class="muted" style="font-size:14px">Təbiət / kurort · motiv: spa · qürub · Səhər yeməyi</div>
+          <div class="badges">
+            <span class="badge rating">8.7</span>
+            <span class="badge">Uşaq klubu</span><span class="badge">SPA</span><span class="badge">Hovuz</span>
+          </div>
+          <div class="muted" style="font-size:13px">Şəkil blokunda: oxlar, nöqtələr, swipe, ← → klavişləri, klik/Enter → lightbox.</div>
+        </div>
+        <div class="price">
+          <div><div class="from">Real foto yoxdur</div><div class="amount" style="font-size:18px">3 illüstrasiya</div><div class="from">ümumi · hovuz/çimərlik · otaq</div></div>
+        </div>
+      </article>
+    </div>
+
+    <h2 class="gd-section">Kompakt plitələr — 5★ otellər</h2>
+    <div class="gd-tiles">
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #f97316,#facc15)" data-gallery data-hotel-id="antalya-h4" data-dest="antalya" data-region="intl" data-stars="5" data-tags="Uşaq klubu" data-name="Mountain View Premium"><span class="img-cap">Antalya</span></div>
+        <div class="meta"><b>Mountain View Premium <span class="stars">★★★★★</span></b><span class="muted">Uşaq klubu</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #b45309,#f59e0b)" data-gallery data-hotel-id="alanya-h4" data-dest="alanya" data-region="intl" data-stars="5" data-tags="Uşaq klubu,Öz çimərliyi" data-name="Royal Garden Resort"><span class="img-cap">Alanya</span></div>
+        <div class="meta"><b>Royal Garden Resort <span class="stars">★★★★★</span></b><span class="muted">Uşaq klubu · Öz çimərliyi</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #15803d,#84cc16)" data-gallery data-hotel-id="kemer-h4" data-dest="kemer" data-region="intl" data-stars="5" data-tags="Öz çimərliyi,SPA" data-name="Royal Family Resort"><span class="img-cap">Kemer</span></div>
+        <div class="meta"><b>Royal Family Resort <span class="stars">★★★★★</span></b><span class="muted">Öz çimərliyi · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #1e3a8a,#0ea5e9)" data-gallery data-hotel-id="side-h4" data-dest="side" data-region="intl" data-stars="5" data-tags="Aquapark,Uşaq klubu,Öz çimərliyi" data-name="Sunrise Beach Hotel"><span class="img-cap">Side</span></div>
+        <div class="meta"><b>Sunrise Beach Hotel <span class="stars">★★★★★</span></b><span class="muted">Aquapark · Uşaq klubu · Öz çimərliyi</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #9333ea,#f472b6)" data-gallery data-hotel-id="bodrum-h4" data-dest="bodrum" data-region="intl" data-stars="5" data-tags="Aquapark,Uşaq klubu,SPA" data-name="Silver Coast Palace"><span class="img-cap">Bodrum</span></div>
+        <div class="meta"><b>Silver Coast Palace <span class="stars">★★★★★</span></b><span class="muted">Aquapark · Uşaq klubu · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #1e3a8a,#0ea5e9)" data-gallery data-hotel-id="istanbul-h4" data-dest="istanbul" data-region="intl" data-stars="5" data-tags="Öz çimərliyi,SPA" data-name="Palm Bay Beach Hotel"><span class="img-cap">İstanbul</span></div>
+        <div class="meta"><b>Palm Bay Beach Hotel <span class="stars">★★★★★</span></b><span class="muted">Öz çimərliyi · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #b45309,#f59e0b)" data-gallery data-hotel-id="dubai-h4" data-dest="dubai" data-region="intl" data-stars="5" data-tags="Aquapark,Uşaq klubu,Öz çimərliyi" data-name="Sunrise Beach Hotel"><span class="img-cap">Dubay</span></div>
+        <div class="meta"><b>Sunrise Beach Hotel <span class="stars">★★★★★</span></b><span class="muted">Aquapark · Uşaq klubu · Öz çimərliyi</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="sharm-h4" data-dest="sharm" data-region="intl" data-stars="5" data-tags="Aquapark,SPA" data-name="Golden Sand Boutique"><span class="img-cap">Şarm-əl-Şeyx</span></div>
+        <div class="meta"><b>Golden Sand Boutique <span class="stars">★★★★★</span></b><span class="muted">Aquapark · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="batumi-h4" data-dest="batumi" data-region="intl" data-stars="5" data-tags="Uşaq klubu" data-name="Blue Wave Garden Resort"><span class="img-cap">Batumi</span></div>
+        <div class="meta"><b>Blue Wave Garden Resort <span class="stars">★★★★★</span></b><span class="muted">Uşaq klubu</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="tbilisi-h4" data-dest="tbilisi" data-region="intl" data-stars="5" data-tags="Uşaq klubu,Öz çimərliyi,SPA" data-name="Grand Aurora Beach Hotel"><span class="img-cap">Tbilisi</span></div>
+        <div class="meta"><b>Grand Aurora Beach Hotel <span class="stars">★★★★★</span></b><span class="muted">Uşaq klubu · Öz çimərliyi · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #b45309,#f59e0b)" data-gallery data-hotel-id="maldives-h4" data-dest="maldives" data-region="intl" data-stars="5" data-tags="Aquapark,Öz çimərliyi,SPA" data-name="Golden Sand Family Resort"><span class="img-cap">Maldiv adaları</span></div>
+        <div class="meta"><b>Golden Sand Family Resort <span class="stars">★★★★★</span></b><span class="muted">Aquapark · Öz çimərliyi · SPA</span></div>
+      </div>
+      <div class="gd-tile">
+        <div class="img" style="background:linear-gradient(135deg, #0f766e,#22d3ee)" data-gallery data-hotel-id="qabala-h4" data-dest="qabala" data-region="domestic" data-stars="5" data-tags="Uşaq klubu,Öz çimərliyi,SPA,Hovuz" data-name="Bulaq Palace"><span class="img-cap">Qəbələ</span></div>
+        <div class="meta"><b>Bulaq Palace <span class="stars">★★★★★</span></b><span class="muted">Uşaq klubu · Öz çimərliyi · SPA · Hovuz</span></div>
+      </div>
+    </div>
+    <p class="gd-note">Bu səhifə yalnız dizayn yoxlaması üçündür (DEMO kataloq, uydurma otel adları). İllüstrasiyalar mətn/brend ehtiva etmir.</p>
+  </main>
+
+  <footer><div class="container">© TurTap · Qalereya demosu</div></footer>
+  <script src="/js/common.js"></script>
+  <script src="/js/hotel-art.js"></script>
+  <script src="/js/gallery.js"></script>
+</body>
+</html>
