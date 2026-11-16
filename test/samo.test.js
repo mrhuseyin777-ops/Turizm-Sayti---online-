@@ -169,8 +169,9 @@ test('normalize: hipotetik SamoItem fixture → Offer formatı', () => {
   assert.strictEqual(a.destinationId, 'antalya');
   assert.strictEqual(a.itemType, 'hotel');
   assert.strictEqual(a.board, 'AI');
-  assert.strictEqual(a.price, 2000); // 1176 USD / 0.588 → AZN
-  assert.strictEqual(a.oldPrice, 2211);
+  const usd = require('../src/config').rates.USD; // operator məzənnəsindən hesablanır
+  assert.strictEqual(a.price, Math.round(1176 / usd)); // USD → AZN
+  assert.strictEqual(a.oldPrice, Math.round(1300 / usd));
   assert.strictEqual(a.currency, 'AZN');
   assert.deepStrictEqual(a.originalPrice, { amount: 1176, currency: 'USD' });
   assert.strictEqual(a.availability, 'instant');
@@ -178,7 +179,7 @@ test('normalize: hipotetik SamoItem fixture → Offer formatı', () => {
   assert.strictEqual(a.stars, 5);
   assert.ok(isAllowedOperatorUrl(a.url));
   assert.strictEqual(b.board, 'UAI');
-  assert.strictEqual(b.price, 1701); // CURRENCY ID 2 → USD
+  assert.strictEqual(b.price, Math.round(1000 / usd)); // CURRENCY ID 2 → USD
   assert.strictEqual(b.availability, 'request');
   // Offer sahələri mockProvider ilə eynidir
   for (const k of ['id', 'providerId', 'itemType', 'itemId', 'name', 'destinationId', 'stars', 'rating', 'tags', 'board', 'room', 'checkIn', 'nights', 'adults', 'children', 'includesFlight', 'price', 'oldPrice', 'currency', 'earlyBooking', 'availability', 'prepayment', 'freeCancelUntil', 'url']) {
