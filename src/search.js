@@ -1,5 +1,5 @@
 const config = require('./config');
-const { destinations, hotels, tours, boardLabels, HOTEL_ATTRS } = require('./data/catalog');
+const { destinations, hotels, tours, boardLabels, HOTEL_ATTRS, hotelById, keyDistance, hotelRules } = require('./data/catalog');
 const { providers } = require('./providers');
 const { parseChildAges, paymentPlan, QueryError } = require('./pricing');
 
@@ -19,6 +19,14 @@ function suggest(text) {
     .filter((d) => !t || [d.name, d.country, ...d.aliases].some((a) => norm(a).startsWith(t) || norm(a).includes(t)))
     .slice(0, 8)
     .map((d) => ({ id: d.id, name: d.name, country: d.country, region: d.region }));
+}
+
+// Reytinq sözü açarı (config.ratingWords): 9.2 → 'superb'. 7-dən aşağı və ya reytinqsiz → null.
+function ratingWord(rating) {
+  const r = Number(rating);
+  if (rating == null || !Number.isFinite(r)) return null;
+  const w = config.ratingWords.find((x) => r >= x.min);
+  return w ? w.key : null;
 }
 
 const clampInt = (v, min, max, def) => {
@@ -107,6 +115,11 @@ function parseQuery(raw, { anywhere = false } = {}) {
     districts: list(raw.districts, 1200, 40).filter((x) => /^[a-z0-9-]{1,20}\.[a-z0-9-]{1,30}$/.test(x)),
     hotels: list(raw.hotels, 1200, 60).filter((x) => /^[a-z0-9-]{1,40}$/.test(x)),
     attrs: list(raw.attrs, 100, 4).filter((a) => HOTEL_ATTRS.includes(a)),
+    // Reytinq həddi (məs. 8 → "8+"), çimərlik xətti (1,2,3 = "3-cü xətt+") və əsas məsafəyə maks. hədd (m):
+    // dəniz → dənizə, dağ → kanata, şəhər → mərkəzə. Yanlış dəyər nəzərə alınmır (digər filtrlər kimi).
+    minRating: /^(10|[1-9](\.\d)?)$/.test(String(raw.minRating ?? '')) ? Number(raw.minRating) : null,
+    beachLines: [...new Set(list(raw.beachLines, 20, 10).filter((x) => ['1', '2', '3'].includes(x)).map(Number))],
+    maxDist: /^\d{1,6}$/.test(String(raw.maxDist ?? '')) && Number(raw.maxDist) > 0 ? Number(raw.maxDist) : null,
     earlyOnly: flag(raw.earlyOnly),
     // Ödəniş/ləğv filtrləri: prepay=none (ilkin ödənişsiz) | upto50 (ən çox 50% ilkin)
     prepay: ['none', 'upto50'].includes(raw.prepay) ? raw.prepay : null,
@@ -119,7 +132,7 @@ function parseQuery(raw, { anywhere = false } = {}) {
     refresh: flag(raw.refresh),
     limit: clampInt(raw.limit, 1, L.maxFlatOffers, L.maxFlatOffers),
     currency: config.rates[raw.currency] ? raw.currency : config.defaultCurrency,
-    sort: ['price', 'price_desc', 'rating', 'stars', 'savings'].includes(raw.sort) ? raw.sort : 'price',
+    sort: ['price', 'price_desc', 'rating', 'stars', 'savings', 'distance'].includes(raw.sort) ? raw.sort : 'price',
   };
   checkCombos(out);
   return out;
@@ -184,8 +197,13 @@ async function collectOffers(q) {
     .flatMap((r) => r.value.offers)
     .map((o) => {
       const days = daysUntil(o.checkIn);
+      // Kataloqdan reytinq/rəy sayı/məkan (real adapter bu sahələri verməsə də nişan və filtrlər işləsin)
+      const h = o.itemType === 'hotel' ? hotelById.get(o.itemId) : null;
       return {
         ...o,
+        reviewCount: o.reviewCount ?? (h ? h.reviewCount : null),
+        location: o.location || (h ? h.location : null),
+        ratingWord: ratingWord(o.rating),
         price: Math.round(o.price * rate),
         oldPrice: o.oldPrice ? Math.round(o.oldPrice * rate) : null,
         currency: q.currency,
@@ -226,6 +244,10 @@ function activePredicates(q) {
   add('instantOnly', q.instantOnly, (o) => o.availability === 'instant');
   add('districts', q.districts.length, (o) => q.districts.includes(o.districtId), true);
   add('hotels', q.hotels.length, (o) => q.hotels.includes(o.itemId), true);
+  add('minRating', q.minRating != null, (o) => o.rating != null && o.rating >= q.minRating);
+  // Çimərlik xətti yalnız dəniz otellərinə aiddir: filtr aktivdirsə, xətti olmayan (şəhər/dağ) otellər çıxır
+  add('beachLines', q.beachLines.length, (o) => !!(o.location && o.location.line) && q.beachLines.includes(Math.min(3, o.location.line)));
+  add('maxDist', q.maxDist != null, (o) => { const d = keyDistance(o.location); return d != null && d <= q.maxDist; });
   add('attrs', q.attrs.length, (o) => q.attrs.every((a) => (o.attrs || []).includes(a)), true);
   return P;
 }
@@ -331,7 +353,7 @@ async function search(raw, opts = {}) {
   for (const o of offers) {
     if (!map.has(o.itemId)) {
       map.set(o.itemId, {
-        itemId: o.itemId, itemType: o.itemType, name: o.name, stars: o.stars, rating: o.rating,
+        itemId: o.itemId, itemType: o.itemType, name: o.name, stars: o.stars, rating: o.rating, ratingWord: o.ratingWord, reviewCount: o.reviewCount, location: o.location,
         tags: o.tags, attrs: o.attrs, district: o.district, districtId: o.districtId, destination: o.destination, includesFlight: o.includesFlight, nights: o.nights,
         best: o, byProvider: {}, offerCount: 0, earlyBooking: false, lastMinute: false,
       });
@@ -353,7 +375,10 @@ async function search(raw, opts = {}) {
   const sorters = {
     price: (a, b) => a.best.price - b.best.price,
     price_desc: (a, b) => b.best.price - a.best.price,
-    rating: (a, b) => (b.rating || 0) - (a.rating || 0) || a.best.price - b.best.price,
+    // Reytinq: bal → rəy sayı → qiymət (reytinqsiz turlar sonda)
+    rating: (a, b) => (b.rating || 0) - (a.rating || 0) || (b.reviewCount || 0) - (a.reviewCount || 0) || a.best.price - b.best.price,
+    // Ən yaxın: dənizə (dəniz kurortu) / kanata (dağ) / mərkəzə (şəhər); məsafəsi bilinməyənlər sonda
+    distance: (a, b) => (keyDistance(a.location) ?? Infinity) - (keyDistance(b.location) ?? Infinity) || a.best.price - b.best.price,
     stars: (a, b) => b.stars - a.stars || a.best.price - b.best.price,
     savings: (a, b) => b.savings - a.savings,
   };
@@ -412,10 +437,52 @@ async function explore(raw) {
   };
 }
 
+// Otel detal pəncərəsi: bir otelin bütün təklifləri (otaq × qidalanma × operator), ucuzdan bahalıya.
+// Yalnız qiymətə təsir edən axtarış parametrləri qəbul olunur; filtrlər (ulduz, büdcə və s.) tətbiq edilmir —
+// pəncərə otelin tam qiymət cədvəlini göstərir (istisna: noStopSale=1 — satışı dayandırılmış təklif "ən ucuz" kimi
+// göstərilməsin). Hər (otaq, qidalanma, operator) üçün ən ucuz tarix/gecə.
+const HOTEL_QUERY_KEYS = ['type', 'checkIn', 'checkInTo', 'flex', 'nights', 'nightsTo', 'adults', 'children', 'childAges', 'currency', 'providers', 'noStopSale', 'refresh'];
+const HOTEL_ID_RE = /^[a-z0-9-]{1,40}$/;
+const HOTEL_ROWS_MAX = 200;
+async function hotelOffers(id, rawIn) {
+  if (typeof id !== 'string' || !HOTEL_ID_RE.test(id)) throw new QueryError('Otel id-si düzgün deyil');
+  const h = hotelById.get(id);
+  if (!h) return null;
+  const src = rawIn && typeof rawIn === 'object' ? rawIn : {};
+  const raw = {};
+  for (const k of HOTEL_QUERY_KEYS) if (typeof src[k] === 'string') raw[k] = src[k];
+  if (raw.type === 'tour') throw new QueryError('Ekskursiya turu üçün otel cədvəli yoxdur');
+  const dest = destinations.find((d) => d.id === h.destinationId);
+  // Daxili istiqamətlərdə aviabiletli paket yoxdur → yalnız otel
+  raw.type = raw.type === 'package' && dest.region !== 'domestic' ? 'package' : 'hotel';
+  raw.destinationId = h.destinationId;
+  raw.hotels = h.id;
+  const q = parseQuery(raw);
+  const { offers, sources } = await collectOffers(q);
+  const seen = new Set();
+  const rows = [];
+  for (const o of offers) { // ucuzdan sıralanıb → hər açar üçün ilk rast gəlinən ən ucuzdur
+    const key = `${o.room}|${o.board}|${o.providerId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(o);
+    if (rows.length >= HOTEL_ROWS_MAX) break;
+  }
+  const { priceFactor, ...pub } = h;
+  return {
+    hotel: { ...pub, ratingWord: ratingWord(h.rating), destination: slimDest[h.destinationId], rules: hotelRules(h) },
+    rows,
+    stats: offers.length ? { offers: offers.length, rows: rows.length, min: offers[0].price, max: offers[offers.length - 1].price } : null,
+    query: publicQuery(q),
+    sources,
+    serverTime: new Date().toISOString(),
+  };
+}
+
 function publicQuery(q) {
   const { refresh, ...rest } = q;
   const d = (x) => (x ? x.toISOString().slice(0, 10) : null);
   return { ...rest, checkIn: d(q.checkIn), checkInTo: d(q.checkInTo), dateFrom: d(q.dateFrom), dateTo: d(q.dateTo) };
 }
 
-module.exports = { QueryError, search, explore, suggest, resolveDestinations, parseQuery, activePredicates, _cache: cache };
+module.exports = { QueryError, search, explore, suggest, resolveDestinations, parseQuery, activePredicates, ratingWord, hotelOffers, _cache: cache };

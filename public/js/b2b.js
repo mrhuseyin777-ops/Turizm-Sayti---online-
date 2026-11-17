@@ -196,7 +196,7 @@
     const rows = d.groups.map((g) => {
       const byOp = Object.fromEntries(g.providers.map((o) => [o.providerId, o]));
       return `<tr>
-        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating ? ' · ' + esc(g.rating) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}</div></td>
+        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div></td>
         ${ops.map((s) => {
           const o = byOp[s.id];
           if (!o) return '<td class="num muted">—</td>';
@@ -216,14 +216,16 @@
   // "Bütün təkliflər" — operator saytındakı sütunlar + müqayisə (net / müştəri qiyməti, operator)
   const cols = () => [
     ['checkIn', t('col_date')], ['tourName', t('col_tour')], ['nights', t('col_nights')], ['name', t('col_hotel')], ['stars', '★'],
-    ['hotelSeats', t('col_seats')], ['board', t('col_board')], ['room', t('col_room')], ['price', 'Net (AZN)'], ['opPrice', t('col_opprice')],
+    ['hotelSeats', t('col_seats')], ['dist', t('col_location')], ['board', t('col_board')], ['room', t('col_room')], ['price', 'Net (AZN)'], ['opPrice', t('col_opprice')],
     ['client', 'Müştəri qiyməti'], ['priceType', t('col_ptype')], ['providerName', t('col_op')], ['availability', 'Status'], ['prepayment', t('b2b_terms')],
   ];
   const termsShort = (o) => [o.prepayment === 'none' ? t('prepay_none') : o.prepayment === '50' ? t('prepay_50') : o.prepayment === 'full' ? t('prepay_full') : '',
     o.freeCancelUntil ? t('free_cancel', { d: shortDate(o.freeCancelUntil) }) : ''].filter(Boolean).join(' · ');
   function renderList(offers) {
     const k = state.sortKey === 'client' ? 'price' : state.sortKey;
-    const list = [...offers].sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * state.sortDir).slice(0, 400);
+    // "dist" = əsas məsafə (dəniz / kanat / mərkəz); məsafəsi olmayanlar həmişə sonda
+    const val = (o) => (k === 'dist' ? keyDist(o.location) ?? (state.sortDir > 0 ? Infinity : -Infinity) : o[k]);
+    const list = [...offers].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * state.sortDir).slice(0, 400);
     const minPrice = Math.min(...offers.map((o) => o.price));
     $('#tableWrap').innerHTML = `<table class="grid op-table"><thead><tr><th></th>${cols().map(([key, label]) => `<th data-sort="${key}">${esc(label)}${state.sortKey === key ? (state.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
       ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''} ${o.stopSale ? 'stop' : ''}">
@@ -234,6 +236,7 @@
         <td class="wrap">${esc(o.name)}${o.district ? ` <small class="muted">(${esc(o.district)})</small>` : ''}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}<div class="badges tight">${attrBadges(o.attrs)}</div></td>
         <td>${esc(o.stars || '')}</td>
         <td>${seatsHtml(o)}</td>
+        <td class="wrap"><small>${esc(locationText(o.location) || '—')}</small>${o.rating != null ? `<br><small class="muted">${esc(ratingText(o))}</small>` : ''}</td>
         <td>${esc(o.board || '—')}</td>
         <td class="wrap"><small>${esc(roomText(o))}</small></td>
         <td class="num">${money(o.price, 'AZN')}</td>
@@ -357,11 +360,12 @@
   $('#csvBtn').addEventListener('click', () => {
     if (!state.data || !state.data.offers.length) return toast('Əvvəlcə axtarış edin');
     const head = ['Otel/Tur', 'İstiqamət', 'Rayon', 'Tur', 'Operator', 'Tarix', 'Uçuş saatı', 'Sinif', 'Gecə', 'Qida', 'Otaq', 'Yerləşmə', 'Ulduz',
-      'Net qiymət (AZN)', 'Operator qiyməti', 'Operator valyutası', 'Müştəri qiyməti (AZN)', 'Qiymət növü', 'Otel yer', 'Reys yer (gediş)', 'Reys yer (dönüş)', 'Stop-sale', 'Status'];
+      'Net qiymət (AZN)', 'Operator qiyməti', 'Operator valyutası', 'Müştəri qiyməti (AZN)', 'Qiymət növü', 'Otel yer', 'Reys yer (gediş)', 'Reys yer (dönüş)', 'Stop-sale', 'Status', 'Reytinq (demo)', 'Rəy sayı (demo)', 'Çimərlik xətti', 'Əsas məsafə (m)'];
     const rows = state.data.offers.map((o) => [o.name, o.destination.name, o.district || '', o.tourName || '', o.providerName, o.checkIn,
       o.flight ? o.flight.out.time : '', o.flight ? o.flight.cls : '', o.nights, o.board || '', o.room || '', o.accommodation || '', o.stars,
       o.price, o.opPrice ?? '', o.opCurrency || '', withMarkup(o.price), o.priceTypeLabel || '', o.hotelSeats || '',
-      o.flight ? o.flight.out.seats : '', o.flight ? o.flight.back.seats : '', o.stopSale ? 'bəli' : '', o.availability]);
+      o.flight ? o.flight.out.seats : '', o.flight ? o.flight.back.seats : '', o.stopSale ? 'bəli' : '', o.availability,
+      o.rating ?? '', o.reviewCount ?? '', o.location && o.location.line ? o.location.line : '', keyDist(o.location) ?? '']);
     const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${csvCell(c)}"`).join(';')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

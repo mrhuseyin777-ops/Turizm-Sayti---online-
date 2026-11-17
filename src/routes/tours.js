@@ -2,7 +2,7 @@
 // B2B paylaşılan seçim linkləri. server.js bu faylı avtomatik qoşur.
 const express = require('express');
 const path = require('path');
-const { explore, QueryError } = require('../search');
+const { explore, hotelOffers, QueryError } = require('../search');
 const { InputError, createLead, createSelection, getSelectionRecord, publicSelection } = require('../leads');
 const { requireAuth, requireCsrf } = require('../auth');
 const { rateLimit } = require('../security/rateLimit');
@@ -20,6 +20,20 @@ const fail = (res, e, next) => {
 router.get('/api/explore', async (req, res, next) => {
   try {
     res.json(await explore(req.query));
+  } catch (e) {
+    if (e instanceof QueryError) return res.status(400).json({ error: e.message });
+    next(e);
+  }
+});
+
+// Otel detal pəncərəsi: bir otelin bütün təklifləri (otaq × qidalanma × operator), ucuzdan bahalıya.
+// Parametrlər /api/search ilə eynidir (checkIn, checkInTo, nights, nightsTo, adults, childAges, currency…);
+// id ağ siyahı formatı + kataloqda mövcudluq yoxlanılır. Provayderlərə sorğu getdiyi üçün ayrıca limit.
+router.get('/api/hotels/:id/offers', rateLimit({ name: 'hotel-offers', windowMs: 60 * 1000, max: 60 }), async (req, res, next) => {
+  try {
+    const r = await hotelOffers(req.params.id, req.query);
+    if (!r) return res.status(404).json({ error: 'Otel tapılmadı' });
+    res.json(r);
   } catch (e) {
     if (e instanceof QueryError) return res.status(400).json({ error: e.message });
     next(e);
