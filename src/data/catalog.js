@@ -58,6 +58,11 @@ const domesticPrefixes = ['Dağ Ətəyi', 'Meşə', 'Qafqaz Mənzərə', 'Çinar
 // Dəniz kurortları (AI/UAI, "yalnız böyüklər" otelləri, dəniz mənzərəli otaqlar)
 const BEACH = ['antalya', 'alanya', 'kemer', 'side', 'bodrum', 'sharm', 'dubai', 'maldives', 'batumi'];
 const CITY = ['istanbul', 'tbilisi', 'baku'];
+// Məkan növü (məsafə nişanı və filtrləri üçün): dəniz → çimərlik xətti + dənizə məsafə (m),
+// şəhər → mərkəzə məsafə, dağ → kanat/ski liftinə məsafə. Qalanları (Naftalan) mərkəzə məsafə.
+const SEA = [...BEACH, 'lankaran'];
+const MOUNTAIN = ['qabala', 'shahdag'];
+const locationKind = (destId) => (SEA.includes(destId) ? 'beach' : MOUNTAIN.includes(destId) ? 'mountain' : 'city');
 
 function hash(str) {
   let h = 2166136261;
@@ -115,6 +120,22 @@ for (const d of destinations) {
     const chdFree = !adultsOnly && d.region === 'intl' && ((h >>> 20) % 3 === 0 || (family && stars === 5));
     const recommended = rating >= 9.3 || (h >>> 24) % 7 === 0;
     const district = d.districts[(dOff + i) % d.districts.length];
+    // Rəy sayı (DEMO, deterministik): 5* otellərdə daha çox
+    const reviewCount = 60 + ((h >>> 6) % 900) + stars * ((h >>> 14) % 260);
+    // Məkan (DEMO, deterministik). "Öz çimərliyi" olan otel həmişə 1-ci xətdədir.
+    const kind = locationKind(d.id);
+    const hl = hash(d.id + i + ':loc');
+    const location = { kind, line: null, seaM: null, centerM: null, liftM: null, airportKm: d.region === 'intl' ? 8 + (hl % 70) : null };
+    if (kind === 'beach') {
+      location.line = tags.includes('Öz çimərliyi') ? 1 : [1, 2, 2, 3][hl % 4];
+      location.seaM = location.line === 1 ? 20 + ((hl >>> 4) % 14) * 10 : location.line === 2 ? 200 + ((hl >>> 4) % 31) * 10 : 550 + ((hl >>> 4) % 96) * 10;
+      location.centerM = 800 + ((hl >>> 10) % 60) * 100;
+    } else if (kind === 'mountain') {
+      location.liftM = 50 + ((hl >>> 4) % 50) * 50;
+      location.centerM = 1000 + ((hl >>> 10) % 40) * 250;
+    } else {
+      location.centerM = 300 + ((hl >>> 4) % 58) * 100;
+    }
     hotels.push({
       id: `${d.id}-h${i + 1}`,
       name: `${pre} ${suf}${i > 3 ? ' ' + d.name.split(' ')[0] : ''}`,
@@ -123,6 +144,8 @@ for (const d of destinations) {
       district: district.name,
       stars,
       rating,
+      reviewCount,
+      location,
       boards,
       tags,
       attrs: [chdFree && 'chdFree', adultsOnly && 'adultsOnly', recommended && 'recommended', family && 'family'].filter(Boolean),
@@ -155,4 +178,28 @@ const boardLabels = {
 // Otel atributları (filtr/nişan açarları)
 const HOTEL_ATTRS = ['chdFree', 'adultsOnly', 'recommended', 'family'];
 
-module.exports = { destinations, hotels, tours, boardLabels, hash, ROOM_TYPES, HOTEL_ATTRS };
+// Otel qaydaları (DEMO, şablon): check-in/out saatı, uşaq siyasəti, ev heyvanı.
+// Real versiyada operator/otel feed-indən gəlməlidir — UI-da "operatordan dəqiqləşdirin" qeydi var.
+function hotelRules(h) {
+  const x = hash(h.id + ':rules');
+  return {
+    demo: true,
+    checkIn: ['14:00', '14:00', '15:00', '13:00'][x % 4],
+    checkOut: ['12:00', '12:00', '11:00', '10:00'][(x >>> 3) % 4],
+    children: h.attrs.includes('adultsOnly') ? 'adults_only' : h.attrs.includes('chdFree') ? 'chd_free' : 'welcome',
+    minAge: h.attrs.includes('adultsOnly') ? [16, 18][(x >>> 5) % 2] : null,
+    pets: ['no', 'no', 'on_request'][(x >>> 7) % 3],
+  };
+}
+
+// Əsas məsafə (m): dəniz → dənizə, dağ → kanata, şəhər → mərkəzə. Yoxdursa null.
+function keyDistance(loc) {
+  if (!loc) return null;
+  if (loc.kind === 'beach') return loc.seaM;
+  if (loc.kind === 'mountain') return loc.liftM;
+  return loc.centerM;
+}
+
+const hotelById = new Map(hotels.map((h) => [h.id, h]));
+
+module.exports = { destinations, hotels, tours, boardLabels, hash, ROOM_TYPES, HOTEL_ATTRS, hotelRules, keyDistance, hotelById, locationKind };

@@ -40,6 +40,14 @@ module.exports = {
     { maxAge: 17, hotel: 1, flight: 1 }, // 12+: böyük kimi
   ],
   defaultChildAge: 7,
+  // Reytinq sözləri (öz şkalamız, 1–10): ən yüksək həddən aşağıya yoxlanılır. Mətnlər UI-da i18n (rw_<key>).
+  // Reytinq və rəy sayı hələ DEMO-dur (real rəy mənbəyi qoşulmayıb) — UI-da "DEMO" işarəsi ilə göstərilir.
+  ratingWords: [
+    { min: 9, key: 'superb' }, // Möhtəşəm
+    { min: 8.5, key: 'excellent' }, // Əla
+    { min: 8, key: 'very_good' }, // Çox yaxşı
+    { min: 7, key: 'good' }, // Yaxşı
+  ],
   // Operator qiymətlərinin yaddaş keşi (dəq). "Yenilə" düyməsi keşi keçir.
   priceCacheMinutes: 30,
 };

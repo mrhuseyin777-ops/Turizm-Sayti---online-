@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurTap — necə işləyirik</title>
+  <meta name="description" content="TurTap necə işləyir: qiymətlər haradan gəlir, sıralama necədir, reklam siyasəti, saxta qıtlıq göstərmirik, demo məlumat və məxfilik.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="logo" href="/"><span class="logo-mark">✈</span><span>Tur<b>Tap</b></span></a>
+      <nav class="nav">
+        <a href="/" data-i18n="nav_search">Axtarış</a>
+        <a href="/flights.html" class="hide-sm" data-i18n="nav_flights">Aviabilet</a>
+        <a href="/cars.html" class="hide-sm" data-i18n="nav_cars">Avtomobil</a>
+        <a href="/b2b" class="hide-sm" data-i18n="nav_b2b">Agentliklər üçün (B2B)</a>
+        <a href="/how.html" class="active" aria-current="page" data-i18n="nav_how">Necə işləyirik</a>
+        <select id="currency" aria-label="Valyuta"></select>
+        <select id="lang" aria-label="Dil"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero how-hero">
+    <div class="container">
+      <h1 data-i18n="how_title">TurTap necə işləyir</h1>
+      <p data-i18n="how_sub"></p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="how-wrap">
+      <section class="panel how-sec" id="what"><h2 data-i18n="how_s1_t"></h2><p data-i18n="how_s1_d"></p></section>
+      <section class="panel how-sec" id="sources"><h2 data-i18n="how_s2_t"></h2><p data-i18n="how_s2_d"></p></section>
+      <section class="panel how-sec" id="ranking"><h2 data-i18n="how_s3_t"></h2><p data-i18n="how_s3_d"></p></section>
+      <section class="panel how-sec" id="sorts"><h2 data-i18n="how_s4_t"></h2><p data-i18n="how_s4_d"></p></section>
+      <section class="panel how-sec" id="ads"><h2 data-i18n="how_s5_t"></h2><p data-i18n="how_s5_d"></p></section>
+      <section class="panel how-sec" id="scarcity"><h2 data-i18n="how_s6_t"></h2><p data-i18n="how_s6_d"></p></section>
+      <section class="panel how-sec" id="demo"><h2 data-i18n="how_s7_t"></h2><p data-i18n="how_s7_d"></p></section>
+      <section class="panel how-sec" id="privacy"><h2 data-i18n="how_s8_t"></h2><p data-i18n="how_s8_d"></p></section>
+      <section class="panel how-sec" id="contact"><h2 data-i18n="how_s9_t"></h2><p data-i18n="how_s9_d"></p>
+        <div class="how-cta" style="margin-top:12px"><a class="btn primary sm" href="/" data-i18n="how_cta">Axtarışa keç</a><a class="btn secondary sm" href="/#homeCallback" data-i18n="how_cb"></a></div>
+      </section>
+      <div id="payStrip"></div>
+    </div>
+  </main>
+
+  <footer><div class="container">© <span id="year"></span> TurTap · <a href="/how.html" data-i18n="how_link">Necə işləyirik</a></div></footer>
+  <script src="/js/common.js"></script>
+  <script src="/js/how.js"></script>
+</body>
+</html>

@@ -439,6 +439,7 @@ function filterLabel(key) {
   const m = {
     minPrice: 'f_minprice', stars: 'stars', boards: 'board', earlyOnly: 'early_only', prepay: 'f_terms', freeCancel: 'f_free_cancel',
     lastMinute: 'f_lastmin_short', seatsOnly: 'f_seats', noStopSale: 'f_no_stop', instantOnly: 'f_instant', districts: 'f_district', hotels: 'f_hotel', attrs: 'attr_title',
+    minRating: 'f_minrating', beachLines: 'f_lines', maxDist: 'f_maxdist',
   };
   return t(m[key] || key);
 }
@@ -557,4 +558,123 @@ function bindRangeInputs({ from, to, nFrom, nTo }, limits) {
       fixDates(); fixNights();
     },
   };
+}
+
+// ---- Otel/tur P1: reytinq sözü + rəy sayı, məsafə/çimərlik xətti, otel detal pəncərəsi, "Necə işləyirik" ----
+Object.assign(I18N.az, {
+  rw_superb: 'Möhtəşəm', rw_excellent: 'Əla', rw_very_good: 'Çox yaxşı', rw_good: 'Yaxşı', reviews_n: '{n} rəy',
+  rating_demo_t: 'DEMO: reytinq və rəy sayı nümunədir. Real rəy mənbəyi qoşulduqdan sonra əvəz olunacaq.',
+  f_rating: 'Reytinq', f_any: 'İstənilən', rating_plus: '{n}+', f_location: 'Yerləşmə və məsafə', f_beach_line: 'Çimərlik xətti (dəniz kurortları)',
+  line_1: '1-ci xətt', line_2: '2-ci xətt', line_3: '3-cü xətt+', f_max_dist: 'Maks. məsafə (dəniz / kanat / mərkəz)', dist_upto: '≤ {d}',
+  sort_distance: 'Dənizə / mərkəzə ən yaxın', loc_sea: 'dənizə {d}', loc_center: 'mərkəzə {d}', loc_lift: 'kanata / ski liftinə {d}', loc_airport: 'hava limanına ~{d}',
+  loc_demo_t: 'DEMO: məsafələr təxminidir (nümunə məlumat).', col_location: 'Yerləşmə / məsafə', f_minrating: 'Reytinq həddi', f_lines: 'Çimərlik xətti', f_maxdist: 'Maks. məsafə',
+  hd_open: 'Otel haqqında və bütün otaqlar', hd_more: 'Otaqlar və qiymətlər', hd_rooms: 'Otaq tipləri, qidalanma və operator qiymətləri', hd_room: 'Otaq / yerləşmə', hd_board: 'Qidalanma',
+  hd_op: 'Operator', hd_dates: 'Tarix / gecə', hd_terms: 'Ödəniş və ləğv', hd_price: 'Qiymət', hd_amen: 'Olanaqlar', hd_dist: 'Məsafələr', hd_rules: 'Otel qaydaları',
+  hd_rules_note: 'DEMO: qaydalar nümunədir — rezervasiyadan əvvəl operatordan dəqiqləşdirin.', hd_checkin: 'Check-in', hd_checkin_v: '{t}-dan', hd_checkout: 'Check-out', hd_checkout_v: '{t}-dək',
+  hd_children: 'Uşaqlar', ch_welcome: 'Uşaqlar qəbul olunur', ch_chd_free: 'Uşaqlar qəbul olunur; CHD FREE — ilk 2–11 yaş uşaq otelə pulsuz (operatorun şərtinə görə)', ch_adults_only: 'Yalnız böyüklər ({n}+ yaş)',
+  hd_pets: 'Ev heyvanları', pets_no: 'Qəbul olunmur', pets_on_request: 'Sorğu ilə', hd_close: 'Bağla', hd_loading: 'Otelin bütün təklifləri yüklənir...',
+  hd_empty: 'Bu tarix və nəfər sayı üçün həmin oteldə təklif tapılmadı.', hd_desc_note: 'Təsvir şablon əsasında yaradılıb (DEMO) — otelin rəsmi təsviri deyil.', hd_rows: '{r} variant · {o} təklif · ucuzdan bahalıya',
+  hd_copy: 'Linki kopyala', hd_copied: 'Link kopyalandı', hd_cheapest: 'ən ucuz', hd_illus: 'Şəkillər illüstrasiyadır.',
+  desc_beach: '{name} — {dest} ({district}) ərazisində {stars} ulduzlu dəniz kənarı otel: {line}, dənizə təxminən {sea}.',
+  desc_city: '{name} — {dest} ({district}) ərazisində {stars} ulduzlu otel; şəhər mərkəzinə təxminən {center}.',
+  desc_mountain: '{name} — {dest} ({district}) ərazisində {stars} ulduzlu dağ oteli; kanata / ski liftinə təxminən {lift}.',
+  desc_boards: 'Operatorlarda qidalanma variantları: {b}.', desc_tags: 'Olanaqlar: {t}.',
+  how_link: 'Necə işləyirik', nav_how: 'Necə işləyirik', how_title: 'TurTap necə işləyir', how_sub: 'Qiymətləri haradan götürürük, necə sıralayırıq və nəyi etmirik — açıq şəkildə.',
+  how_s1_t: 'TurTap nədir?', how_s1_d: 'TurTap tur operatorlarının və otel mənbələrinin qiymətlərini bir axtarışda toplayan müqayisə platformasıdır. Biz bilet, tur və ya otel satmırıq və ödəniş qəbul etmirik: siz variant seçirsiniz, müraciətiniz operatora / agentliyə ötürülür və ya operatorun öz saytına keçirsiniz. Rezervasiya və ödəniş birbaşa operatorla aparılır.',
+  how_s2_t: 'Qiymətlər haradan gəlir və nə vaxt yoxlanılıb?', how_s2_d: 'Hər axtarışda qoşulmuş operatorlar paralel sorğulanır. Hər mənbənin yanında qiymətin nə vaxt yoxlanıldığı yazılır («X dəq əvvəl yoxlanılıb»). Cavablar ən çox 30 dəqiqə yaddaşda saxlanılır; «Yenilə» düyməsi operatorları yenidən soruşur. Operatorun saytında yekun qiymət fərqli ola bilər — rezervasiyanı operator təsdiqləyir.',
+  how_s3_t: '«Ən ucuz əvvəl» sıralaması', how_s3_d: 'Defolt sıralama yalnız qiymətə görədir: hər otel üçün bütün operatorların ən ucuz təklifi götürülür və otellər ucuzdan bahalıya düzülür. Kartda operatorlar da ucuzdan bahalıya alt-alta göstərilir; ən ucuz mənbə həmişə yaşıl rənglə vurğulanır, qalanlarının fərqi (+X) yazılır.',
+  how_s4_t: 'Digər sıralamalar və «Ən yaxşı» düsturu', how_s4_d: '«Reytinq» — əvvəl bal, sonra rəy sayı, sonra qiymət. «Dənizə / mərkəzə ən yaxın» — dəniz kurortunda dənizə, dağda kanata, şəhərdə mərkəzə məsafə. «Ulduz» və «Ən çox qənaət» (operatorlar arası fərq). Aviabiletdə «Ən yaxşı» = qiymət / ən ucuz qiymət + 0.7 × müddət / ən qısa müddət + 0.1 × aktarma sayı (kiçik bal daha yaxşıdır). İstənilən sıralamada ən ucuz variant ayrıca göstərilir.',
+  how_s5_t: 'Reklam və ödənişli yerləşdirmə', how_s5_d: 'Hazırda ödənişli yerləşdirmə yoxdur. Gələcəkdə olarsa, belə təklif həmişə «Reklam» nişanı ilə göstəriləcək və «Ən ucuz əvvəl» sıralamasına təsir etməyəcək — ən ucuz mənbə yenə birinci və vurğulanmış qalacaq.',
+  how_s6_t: 'Saxta qıtlıq göstərmirik', how_s6_d: '«Son 1 otaq qaldı!», «İndi 25 nəfər baxır», geri sayan saatlar kimi təzyiq yaradan mesajlar göstərmirik. Yer statusu (çox / az / sorğu ilə / stop-sale) yalnız operatorun cavabında gələn məlumatdır.',
+  how_s7_t: 'Demo məlumat bəyanatı', how_s7_d: 'Bu versiyada qiymətlər, reytinq və rəy sayı, məsafələr, otel təsvirləri, qaydalar və şəkillər nümunə (DEMO) məlumatdır və «DEMO» işarəsi ilə göstərilir. Otel adları uydurmadır. Real operator inteqrasiyası qoşulduqca bu məlumatlar operatorların rəsmi API / feed-ləri ilə əvəz olunacaq.',
+  how_s8_t: 'Məxfilik — qısa xülasə', how_s8_d: 'Yalnız müraciət üçün lazım olanı toplayırıq: ad, telefon və (istəsəniz) qeyd — menecer sizinlə əlaqə saxlasın deyə. Ödəniş və kart məlumatı toplamırıq. Axtarış parametrləri yalnız nəticəni göstərmək üçün istifadə olunur; dil və valyuta seçimi brauzerinizdə saxlanılır. Məlumatlarınızı satmırıq.',
+  how_s9_t: 'Əlaqə', how_s9_d: 'Sualınız və ya təklifiniz varsa, ana səhifədəki «Sizə zəng edək» formasından istifadə edin — menecer sizinlə əlaqə saxlayacaq. Agentliklər üçün: B2B bölməsi.',
+  how_cta: 'Axtarışa keç', how_cb: '«Sizə zəng edək» forması',
+});
+Object.assign(I18N.en, {
+  rw_superb: 'Superb', rw_excellent: 'Excellent', rw_very_good: 'Very good', rw_good: 'Good', reviews_n: '{n} reviews',
+  rating_demo_t: 'DEMO: rating and review count are sample data and will be replaced once a real review source is connected.',
+  f_rating: 'Rating', f_any: 'Any', rating_plus: '{n}+', f_location: 'Location & distance', f_beach_line: 'Beach line (seaside resorts)',
+  line_1: '1st line', line_2: '2nd line', line_3: '3rd line+', f_max_dist: 'Max distance (sea / lift / centre)', dist_upto: '≤ {d}',
+  sort_distance: 'Closest to sea / centre', loc_sea: '{d} to the sea', loc_center: '{d} to the centre', loc_lift: '{d} to the lift', loc_airport: '~{d} to the airport',
+  loc_demo_t: 'DEMO: distances are approximate (sample data).', col_location: 'Location / distance', f_minrating: 'Minimum rating', f_lines: 'Beach line', f_maxdist: 'Max distance',
+  hd_open: 'Hotel details and all rooms', hd_more: 'Rooms & prices', hd_rooms: 'Room types, board and operator prices', hd_room: 'Room / occupancy', hd_board: 'Board',
+  hd_op: 'Operator', hd_dates: 'Date / nights', hd_terms: 'Payment & cancellation', hd_price: 'Price', hd_amen: 'Facilities', hd_dist: 'Distances', hd_rules: 'House rules',
+  hd_rules_note: 'DEMO: rules are illustrative — please confirm with the operator before booking.', hd_checkin: 'Check-in', hd_checkin_v: 'from {t}', hd_checkout: 'Check-out', hd_checkout_v: 'until {t}',
+  hd_children: 'Children', ch_welcome: 'Children welcome', ch_chd_free: 'Children welcome; CHD FREE — first child aged 2–11 stays free (per operator terms)', ch_adults_only: 'Adults only ({n}+)',
+  hd_pets: 'Pets', pets_no: 'Not allowed', pets_on_request: 'On request', hd_close: 'Close', hd_loading: 'Loading all offers for this hotel...',
+  hd_empty: 'No offers for this hotel with these dates and guests.', hd_desc_note: 'Description generated from a template (DEMO) — not the hotel’s official text.', hd_rows: '{r} options · {o} offers · cheapest first',
+  hd_copy: 'Copy link', hd_copied: 'Link copied', hd_cheapest: 'cheapest', hd_illus: 'Images are illustrations.',
+  desc_beach: '{name} is a {stars}-star seaside hotel in {dest} ({district}): {line}, about {sea} to the sea.',
+  desc_city: '{name} is a {stars}-star hotel in {dest} ({district}), about {center} from the city centre.',
+  desc_mountain: '{name} is a {stars}-star mountain hotel in {dest} ({district}), about {lift} from the lift.',
+  desc_boards: 'Board options with operators: {b}.', desc_tags: 'Facilities: {t}.',
+  how_link: 'How we work', nav_how: 'How we work', how_title: 'How TurTap works', how_sub: 'Where prices come from, how we rank them and what we never do — in plain words.',
+  how_s1_t: 'What is TurTap?', how_s1_d: 'TurTap is a comparison platform that gathers prices from tour operators and hotel sources in one search. We do not sell tickets, tours or hotels and we do not take payments: you choose an option, and your request is passed to the operator / agency or you continue on the operator’s own website. Booking and payment happen directly with the operator.',
+  how_s2_t: 'Where do prices come from and when were they checked?', how_s2_d: 'Each search queries the connected operators in parallel. Every source shows when its price was checked (“checked X min ago”). Responses are cached for at most 30 minutes; the “Refresh” button asks the operators again. The final price on the operator’s site may differ — the operator confirms the booking.',
+  how_s3_t: '“Cheapest first” ranking', how_s3_d: 'The default ranking is by price only: for every hotel we take the cheapest offer across all operators and list hotels from cheapest to most expensive. On each card operators are also listed cheapest first; the cheapest source is always highlighted in green and the others show the difference (+X).',
+  how_s4_t: 'Other sort orders and the “Best” formula', how_s4_d: '“Rating” — score first, then review count, then price. “Closest to sea / centre” — distance to the sea at seaside resorts, to the lift in the mountains, to the centre in cities. “Stars” and “Biggest savings” (difference between operators). For flights, “Best” = price / cheapest price + 0.7 × duration / shortest duration + 0.1 × number of stops (lower is better). Whatever the order, the cheapest option is always shown separately.',
+  how_s5_t: 'Advertising and paid placement', how_s5_d: 'There is no paid placement today. If there ever is, such offers will always carry an “Ad” label and will not affect the “Cheapest first” ranking — the cheapest source stays first and highlighted.',
+  how_s6_t: 'No fake scarcity', how_s6_d: 'We do not show pressure messages like “Only 1 room left!”, “25 people are looking now” or countdown timers. Availability (many / few / on request / stop-sale) is shown only as returned by the operator.',
+  how_s7_t: 'Demo data disclaimer', how_s7_d: 'In this version, prices, ratings and review counts, distances, hotel descriptions, rules and images are sample (DEMO) data and are marked “DEMO”. Hotel names are fictional. As real operator integrations are connected, this data will be replaced by the operators’ official APIs / feeds.',
+  how_s8_t: 'Privacy in short', how_s8_d: 'We only collect what a request needs: your name, phone and (optionally) a note, so a manager can contact you. We do not collect payment or card details. Search parameters are used only to show results; your language and currency choice is stored in your browser. We do not sell your data.',
+  how_s9_t: 'Contact', how_s9_d: 'Questions or suggestions? Use the “Request a call back” form on the home page and a manager will contact you. For agencies: the B2B section.',
+  how_cta: 'Go to search', how_cb: '“Request a call back” form',
+});
+Object.assign(I18N.ru, {
+  rw_superb: 'Превосходно', rw_excellent: 'Отлично', rw_very_good: 'Очень хорошо', rw_good: 'Хорошо', reviews_n: '{n} отзывов',
+  rating_demo_t: 'ДЕМО: рейтинг и число отзывов — пример. Будут заменены после подключения реального источника отзывов.',
+  f_rating: 'Рейтинг', f_any: 'Любой', rating_plus: '{n}+', f_location: 'Расположение и расстояние', f_beach_line: 'Пляжная линия (морские курорты)',
+  line_1: '1-я линия', line_2: '2-я линия', line_3: '3-я линия+', f_max_dist: 'Макс. расстояние (море / подъёмник / центр)', dist_upto: '≤ {d}',
+  sort_distance: 'Ближе к морю / центру', loc_sea: 'до моря {d}', loc_center: 'до центра {d}', loc_lift: 'до подъёмника {d}', loc_airport: 'до аэропорта ~{d}',
+  loc_demo_t: 'ДЕМО: расстояния приблизительные (пример).', col_location: 'Расположение / расстояние', f_minrating: 'Мин. рейтинг', f_lines: 'Пляжная линия', f_maxdist: 'Макс. расстояние',
+  hd_open: 'Об отеле и все номера', hd_more: 'Номера и цены', hd_rooms: 'Типы номеров, питание и цены операторов', hd_room: 'Номер / размещение', hd_board: 'Питание',
+  hd_op: 'Оператор', hd_dates: 'Дата / ночей', hd_terms: 'Оплата и отмена', hd_price: 'Цена', hd_amen: 'Удобства', hd_dist: 'Расстояния', hd_rules: 'Правила отеля',
+  hd_rules_note: 'ДЕМО: правила для примера — уточняйте у оператора до бронирования.', hd_checkin: 'Заезд', hd_checkin_v: 'с {t}', hd_checkout: 'Выезд', hd_checkout_v: 'до {t}',
+  hd_children: 'Дети', ch_welcome: 'Дети принимаются', ch_chd_free: 'Дети принимаются; CHD FREE — первый ребёнок 2–11 лет бесплатно (по условиям оператора)', ch_adults_only: 'Только для взрослых ({n}+)',
+  hd_pets: 'Животные', pets_no: 'Не допускаются', pets_on_request: 'По запросу', hd_close: 'Закрыть', hd_loading: 'Загружаем все предложения отеля...',
+  hd_empty: 'Для этого отеля нет предложений на эти даты и состав.', hd_desc_note: 'Описание создано по шаблону (ДЕМО) — это не официальный текст отеля.', hd_rows: '{r} вариантов · {o} предложений · от дешёвых к дорогим',
+  hd_copy: 'Копировать ссылку', hd_copied: 'Ссылка скопирована', hd_cheapest: 'дешевле всех', hd_illus: 'Изображения — иллюстрации.',
+  desc_beach: '{name} — отель {stars}* у моря, {dest} ({district}): {line}, до моря около {sea}.',
+  desc_city: '{name} — отель {stars}*, {dest} ({district}); до центра около {center}.',
+  desc_mountain: '{name} — горный отель {stars}*, {dest} ({district}); до подъёмника около {lift}.',
+  desc_boards: 'Варианты питания у операторов: {b}.', desc_tags: 'Удобства: {t}.',
+  how_link: 'Как мы работаем', nav_how: 'Как мы работаем', how_title: 'Как работает TurTap', how_sub: 'Откуда цены, как мы их сортируем и чего никогда не делаем — открыто.',
+  how_s1_t: 'Что такое TurTap?', how_s1_d: 'TurTap — платформа сравнения, которая собирает цены туроператоров и отельных источников в одном поиске. Мы не продаём билеты, туры или отели и не принимаем оплату: вы выбираете вариант, ваша заявка передаётся оператору / агентству или вы переходите на сайт оператора. Бронирование и оплата — напрямую с оператором.',
+  how_s2_t: 'Откуда цены и когда они проверены?', how_s2_d: 'При каждом поиске подключённые операторы опрашиваются параллельно. Рядом с каждым источником указано, когда проверена цена («проверено X мин назад»). Ответы хранятся в кэше не дольше 30 минут; кнопка «Обновить» опрашивает операторов заново. Итоговая цена на сайте оператора может отличаться — бронирование подтверждает оператор.',
+  how_s3_t: 'Сортировка «Сначала дешёвые»', how_s3_d: 'Сортировка по умолчанию — только по цене: для каждого отеля берётся самое дешёвое предложение среди всех операторов, отели идут от дешёвых к дорогим. В карточке операторы тоже идут от дешёвых к дорогим; самый дешёвый источник всегда выделен зелёным, у остальных указана разница (+X).',
+  how_s4_t: 'Другие сортировки и формула «Лучшие»', how_s4_d: '«Рейтинг» — сначала оценка, затем число отзывов, затем цена. «Ближе к морю / центру» — расстояние до моря на морских курортах, до подъёмника в горах, до центра в городах. «Звёзды» и «Макс. экономия» (разница между операторами). В авиабилетах «Лучшие» = цена / минимальная цена + 0.7 × длительность / минимальная длительность + 0.1 × число пересадок (меньше — лучше). При любой сортировке самый дешёвый вариант показывается отдельно.',
+  how_s5_t: 'Реклама и платное размещение', how_s5_d: 'Сейчас платного размещения нет. Если оно появится, такие предложения всегда будут с пометкой «Реклама» и не повлияют на сортировку «Сначала дешёвые» — самый дешёвый источник останется первым и выделенным.',
+  how_s6_t: 'Без искусственного дефицита', how_s6_d: 'Мы не показываем давящие сообщения вроде «Остался 1 номер!», «Сейчас смотрят 25 человек» или таймеры обратного отсчёта. Наличие мест (много / мало / под запрос / стоп-продажа) показывается только так, как его передал оператор.',
+  how_s7_t: 'Демо-данные', how_s7_d: 'В этой версии цены, рейтинг и число отзывов, расстояния, описания отелей, правила и изображения — пример (ДЕМО) и помечены «ДЕМО». Названия отелей вымышлены. По мере подключения операторов эти данные будут заменены официальными API / фидами операторов.',
+  how_s8_t: 'Коротко о конфиденциальности', how_s8_d: 'Мы собираем только то, что нужно для заявки: имя, телефон и (по желанию) комментарий, чтобы менеджер мог с вами связаться. Платёжные и карточные данные мы не собираем. Параметры поиска используются только для показа результатов; язык и валюта хранятся в вашем браузере. Мы не продаём ваши данные.',
+  how_s9_t: 'Контакты', how_s9_d: 'Есть вопрос или предложение? Воспользуйтесь формой «Перезвоним вам» на главной странице — менеджер свяжется с вами. Для агентств: раздел B2B.',
+  how_cta: 'Перейти к поиску', how_cb: 'Форма «Перезвоним вам»',
+});
+
+// Reytinq: "Möhtəşəm 9.2 · 1 240 rəy" + kiçik DEMO etiketi (tooltip). Söz açarı serverdən (ratingWord).
+const fmtInt = (n) => Number(n).toLocaleString('en-US').replace(/,/g, ' ');
+function ratingText(o) {
+  if (!o || o.rating == null) return '';
+  const word = o.ratingWord ? t('rw_' + o.ratingWord) + ' ' : '';
+  return `${word}${o.rating}${o.reviewCount ? ' · ' + t('reviews_n', { n: fmtInt(o.reviewCount) }) : ''}`;
+}
+function ratingHtml(o) {
+  if (!o || o.rating == null) return '';
+  return `<span class="badge rating" title="${esc(t('rating_demo_t'))}">${o.ratingWord ? `<b>${esc(t('rw_' + o.ratingWord))}</b> ` : ''}${esc(o.rating)}${o.reviewCount ? ` <span class="rv">· ${esc(t('reviews_n', { n: fmtInt(o.reviewCount) }))}</span>` : ''} <span class="demo-tag">demo</span></span>`;
+}
+// Məsafə: <1000 m → "120 m", əks halda "2.4 km"
+const distText = (m) => (m == null ? '' : m < 1000 ? `${Math.round(m)} m` : `${Math.round(m / 100) / 10} km`);
+// Əsas məsafə (server keyDistance ilə eyni): dəniz → dənizə, dağ → kanata, şəhər → mərkəzə
+const keyDist = (loc) => (!loc ? null : loc.kind === 'beach' ? loc.seaM : loc.kind === 'mountain' ? loc.liftM : loc.centerM);
+function locationText(loc) {
+  if (!loc) return '';
+  if (loc.kind === 'beach') return `${loc.line ? t('line_' + Math.min(3, loc.line)) + ' · ' : ''}${t('loc_sea', { d: distText(loc.seaM) })}`;
+  if (loc.kind === 'mountain') return t('loc_lift', { d: distText(loc.liftM) });
+  return t('loc_center', { d: distText(loc.centerM) });
+}
+function locationBadge(loc) {
+  if (!loc) return '';
+  const icon = loc.kind === 'beach' ? '🏖' : loc.kind === 'mountain' ? '🚡' : '📍';
+  return `<span class="badge loc loc-${esc(loc.kind)}${loc.line === 1 ? ' line1' : ''}" title="${esc(t('loc_demo_t'))}">${icon} ${esc(locationText(loc))}</span>`;
 }

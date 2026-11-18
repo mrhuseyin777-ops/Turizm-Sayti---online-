@@ -121,6 +121,7 @@
       providers: checked('providers'), earlyOnly: $('#earlyOnly').checked ? '1' : '', sort: $('#sort').value, currency: state.currency,
       prepay: checked('prepay'), freeCancel: $('#freeCancel').checked ? '1' : '', lastMinute: $('#lastMinuteOnly').checked ? '1' : '',
       districts: msValue(districtMs).join(','), hotels: msValue(hotelMs).join(','), attrs: checked('attrs'),
+      minRating: checked('minRating'), beachLines: checked('beachLines'), maxDist: $('#maxDist').value,
       seatsOnly: $('#seatsOnly').checked ? '1' : '', noStopSale: $('#noStopSale').checked ? '1' : '0', instantOnly: $('#instantOnly').checked ? '1' : '',
       view: state.view === 'table' ? 'table' : '',
     };
@@ -199,11 +200,12 @@
       return `<article class="card">
         <div class="img" data-gslot="${i}" style="background:${gradFor(g.itemId)}"><span class="rank">#${i + 1}</span><span class="img-cap">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}, ${esc(g.destination.country)}</span></div>
         <div class="body">
-          <h3>${esc(g.name)} <span class="stars">${starStr(g.stars)}</span></h3>
+          <h3>${g.itemType === 'hotel' ? `<button type="button" class="hd-link" data-hotel="${i}" title="${esc(t('hd_open'))}">${esc(g.name)}</button>` : esc(g.name)} <span class="stars">${starStr(g.stars)}</span></h3>
           <div class="muted" style="font-size:14px">${fmtDate(b.checkIn)} · ${esc(t('nights_n', { n: b.nights }))}${b.boardLabel ? ' · ' + esc(b.boardLabel) : ''}${g.includesFlight ? ' · ✈ ' + esc(t('flight_incl')) : ''}</div>
           <div class="offer-meta">${b.room || b.accommodation ? `<span>🛏 ${esc(roomText(b))}</span>` : ''}${b.flight ? `<span>${esc(flightText(b))}</span>` : ''}${b.tourName ? `<span class="muted">${esc(b.tourName)}</span>` : ''}</div>
           <div class="badges">
-            ${g.rating ? `<span class="badge rating">${esc(g.rating)}</span>` : ''}
+            ${ratingHtml(g)}
+            ${locationBadge(g.location)}
             ${attrBadges(g.attrs)}
             ${b.priceType && b.priceType !== 'STD' ? `<span class="badge ${b.priceType === 'EB' ? 'early' : 'spo'}">${esc(priceTypeText(b))}</span>` : ''}
             ${b.lastMinute ? `<span class="badge hot">${esc(t('lastmin_badge'))}</span>` : ''}
@@ -231,6 +233,7 @@
             ${planHtml(b.plan, cur)}
           </div>
           <button class="btn sm" data-book="${i}">${esc(t('book'))}</button>
+          ${g.itemType === 'hotel' ? `<button type="button" class="btn secondary sm" data-hotel="${i}">${esc(t('hd_more'))}</button>` : ''}
           ${opLinkHtml(b)}
           <a style="font-size:13px" href="/cars.html?loc=${encodeURIComponent(g.destination.id)}&amp;from=${esc(b.checkIn)}&amp;to=${new Date(Date.parse(b.checkIn) + Math.max(1, b.nights) * 864e5).toISOString().slice(0, 10)}">🚗 Maşın əlavə et</a>
         </div>
@@ -268,7 +271,7 @@
         <td>${esc(fmtDate(o.checkIn))}${o.flight ? `<br><small class="muted">✈ ${esc(o.flight.out.time)} · ${esc(t('cls_' + o.flight.cls))}</small>` : ''}</td>
         <td class="wrap"><small>${esc(o.tourName || '')}</small></td>
         <td class="num">${esc(o.nights)}</td>
-        <td class="wrap"><b>${esc(o.name)}</b> <span class="stars">${starStr(o.stars)}</span>${o.district ? `<br><small class="muted">(${esc(o.district)})</small>` : ''}<div class="badges tight">${attrBadges(o.attrs)}</div></td>
+        <td class="wrap"><b>${esc(o.name)}</b> <span class="stars">${starStr(o.stars)}</span>${o.district ? `<br><small class="muted">(${esc(o.district)})</small>` : ''}<div class="badges tight">${attrBadges(o.attrs)}${locationBadge(o.location)}</div>${o.rating != null ? `<small class="muted">${esc(ratingText(o))}</small>` : ''}</td>
         <td>${seatsHtml(o)}</td>
         <td>${esc(o.board || '—')}</td>
         <td class="wrap"><small>${esc(roomText(o))}</small></td>
@@ -346,6 +349,9 @@
       case 'freeCancel': $('#freeCancel').checked = false; break;
       case 'lastMinute': $('#lastMinuteOnly').checked = false; break;
       case 'seatsOnly': case 'noStopSale': case 'instantOnly': $('#' + key).checked = false; break;
+      case 'minRating': $('#ratingFilter input[value=""]').checked = true; break;
+      case 'beachLines': uncheck('beachLines'); break;
+      case 'maxDist': $('#maxDist').value = ''; break;
       case 'districts': msSetSelected(districtMs, []); break;
       case 'hotels': msSetSelected(hotelMs, []); break;
       default: break;
@@ -354,7 +360,7 @@
   }
 
   function openLead(g, offer) {
-    const cur = state.last.query.currency;
+    const cur = offer.currency || state.last.query.currency;
     $('#modalBody').innerHTML = `
       <h3>${esc(t('lead_title'))}: ${esc(g.name)}</h3>
       <table>${g.providers.map((o) => `<tr><td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td><td>${fmtDate(o.checkIn)}</td><td>${esc(o.board || '')}</td><td style="text-align:right"><b>${money(o.price, cur)}</b></td></tr>`).join('')}</table>
@@ -398,6 +404,8 @@
       if (!open) op.setAttribute('aria-expanded', 'true');
       return;
     }
+    const hb = e.target.closest('[data-hotel]');
+    if (hb) { const g = state.last.groups[+hb.dataset.hotel]; if (g) openHotel(g.itemId, hb); return; }
     const row = e.target.closest('[data-book-row]');
     if (row) {
       const o = state.tableRows[+row.dataset.bookRow];
@@ -410,6 +418,158 @@
     openLead(g, g.best);
   });
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) $('#modal').classList.remove('open'); });
+
+  // ---- Otel detal pəncərəsi: qalereya, təsvir (şablon, DEMO), olanaqlar, məsafələr, reytinq, qaydalar və
+  // otaq tipi × qidalanma × operator qiymət cədvəli (GET /api/hotels/:id/offers — eyni axtarış parametrləri ilə).
+  // A11y: role=dialog + aria-modal, Esc ilə bağlanır, Tab fokusu pəncərə daxilində saxlayır, bağlananda fokus geri qayıdır.
+  const hd = { open: false, id: null, data: null, seq: 0, opener: null };
+  const hdModal = $('#hotelModal');
+  const hdBody = $('#hotelModalBody');
+  // Sorğu: son axtarışın parametrləri (server cavabındakı normallaşdırılmış dəyərlər), yoxdursa formadan
+  function hotelQuery() {
+    const q = state.last && state.last.query && !state.last.destinations ? state.last.query : null;
+    if (q) {
+      return {
+        type: q.type === 'tour' ? 'hotel' : q.type, checkIn: q.dateFrom, checkInTo: q.dateTo, nights: q.nightsFrom, nightsTo: q.nightsTo, adults: q.adults,
+        childAges: (q.childAges || []).filter((a) => a != null).join(','), children: String(q.children || 0), currency: q.currency, providers: (q.providers || []).join(','), noStopSale: q.noStopSale ? '1' : '',
+      };
+    }
+    const p = params();
+    return { type: p.type === 'tour' ? 'hotel' : p.type, checkIn: p.checkIn, checkInTo: p.checkInTo, nights: p.nights, nightsTo: p.nightsTo, adults: p.adults, children: p.children, childAges: p.childAges, currency: p.currency, noStopSale: p.noStopSale };
+  }
+  function setHotelUrl(id) {
+    try {
+      const url = new URL(location.href);
+      if (id) url.searchParams.set('hotel', id); else url.searchParams.delete('hotel');
+      history.replaceState(null, '', url.pathname + url.search);
+    } catch { /* köhnə brauzer */ }
+  }
+  const hdFocusables = () => [...hdBody.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => x.offsetParent !== null);
+  const hdHead = (title) => `<div class="hd-head"><h3 id="hdTitle">${esc(title)}</h3><button type="button" class="hd-x" data-hd-close aria-label="${esc(t('hd_close'))}">✕</button></div>`;
+  async function openHotel(id, opener) {
+    if (!/^[a-z0-9-]{1,40}$/.test(id || '')) return;
+    if (!hd.open) hd.opener = opener || document.activeElement;
+    hd.open = true; hd.id = id; hd.data = null;
+    const seq = ++hd.seq;
+    setHotelUrl(id);
+    hdBody.innerHTML = `${hdHead(t('hd_loading'))}<div class="spinner"></div>`;
+    hdModal.classList.add('open');
+    document.body.classList.add('no-scroll');
+    hdBody.querySelector('[data-hd-close]').focus();
+    try {
+      const data = await api(`/api/hotels/${encodeURIComponent(id)}/offers`, hotelQuery());
+      if (seq !== hd.seq || !hd.open) return;
+      hd.data = data;
+      renderHotel(data);
+      hdBody.querySelector('[data-hd-close]').focus();
+    } catch (err) {
+      if (seq !== hd.seq || !hd.open) return;
+      hdBody.innerHTML = hdHead(err.message);
+      hdBody.querySelector('[data-hd-close]').focus();
+    }
+  }
+  function closeHotel() {
+    if (!hd.open) return;
+    hd.open = false; hd.data = null; hd.seq++;
+    hdModal.classList.remove('open');
+    document.body.classList.remove('no-scroll');
+    hdBody.innerHTML = '';
+    setHotelUrl(null);
+    const back = hd.opener; hd.opener = null;
+    if (back && back.isConnected && typeof back.focus === 'function') back.focus();
+  }
+  // Təsvir: şablon əsasında (real otel iddiası yoxdur) — "DEMO" qeydi ilə
+  function hotelDescription(h, rows) {
+    const loc = h.location || {};
+    const vars = {
+      name: h.name, dest: h.destination.name, district: h.district || h.destination.name, stars: h.stars, line: loc.line ? t('line_' + Math.min(3, loc.line)) : '',
+      sea: distText(loc.seaM), center: distText(loc.centerM), lift: distText(loc.liftM),
+    };
+    const parts = [t(loc.kind === 'beach' ? 'desc_beach' : loc.kind === 'mountain' ? 'desc_mountain' : 'desc_city', vars)];
+    const boards = [...new Set((rows.length ? rows.map((r) => r.board) : h.boards || []).filter(Boolean))];
+    if (boards.length) parts.push(t('desc_boards', { b: boards.map((b) => `${cfg.boards[b] || b} (${b})`).join(', ') }));
+    if (h.tags && h.tags.length) parts.push(t('desc_tags', { t: h.tags.join(', ') }));
+    return parts.join(' ');
+  }
+  function renderHotel(data) {
+    const h = data.hotel;
+    const rows = data.rows || [];
+    const cur = data.query.currency;
+    const loc = h.location || {};
+    const r = h.rules || {};
+    const dl = (pairs) => `<dl class="hd-dl">${pairs.filter(([, v]) => v).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+    const dists = [
+      ['🏖', loc.seaM != null ? t('loc_sea', { d: distText(loc.seaM) }) + (loc.line ? ` (${t('line_' + Math.min(3, loc.line))})` : '') : ''],
+      ['🚡', loc.liftM != null ? t('loc_lift', { d: distText(loc.liftM) }) : ''],
+      ['📍', loc.centerM != null ? t('loc_center', { d: distText(loc.centerM) }) : ''],
+      ['✈', loc.airportKm != null ? t('loc_airport', { d: `${loc.airportKm} km` }) : ''],
+    ].filter(([, v]) => v);
+    const childText = r.children === 'adults_only' ? t('ch_adults_only', { n: r.minAge || 18 }) : t('ch_' + (r.children || 'welcome'));
+    const min = rows.length ? rows[0].price : 0;
+    hdBody.innerHTML = `
+      <div class="hd-head">
+        <div><h3 id="hdTitle">${esc(h.name)} <span class="stars">${starStr(h.stars)}</span></h3>
+          <div class="muted hd-sub">${esc(h.destination.name)}${h.district ? ' · ' + esc(h.district) : ''}, ${esc(h.destination.country)}</div></div>
+        <button type="button" class="hd-x" data-hd-close aria-label="${esc(t('hd_close'))}">✕</button>
+      </div>
+      <div class="hd-top">
+        <div class="hd-gallery" style="background:${gradFor(h.id)}"></div>
+        <div class="hd-info">
+          <div class="badges">${ratingHtml(h)}${locationBadge(loc)}${attrBadges(h.attrs)}</div>
+          <p class="hd-desc">${esc(hotelDescription(h, rows))}</p>
+          <small class="muted">${esc(t('hd_desc_note'))} ${esc(t('hd_illus'))}</small>
+          ${h.tags && h.tags.length ? `<h4>${esc(t('hd_amen'))}</h4><div class="badges">${h.tags.map((x) => `<span class="badge">${esc(x)}</span>`).join('')}</div>` : ''}
+          ${dists.length ? `<h4>${esc(t('hd_dist'))} <span class="demo-tag" title="${esc(t('loc_demo_t'))}">demo</span></h4><ul class="hd-dists">${dists.map(([i, v]) => `<li><span aria-hidden="true">${i}</span> ${esc(v)}</li>`).join('')}</ul>` : ''}
+        </div>
+      </div>
+      <h4 class="hd-rooms-title">${esc(t('hd_rooms'))}</h4>
+      ${data.stats ? `<p class="muted hd-count">${esc(t('hd_rows', { r: data.stats.rows, o: data.stats.offers }))}</p>` : ''}
+      ${rows.length ? `<div class="hd-table-wrap"><table class="hd-table"><thead><tr>
+          <th>${esc(t('hd_room'))}</th><th>${esc(t('hd_board'))}</th><th>${esc(t('hd_op'))}</th><th>${esc(t('hd_dates'))}</th><th>${esc(t('hd_terms'))}</th><th class="num">${esc(t('hd_price'))}</th><th></th></tr></thead><tbody>
+        ${rows.map((o, j) => `<tr class="${j === 0 ? 'best' : ''}">
+          <td data-label="${esc(t('hd_room'))}"><div class="hd-v">${esc(roomText(o))}</div></td>
+          <td data-label="${esc(t('hd_board'))}"><div class="hd-v"><b>${esc(o.board || '—')}</b>${o.boardLabel ? ` <small class="muted">${esc(o.boardLabel)}</small>` : ''}</div></td>
+          <td data-label="${esc(t('hd_op'))}"><div class="hd-v"><span class="dot" style="background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</div></td>
+          <td data-label="${esc(t('hd_dates'))}"><div class="hd-v">${esc(fmtDate(o.checkIn))} · ${esc(t('nights_n', { n: o.nights }))}${o.flight ? `<br><small class="muted">${esc(flightText(o))}</small>` : ''}</div></td>
+          <td data-label="${esc(t('hd_terms'))}"><div class="hd-v"><div class="badges tight">${termBadges(o) || '—'}</div>${seatsHtml(o)}</div></td>
+          <td data-label="${esc(t('hd_price'))}" class="num"><div class="hd-v"><b>${money(o.price, cur)}</b><br><small class="${j === 0 ? 'good' : 'muted'}">${j === 0 ? esc(t('hd_cheapest')) : '+' + money(o.price - min, cur)}</small></div></td>
+          <td class="hd-act"><div class="hd-act-in"><button type="button" class="btn sm" data-hd-book="${j}">${esc(t('book'))}</button>${opLinkHtml(o)}</div></td>
+        </tr>`).join('')}</tbody></table></div>` : `<div class="panel empty">${esc(t('hd_empty'))}</div>`}
+      <h4>${esc(t('hd_rules'))}</h4>
+      ${dl([[t('hd_checkin'), r.checkIn ? t('hd_checkin_v', { t: r.checkIn }) : ''], [t('hd_checkout'), r.checkOut ? t('hd_checkout_v', { t: r.checkOut }) : ''],
+        [t('hd_children'), childText], [t('hd_pets'), r.pets ? t('pets_' + r.pets) : '']])}
+      <p class="demo-note">${esc(t('hd_rules_note'))}</p>
+      <div class="hd-foot"><button type="button" class="btn secondary sm" data-hd-copy>${esc(t('hd_copy'))}</button><button type="button" class="btn secondary sm" data-hd-close>${esc(t('hd_close'))}</button></div>`;
+    const gEl = hdBody.querySelector('.hd-gallery');
+    if (window.mountGallery) window.mountGallery(gEl, { id: h.id, destinationId: h.destinationId, region: h.destination.region, stars: h.stars, tags: h.tags, name: h.name, images: h.images }, { eager: true });
+  }
+  hdModal.addEventListener('click', async (e) => {
+    if (e.target === hdModal || e.target.closest('[data-hd-close]')) { closeHotel(); return; }
+    if (e.target.closest('[data-hd-copy]')) {
+      try { await navigator.clipboard.writeText(location.href); toast(t('hd_copied')); } catch { toast(location.href); }
+      return;
+    }
+    const bk = e.target.closest('[data-hd-book]');
+    if (bk && hd.data) {
+      const o = hd.data.rows[+bk.dataset.hdBook];
+      if (!o) return;
+      const same = hd.data.rows.filter((x) => x.room === o.room && x.board === o.board);
+      const g = { name: hd.data.hotel.name, providers: same };
+      closeHotel();
+      openLead(g, o);
+    }
+  });
+  hdModal.addEventListener('keydown', (e) => {
+    if (!hd.open) return;
+    if (e.key === 'Escape') { e.preventDefault(); closeHotel(); return; }
+    if (e.key !== 'Tab') return;
+    const f = hdFocusables();
+    if (!f.length) { e.preventDefault(); return; }
+    const first = f[0]; const last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !hdBody.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !hdBody.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
+  document.addEventListener('langchange', () => { if (hd.open && hd.data) renderHotel(hd.data); });
 
   // URL-dən axtarışı bərpa et (paylaşılan link)
   const u = new URLSearchParams(location.search);
@@ -430,12 +590,18 @@
     if (['none', 'upto50'].includes(u.get('prepay'))) $(`#filters input[name="prepay"][value="${u.get('prepay')}"]`).checked = true;
     if (['package', 'hotel', 'tour'].includes(u.get('type'))) setType(u.get('type'));
     if (u.get('view') === 'table') { state.view = 'table'; syncView(); }
+    if (/^(7|8|8\.5|9)$/.test(u.get('minRating') || '')) $(`#ratingFilter input[value="${u.get('minRating')}"]`).checked = true;
+    for (const l of (u.get('beachLines') || '').split(',')) { const el = $(`#filters input[name="beachLines"][value="${['1', '2', '3'].includes(l) ? l : '-'}"]`); if (el) el.checked = true; }
+    if ([...$('#maxDist').options].some((o) => o.value && o.value === u.get('maxDist'))) $('#maxDist').value = u.get('maxDist');
+    if ([...$('#sort').options].some((o) => o.value === u.get('sort'))) $('#sort').value = u.get('sort');
     const idList = (k, re) => (u.get(k) || '').split(',').filter((x) => re.test(x)).slice(0, 60);
     state.facetFor = `${$('#dest').dataset.id || $('#dest').value.trim().toLowerCase()}|${state.type}`;
     msSetSelected(districtMs, idList('districts', /^[a-z0-9-]+\.[a-z0-9-]+$/));
     msSetSelected(hotelMs, idList('hotels', /^[a-z0-9-]+$/));
     range.fix();
-    run();
+    // ?hotel=<id> — paylaşılan otel linki: axtarışdan sonra detal pəncərəsini aç
+    const hid = u.get('hotel');
+    run({ noScroll: !!hid }).then(() => { if (hid && /^[a-z0-9-]{1,40}$/.test(hid)) openHotel(hid, null); });
   } else {
     loadLastMinute();
   }

@@ -109,6 +109,22 @@
         <div class="group"><div id="districtMs" class="inline"></div></div>
         <div class="group"><div id="hotelMs" class="inline"></div></div>
         <div class="group"><b data-i18n="attr_title"></b><div id="attrFilter"></div></div>
+        <div class="group"><b data-i18n="f_rating"></b> <span class="demo-tag" data-i18n-title="rating_demo_t">demo</span>
+          <div class="pill-radios" id="ratingFilter">
+            <label><input type="radio" name="minRating" value="" checked> <span data-i18n="f_any"></span></label>
+            <label><input type="radio" name="minRating" value="7"> <span>7+</span></label>
+            <label><input type="radio" name="minRating" value="8"> <span>8+</span></label>
+            <label><input type="radio" name="minRating" value="8.5"> <span>8.5+</span></label>
+            <label><input type="radio" name="minRating" value="9"> <span>9+</span></label>
+          </div></div>
+        <div class="group"><b data-i18n="f_location"></b> <span class="demo-tag" data-i18n-title="loc_demo_t">demo</span>
+          <small class="muted sub-label" data-i18n="f_beach_line"></small>
+          <label class="chk"><input type="checkbox" name="beachLines" value="1"> <span data-i18n="line_1"></span></label>
+          <label class="chk"><input type="checkbox" name="beachLines" value="2"> <span data-i18n="line_2"></span></label>
+          <label class="chk"><input type="checkbox" name="beachLines" value="3"> <span data-i18n="line_3"></span></label>
+          <label class="muted sub-label" for="maxDist" data-i18n="f_max_dist"></label>
+          <select id="maxDist" class="filter-select"><option value="" data-i18n="f_any"></option><option value="200">≤ 200 m</option><option value="500">≤ 500 m</option><option value="1000">≤ 1 km</option><option value="2000">≤ 2 km</option><option value="5000">≤ 5 km</option></select>
+        </div>
         <div class="group"><b data-i18n="avail_title"></b>
           <label class="chk"><input type="checkbox" id="seatsOnly"> <span data-i18n="f_seats"></span></label>
           <label class="chk"><input type="checkbox" id="noStopSale" checked> <span data-i18n="f_no_stop"></span></label>
@@ -131,7 +147,7 @@
             <button class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
             <select id="sort" class="btn secondary sm" aria-label="Sort">
               <option value="price" data-i18n="sort_price"></option><option value="price_desc" data-i18n="sort_price_desc"></option>
-              <option value="rating" data-i18n="sort_rating"></option><option value="stars" data-i18n="sort_stars"></option><option value="savings" data-i18n="sort_savings"></option>
+              <option value="rating" data-i18n="sort_rating"></option><option value="stars" data-i18n="sort_stars"></option><option value="savings" data-i18n="sort_savings"></option><option value="distance" data-i18n="sort_distance"></option>
             </select>
           </div>
         </div>
@@ -144,8 +160,10 @@
   </div>
 
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
+  <!-- Otel detal pəncərəsi (app.js): Esc, fokus tələsi, ?hotel=<id> ilə paylaşılan link -->
+  <div class="modal-bg" id="hotelModal"><div class="modal hd-modal" id="hotelModalBody" role="dialog" aria-modal="true" aria-labelledby="hdTitle" tabindex="-1"></div></div>
 
-  <footer><div class="container"><div id="payStrip"></div>© <span id="year"></span> TurTap · Tur operatorlarının qiymət müqayisəsi platforması</div></footer>
+  <footer><div class="container"><div id="payStrip"></div>© <span id="year"></span> TurTap · Tur operatorlarının qiymət müqayisəsi platforması · <a href="/how.html" data-i18n="how_link">Necə işləyirik</a></div></footer>
   <script src="/js/common.js"></script>
   <script src="/js/hotel-art.js"></script>
   <script src="/js/gallery.js"></script>
