@@ -39,6 +39,9 @@
         </div>
         <label class="fl-chk"><input type="checkbox" id="direct"> <span data-i18n="fl_direct_only"></span></label>
         <label class="fl-chk"><input type="checkbox" id="bags"> <span data-i18n="fl_bags_incl"></span></label>
+        <span class="fl-grow"></span>
+        <button type="button" class="fl-link" id="exploreBtn" aria-controls="explore" aria-expanded="false">🌍 <span data-i18n="fl_explore_btn"></span></button>
+        <button type="button" class="fl-link" id="watchListBtn">🔔 <span data-i18n="fl_watch_list"></span> <span class="fl-count" id="watchCount" hidden></span></button>
       </div>
       <div class="fl-fields">
         <div class="field fl-from"><label for="from" data-i18n="fl_from"></label><input id="from" required data-i18n-ph="fl_from_ph" spellcheck="false"></div>
@@ -58,6 +61,9 @@
         <div class="field fl-cabinf"><label for="cabin" data-i18n="fl_cabin"></label>
           <select id="cabin"><option value="economy" data-i18n="fl_economy"></option><option value="business" data-i18n="fl_business"></option></select>
         </div>
+        <div class="field fl-bagf"><label for="bagCount" data-i18n="fl_bag_count"></label>
+          <select id="bagCount"><option value="0"></option><option value="1"></option><option value="2"></option></select>
+        </div>
         <span class="fl-grow"></span>
         <button class="btn" type="submit" data-i18n="btn_search">Axtar</button>
       </div>
@@ -70,6 +76,23 @@
         <button type="button" data-route="GYD-TBS">Bakı → Tbilisi</button>
       </div>
     </form>
+
+    <section class="panel fl-explore" id="explore" hidden aria-labelledby="exTitle">
+      <div class="fl-ex-head"><h2 id="exTitle" data-i18n="fl_explore_title"></h2><button type="button" class="fl-x" id="exClose" aria-label="×">×</button></div>
+      <form class="fl-ex-form" id="exForm" autocomplete="off" novalidate>
+        <div class="field"><label for="exFrom" data-i18n="fl_from"></label><input id="exFrom" spellcheck="false" data-i18n-ph="fl_from_ph"></div>
+        <div class="field"><label for="exMode" data-i18n="fl_ex_when"></label>
+          <select id="exMode"><option value="month" data-i18n="fl_ex_mode_month"></option><option value="date" data-i18n="fl_ex_mode_date"></option></select>
+        </div>
+        <div class="field" id="exMonthF"><label for="exMonth" data-i18n="fl_ex_month"></label><select id="exMonth"></select></div>
+        <div class="field" id="exDateF" hidden><label for="exDate" data-i18n="fl_depart"></label><input id="exDate" type="date"></div>
+        <div class="field"><label for="exBudget" data-i18n="fl_ex_budget"></label><input id="exBudget" type="number" min="0" step="10" inputmode="numeric" data-i18n-ph="fl_ex_budget_ph"></div>
+        <label class="fl-chk fl-ex-direct"><input type="checkbox" id="exDirect"> <span data-i18n="fl_direct_only"></span></label>
+        <button class="btn" type="submit" data-i18n="fl_ex_go"></button>
+      </form>
+      <p class="fl-note" data-i18n="fl_ex_note"></p>
+      <div id="exResults" aria-live="polite"></div>
+    </section>
 
     <div id="intro">
       <div class="features">
@@ -87,6 +110,11 @@
         <div class="group"><b data-i18n="fl_stops"></b><div id="stopFilter"></div></div>
         <div class="group"><b data-i18n="fl_dep_time"></b><div id="timeFilter"></div></div>
         <div class="group"><b data-i18n="fl_airlines"></b><div id="airlineFilter"></div></div>
+        <div class="group"><b data-i18n="fl_conn_safety"></b>
+          <label class="chk"><input type="checkbox" id="protectedF"> <span data-i18n="fl_protected_only"></span> <small class="muted" id="protectedCount"></small></label>
+          <button type="button" class="fl-info" id="protectedInfo" aria-expanded="false">ⓘ <span data-i18n="fl_what_is"></span></button>
+          <p class="fl-note" id="protectedTip" hidden data-i18n="fl_protected_tip"></p>
+        </div>
         <div class="group"><b data-i18n="fl_baggage"></b>
           <label class="chk"><input type="checkbox" id="bagsF"> <span data-i18n="fl_bags_only"></span></label>
         </div>
@@ -105,9 +133,15 @@
         </div>
         <div class="results-head">
           <div><h2 id="resTitle"></h2><div class="muted" id="resSub"></div></div>
-          <button type="button" class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
+          <div class="fl-head-btns">
+            <button type="button" class="btn secondary sm" id="watchBtn" hidden>🔔 <span data-i18n="fl_watch"></span></button>
+            <button type="button" class="btn secondary sm mobile-filter-btn" id="toggleFilters" data-i18n="filter_btn"></button>
+          </div>
         </div>
+        <div class="fl-regulated" id="regulated" hidden></div>
         <div class="fl-cal" id="calendar" aria-label="Qiymət təqvimi"></div>
+        <div class="fl-cal-tools" id="calTools" hidden><button type="button" class="fl-link" id="monthBtn" aria-expanded="false" aria-controls="monthCal">📅 <span data-i18n="fl_month_btn"></span></button></div>
+        <div class="fl-month" id="monthCal" hidden></div>
         <div class="fl-sorts" id="sorts" role="tablist"></div>
         <div class="sources" id="sources"></div>
         <div id="results"></div>

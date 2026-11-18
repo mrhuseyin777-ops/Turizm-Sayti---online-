@@ -69,4 +69,4 @@ function createRequest(body, meta = {}) {
   return r;
 }
 
-module.exports = { validateRequest, createRequest, validFlightId, RequestValidationError, requests };
+module.exports = { validateRequest, createRequest, validFlightId, RequestValidationError, requests, EMAIL_RE };

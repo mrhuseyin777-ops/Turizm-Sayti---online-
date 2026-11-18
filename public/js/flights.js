@@ -107,6 +107,116 @@ Object.assign(I18N.ru, {
   fl_q_total: '(итого)', fl_q_bag: 'Багаж', fl_err_same: 'Пункты вылета и прилёта должны различаться', fl_err_ret: 'Выберите дату обратно',
 });
 
+// ---- P1: ay təqvimi, "Hara uça bilərəm?", baqaj, aktarma riskləri, qiymət izləmə, Naxçıvan ----
+Object.assign(I18N.az, {
+  fl_feat2_d: '±3 gün və bütün ay üçün ən ucuz qiymət — bir kliklə tarixi dəyiş.',
+  fam_light: 'Light (baqajsız)', fam_standard: 'Standard (baqajlı)', fam_flex: 'Flex (çevik)', fam_business: 'Business',
+  fl_bag_count: 'Çanta (hər sərnişinə)', fl_bag_n0: 'Çantasız', fl_bag_n1: '1 çanta', fl_bag_n2: '2 çanta',
+  fl_explore_btn: 'Hara uça bilərəm?', fl_explore_title: 'Hara uça bilərəm?', fl_ex_when: 'Nə vaxt', fl_ex_mode_month: 'Ay ərzində', fl_ex_mode_date: 'Konkret tarix',
+  fl_ex_month: 'Ay', fl_ex_budget: 'Büdcə (istəyə görə)', fl_ex_budget_ph: 'məs. 300', fl_ex_go: 'Göstər',
+  fl_ex_note: 'Təxmini qiymət (demo): 1 böyük, birtərəfli, ekonom; baqaj daxil olmaya bilər. Ay rejimində ayın hər 3-cü günü yoxlanılır. Dəqiq qiymət üçün karta klik edin.',
+  fl_ex_empty: 'Bu parametrlərlə istiqamət tapılmadı. Büdcəni artırın və ya başqa ay seçin.', fl_ex_count: '{n} istiqamət · ucuzdan bahalıya', fl_ex_approx: 'təxminən',
+  fl_ex_regulated: 'Qiymət menecerdən:', fl_ex_self: 'ayrı biletlər', fl_ex_loading: 'İstiqamətlər hesablanır...',
+  fl_watch_list: 'İzlədiklərim', fl_watch: 'Qiyməti izlə', fl_watch_title: 'Qiyməti izlə', fl_watch_now: 'Cari ən ucuz qiymət (demo)',
+  fl_watch_email: 'E-poçt (istəyə görə)', fl_watch_mode: 'Nə vaxt xəbər verək?', fl_watch_daily: 'Gündəlik xülasə', fl_watch_drop10: 'Yalnız qiymət ≥10% dəyişəndə',
+  fl_watch_honest: 'Bildirişlər tezliklə: e-poçt göndərmə hələ qoşulmayıb. Hazırda bu, izləmə siyahısıdır — "İzlədiklərim" bölməsində cari demo qiyməti ilkin qiymətlə müqayisə edə bilərsiniz. İzləmə uçuş tarixi keçəndə avtomatik silinir.',
+  fl_watch_save: 'İzləməyə başla', fl_watch_ok: 'Marşrut izləmə siyahısına əlavə olundu', fl_watch_empty: 'Hələ izlədiyiniz marşrut yoxdur. Axtarış nəticələrində "Qiyməti izlə" düyməsini basın.',
+  fl_watch_local: 'Siyahı yalnız bu brauzerdə saxlanılır (izləmə id-si, açar və marşrut; şəxsi məlumat yoxdur).', fl_watch_initial: 'İlkin', fl_watch_current: 'İndi',
+  fl_watch_same: 'dəyişməyib', fl_watch_gone: 'İzləmə tapılmadı (müddəti bitib və ya silinib) — siyahıdan çıxarıldı', fl_watch_delete: 'Sil', fl_watch_search: 'Axtar',
+  fl_watch_deleted: 'İzləmə silindi', fl_watch_max: 'Ən çox 20 marşrut izləmək olar', fl_watch_pending: 'Bildiriş: tezliklə', fl_watch_err: 'Yüklənmədi',
+  fl_month_btn: 'Bütün ay', fl_month_hide: 'Ayı gizlət', fl_month_note: 'Ən ucuz qiymət ({cur}, cəmi). Qiymətlər təxminidir və axtarışda yenidən yoxlanılır.',
+  fl_month_rt: 'Gediş günü · dönüş {n} gecə sonra', fl_month_cheap: 'ən ucuz 3 gün', fl_month_none: 'qiymət yoxdur', fl_month_prev: 'Əvvəlki ay', fl_month_next: 'Növbəti ay', fl_month_load: 'Ay təqvimi yüklənir...',
+  fl_conn_safety: 'Aktarma təhlükəsizliyi', fl_protected_only: 'Yalnız qorunan aktarmalar', fl_what_is: 'Bu nədir?',
+  fl_protected_tip: 'Qorunan aktarma: bütün reyslər bir biletdə və ya tərəfdaş aviaşirkətlərdədir — gecikmə olarsa, aviaşirkət sizi növbəti reysə keçirir, baqaj son məntəqəyə qədər gedir. "Ayrı biletlər" marşrutlarında bu zəmanət yoxdur.',
+  risk_selfTransfer: 'Ayrı biletlər — aktarma qorunmur', risk_airportChange: 'Hava limanı dəyişir', risk_short: 'Qısa aktarma', risk_night: 'Gecə aktarması', risk_long: 'Uzun gözləmə',
+  risk_selfTransfer_d: 'Reyslər tərəfdaş olmayan aviaşirkətlərin ayrı biletləridir (DEMO nişanı). Birinci reys gecikərsə, növbəti reysə çatmamaq riski sizdədir; baqajı götürüb yenidən qeydiyyatdan keçirmək lazım ola bilər.',
+  risk_airportChange_d: 'Aktarmada başqa hava limanına keçmək lazımdır ({a} → {b}). Yol vaxtını və tranzit/viza tələblərini nəzərə alın.',
+  risk_short_d: 'Aktarma vaxtı bu hava limanı üçün qısadır (< {n} dəq). Gecikmə olarsa, reysə çatmamaq riski var.',
+  risk_night_d: 'Gözləmə gecə saatlarına (00:00–05:00) düşür — tranzit zonada qalmaq və ya otel lazım ola bilər.',
+  risk_long_d: 'Aktarmada 8 saatdan çox gözləmə var.',
+  fl_break_fare: 'Bilet', fl_break_tax: 'Vergi/yığım (demo)', fl_break_bags: 'Baqaj', fl_bags_included: 'baqaj tarifə daxildir', fl_bag_sel: '{n} çanta seçilib',
+  fl_fam_title: 'Tarif ailələri', fl_fam_note: 'Ümumi tarif adları (DEMO) — konkret aviaşirkətin real tarif şərtləri deyil. Qiymət seçilmiş baqajla.',
+  fl_col_hand: 'Əl yükü', fl_col_bag: 'Çanta', fl_col_change: 'Dəyişmə', fl_col_refund: 'Qaytarma', fl_col_seat: 'Oturacaq',
+  fl_change_no: 'Olmur', fl_change_fee: 'Ödənişli', fl_change_yes: 'Pulsuz', fl_ref_no: 'Yox', fl_ref_fee: 'Cərimə ilə', fl_ref_yes: 'Bəli',
+  fl_seat_fee: 'Ödənişli', fl_seat_free: 'Pulsuz', fl_choose: 'Seç', fl_all_offers: 'Bütün mənbələr və tariflər',
+  fl_reg_title: 'Bakı/Gəncə – Naxçıvan: tənzimlənən tariflər',
+  fl_reg_text: 'Bu marşrutlarda tariflər dövlət tərəfindən tənzimlənir və bəzi sərnişin kateqoriyaları üçün güzəştlər var. Bilet satışı xüsusi qaydalarla aparıla bilər, ona görə burada nümunə qiymət göstərmirik. Cari qiyməti və güzəşt hüququnu AZAL-da yoxlayın və ya menecerə müraciət edin — sizin üçün dəqiqləşdirəcək.',
+  fl_reg_early: 'Bayram günlərindən əvvəl biletləri erkən almaq tövsiyə olunur.', fl_reg_btn: 'Menecerə müraciət', fl_reg_price: 'Qiymət AZAL-da / menecerdə yoxlanılmalıdır',
+  fl_reg_sched: 'Bu tarixdə reyslər (cədvəl nümunədir):', fl_reg_no_flights: 'Bu tarixdə reys tapılmadı — başqa tarix seçin.', fl_reg_note: 'Naxçıvan marşrutu: qiymət və güzəşt sorğusu',
+});
+Object.assign(I18N.en, {
+  fl_feat2_d: 'Cheapest fare for ±3 days and the whole month — switch date in one click.',
+  fam_light: 'Light (no bag)', fam_standard: 'Standard (bag)', fam_flex: 'Flex', fam_business: 'Business',
+  fl_bag_count: 'Bags (per passenger)', fl_bag_n0: 'No checked bag', fl_bag_n1: '1 bag', fl_bag_n2: '2 bags',
+  fl_explore_btn: 'Where can I fly?', fl_explore_title: 'Where can I fly?', fl_ex_when: 'When', fl_ex_mode_month: 'Any day in month', fl_ex_mode_date: 'Exact date',
+  fl_ex_month: 'Month', fl_ex_budget: 'Budget (optional)', fl_ex_budget_ph: 'e.g. 300', fl_ex_go: 'Show',
+  fl_ex_note: 'Estimated price (demo): 1 adult, one way, economy; baggage may not be included. In month mode every 3rd day is checked. Click a card for the exact price.',
+  fl_ex_empty: 'No destinations found. Raise the budget or pick another month.', fl_ex_count: '{n} destinations · cheapest first', fl_ex_approx: 'from approx.',
+  fl_ex_regulated: 'Price via manager:', fl_ex_self: 'separate tickets', fl_ex_loading: 'Calculating destinations...',
+  fl_watch_list: 'My watchlist', fl_watch: 'Watch price', fl_watch_title: 'Watch price', fl_watch_now: 'Current lowest price (demo)',
+  fl_watch_email: 'E-mail (optional)', fl_watch_mode: 'When should we notify you?', fl_watch_daily: 'Daily summary', fl_watch_drop10: 'Only when price changes ≥10%',
+  fl_watch_honest: 'Notifications coming soon: e-mail sending is not connected yet. For now this is a watchlist — in "My watchlist" you can compare the current demo price with the initial one. The watch is deleted automatically after the flight date.',
+  fl_watch_save: 'Start watching', fl_watch_ok: 'Route added to your watchlist', fl_watch_empty: 'You are not watching any route yet. Press "Watch price" on the search results.',
+  fl_watch_local: 'The list is stored only in this browser (watch id, key and route; no personal data).', fl_watch_initial: 'Initial', fl_watch_current: 'Now',
+  fl_watch_same: 'unchanged', fl_watch_gone: 'Watch not found (expired or deleted) — removed from the list', fl_watch_delete: 'Delete', fl_watch_search: 'Search',
+  fl_watch_deleted: 'Watch deleted', fl_watch_max: 'You can watch up to 20 routes', fl_watch_pending: 'Notifications: coming soon', fl_watch_err: 'Failed to load',
+  fl_month_btn: 'Whole month', fl_month_hide: 'Hide month', fl_month_note: 'Lowest price ({cur}, total). Prices are estimates and re-checked on search.',
+  fl_month_rt: 'Departure day · return {n} nights later', fl_month_cheap: 'cheapest 3 days', fl_month_none: 'no price', fl_month_prev: 'Previous month', fl_month_next: 'Next month', fl_month_load: 'Loading month...',
+  fl_conn_safety: 'Connection safety', fl_protected_only: 'Protected connections only', fl_what_is: 'What is this?',
+  fl_protected_tip: 'Protected connection: all flights are on one ticket or partner airlines — if you miss a connection due to a delay, the airline rebooks you and checks bags through. "Separate tickets" routes have no such guarantee.',
+  risk_selfTransfer: 'Separate tickets — connection not protected', risk_airportChange: 'Airport change', risk_short: 'Short connection', risk_night: 'Overnight connection', risk_long: 'Long layover',
+  risk_selfTransfer_d: 'Flights are separate tickets of non-partner airlines (DEMO flag). If the first flight is late, missing the next one is your risk; you may need to collect and re-check your bags.',
+  risk_airportChange_d: 'You must move to another airport during the connection ({a} → {b}). Allow for travel time and transit/visa rules.',
+  risk_short_d: 'The connection time is short for this airport (< {n} min). A delay may cause a missed flight.',
+  risk_night_d: 'The layover falls at night (00:00–05:00) — you may need to stay airside or book a hotel.',
+  risk_long_d: 'The layover is longer than 8 hours.',
+  fl_break_fare: 'Ticket', fl_break_tax: 'Taxes/fees (demo)', fl_break_bags: 'Baggage', fl_bags_included: 'baggage included in fare', fl_bag_sel: '{n} bag(s) selected',
+  fl_fam_title: 'Fare families', fl_fam_note: 'Generic fare names (DEMO) — not any airline\'s actual fare rules. Price includes the selected baggage.',
+  fl_col_hand: 'Cabin bag', fl_col_bag: 'Checked', fl_col_change: 'Change', fl_col_refund: 'Refund', fl_col_seat: 'Seat',
+  fl_change_no: 'Not allowed', fl_change_fee: 'For a fee', fl_change_yes: 'Free', fl_ref_no: 'No', fl_ref_fee: 'With fee', fl_ref_yes: 'Yes',
+  fl_seat_fee: 'Paid', fl_seat_free: 'Free', fl_choose: 'Select', fl_all_offers: 'All sources and fares',
+  fl_reg_title: 'Baku/Ganja – Nakhchivan: regulated fares',
+  fl_reg_text: 'Fares on these routes are regulated by the state and some passenger categories are entitled to discounts. Tickets may be sold under special rules, so we do not show sample prices here. Check the current fare and your eligibility with AZAL or ask our manager — they will confirm it for you.',
+  fl_reg_early: 'Booking early before public holidays is recommended.', fl_reg_btn: 'Ask a manager', fl_reg_price: 'Price to be checked with AZAL / manager',
+  fl_reg_sched: 'Flights on this date (sample schedule):', fl_reg_no_flights: 'No flights found on this date — pick another date.', fl_reg_note: 'Nakhchivan route: price and discount request',
+});
+Object.assign(I18N.ru, {
+  fl_feat2_d: 'Самая низкая цена на ±3 дня и на весь месяц — смена даты в один клик.',
+  fam_light: 'Light (без багажа)', fam_standard: 'Standard (с багажом)', fam_flex: 'Flex', fam_business: 'Business',
+  fl_bag_count: 'Багаж (на пассажира)', fl_bag_n0: 'Без багажа', fl_bag_n1: '1 место', fl_bag_n2: '2 места',
+  fl_explore_btn: 'Куда можно полететь?', fl_explore_title: 'Куда можно полететь?', fl_ex_when: 'Когда', fl_ex_mode_month: 'В течение месяца', fl_ex_mode_date: 'Точная дата',
+  fl_ex_month: 'Месяц', fl_ex_budget: 'Бюджет (необязательно)', fl_ex_budget_ph: 'напр. 300', fl_ex_go: 'Показать',
+  fl_ex_note: 'Ориентировочная цена (демо): 1 взрослый, в одну сторону, эконом; багаж может быть не включён. В режиме месяца проверяется каждый 3-й день. Точная цена — по клику на карточку.',
+  fl_ex_empty: 'Направления не найдены. Увеличьте бюджет или выберите другой месяц.', fl_ex_count: 'направлений: {n} · сначала дешёвые', fl_ex_approx: 'около',
+  fl_ex_regulated: 'Цена через менеджера:', fl_ex_self: 'отдельные билеты', fl_ex_loading: 'Считаем направления...',
+  fl_watch_list: 'Отслеживаемые', fl_watch: 'Следить за ценой', fl_watch_title: 'Следить за ценой', fl_watch_now: 'Текущая минимальная цена (демо)',
+  fl_watch_email: 'E-mail (необязательно)', fl_watch_mode: 'Когда сообщать?', fl_watch_daily: 'Ежедневная сводка', fl_watch_drop10: 'Только при изменении цены ≥10%',
+  fl_watch_honest: 'Уведомления скоро: отправка e-mail ещё не подключена. Сейчас это список отслеживания — в разделе «Отслеживаемые» можно сравнить текущую демо-цену с исходной. Отслеживание удаляется автоматически после даты вылета.',
+  fl_watch_save: 'Начать отслеживание', fl_watch_ok: 'Маршрут добавлен в список отслеживания', fl_watch_empty: 'Вы пока ничего не отслеживаете. Нажмите «Следить за ценой» в результатах поиска.',
+  fl_watch_local: 'Список хранится только в этом браузере (id, ключ и маршрут; без личных данных).', fl_watch_initial: 'Было', fl_watch_current: 'Сейчас',
+  fl_watch_same: 'без изменений', fl_watch_gone: 'Отслеживание не найдено (истекло или удалено) — убрано из списка', fl_watch_delete: 'Удалить', fl_watch_search: 'Искать',
+  fl_watch_deleted: 'Отслеживание удалено', fl_watch_max: 'Можно отслеживать до 20 маршрутов', fl_watch_pending: 'Уведомления: скоро', fl_watch_err: 'Не загрузилось',
+  fl_month_btn: 'Весь месяц', fl_month_hide: 'Скрыть месяц', fl_month_note: 'Минимальная цена ({cur}, итого). Цены ориентировочные и перепроверяются при поиске.',
+  fl_month_rt: 'День вылета · обратно через {n} ноч.', fl_month_cheap: '3 самых дешёвых дня', fl_month_none: 'нет цены', fl_month_prev: 'Предыдущий месяц', fl_month_next: 'Следующий месяц', fl_month_load: 'Загружаем месяц...',
+  fl_conn_safety: 'Надёжность пересадки', fl_protected_only: 'Только защищённые пересадки', fl_what_is: 'Что это?',
+  fl_protected_tip: 'Защищённая пересадка: все рейсы в одном билете или у авиакомпаний-партнёров — при опоздании авиакомпания пересадит вас на следующий рейс, багаж идёт до конечного пункта. У маршрутов «отдельные билеты» такой гарантии нет.',
+  risk_selfTransfer: 'Отдельные билеты — пересадка не защищена', risk_airportChange: 'Смена аэропорта', risk_short: 'Короткая пересадка', risk_night: 'Ночная пересадка', risk_long: 'Долгое ожидание',
+  risk_selfTransfer_d: 'Рейсы — отдельные билеты авиакомпаний, не являющихся партнёрами (ДЕМО-метка). Если первый рейс задержится, риск опоздать на следующий — ваш; может понадобиться получить и заново сдать багаж.',
+  risk_airportChange_d: 'Во время пересадки нужно переехать в другой аэропорт ({a} → {b}). Учтите время в пути и правила транзита/визы.',
+  risk_short_d: 'Время пересадки для этого аэропорта короткое (< {n} мин). При задержке можно опоздать на рейс.',
+  risk_night_d: 'Ожидание приходится на ночь (00:00–05:00) — возможно, придётся остаться в транзитной зоне или в отеле.',
+  risk_long_d: 'Ожидание при пересадке больше 8 часов.',
+  fl_break_fare: 'Билет', fl_break_tax: 'Сборы (демо)', fl_break_bags: 'Багаж', fl_bags_included: 'багаж включён в тариф', fl_bag_sel: 'выбрано мест: {n}',
+  fl_fam_title: 'Семейства тарифов', fl_fam_note: 'Общие названия тарифов (ДЕМО) — не реальные условия конкретной авиакомпании. Цена с выбранным багажом.',
+  fl_col_hand: 'Ручная кладь', fl_col_bag: 'Багаж', fl_col_change: 'Обмен', fl_col_refund: 'Возврат', fl_col_seat: 'Место',
+  fl_change_no: 'Нельзя', fl_change_fee: 'Платно', fl_change_yes: 'Бесплатно', fl_ref_no: 'Нет', fl_ref_fee: 'Со штрафом', fl_ref_yes: 'Да',
+  fl_seat_fee: 'Платно', fl_seat_free: 'Бесплатно', fl_choose: 'Выбрать', fl_all_offers: 'Все источники и тарифы',
+  fl_reg_title: 'Баку/Гянджа – Нахчыван: регулируемые тарифы',
+  fl_reg_text: 'Тарифы на этих маршрутах регулируются государством, для некоторых категорий пассажиров есть льготы. Продажа билетов может вестись по особым правилам, поэтому примерные цены здесь не показываются. Уточните текущий тариф и право на льготу в AZAL или обратитесь к менеджеру — он уточнит для вас.',
+  fl_reg_early: 'Перед праздниками рекомендуется покупать билеты заранее.', fl_reg_btn: 'Обратиться к менеджеру', fl_reg_price: 'Цену нужно уточнить в AZAL / у менеджера',
+  fl_reg_sched: 'Рейсы на эту дату (пример расписания):', fl_reg_no_flights: 'На эту дату рейсов нет — выберите другую дату.', fl_reg_note: 'Маршрут Нахчыван: запрос цены и льгот',
+});
+
 (async function () {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -121,6 +231,7 @@ Object.assign(I18N.ru, {
     agent: !!session && store.get('flightsAgentMode', true),
     commission: Number(store.get('flightsCommission', store.get('b2bMarkup', 5))) || 0,
     picked: new Map(), // B2B: seçilmiş uçuşlar (id -> group snapshot)
+    month: { open: false, month: null, data: null, key: '' }, // ay təqvimi
   };
   $('#year').textContent = new Date().getFullYear();
 
@@ -154,6 +265,8 @@ Object.assign(I18N.ru, {
     opts('adults', 1, 9, 'fl_adults_n'); opts('children', 0, 8, 'fl_children_n'); opts('infants', 0, 4, 'fl_infants_n');
   }
   fillPax();
+  function fillBags() { $$('#bagCount option').forEach((o) => { o.textContent = t('fl_bag_n' + o.value); }); }
+  fillBags();
   $('#depart').value = localDate(21); $('#depart').min = localDate(0);
   $('#ret').value = localDate(28); $('#ret').min = localDate(0);
 
@@ -256,6 +369,10 @@ Object.assign(I18N.ru, {
   });
   let mt; $('#maxPrice').addEventListener('input', () => { clearTimeout(mt); mt = setTimeout(run, 450); });
   $('#bags').addEventListener('change', () => { $('#bagsF').checked = $('#bags').checked; });
+  $('#bagCount').addEventListener('change', () => { if (state.data) run(); });
+  $('#protectedInfo').addEventListener('click', () => {
+    const tip = $('#protectedTip'); tip.hidden = !tip.hidden; $('#protectedInfo').setAttribute('aria-expanded', String(!tip.hidden));
+  });
   $('#resetFilters').addEventListener('click', () => {
     $$('#filters input[type=checkbox]').forEach((i) => { i.checked = false; });
     $('#maxPrice').value = ''; $('#bags').checked = false; $('#direct').checked = false; run();
@@ -278,6 +395,9 @@ Object.assign(I18N.ru, {
     k = keep('airlineFilter');
     $('#airlineFilter').innerHTML = d.facets.airlines.map((f) => `<label class="chk"><input type="checkbox" value="${esc(f.code)}" ${k.has(f.code) ? 'checked' : ''}> <span class="dot" style="background:${color(f.color)}"></span> ${esc(f.name)} ${priceTag(f.minPrice)}</label>`).join('') || '<small class="muted">—</small>';
     $('#bagsF').checked = d.query.bags;
+    $('#protectedF').checked = !!d.query.protected;
+    const pf = d.facets.protected;
+    $('#protectedCount').textContent = pf ? `(${pf.count})${pf.minPrice != null ? ' · ' + money(pf.minPrice, cur) : ''}` : '';
   }
 
   // ---- Axtarış ----
@@ -289,6 +409,7 @@ Object.assign(I18N.ru, {
       direct: $('#direct').checked ? '1' : '', bags: $('#bags').checked ? '1' : '',
       stops: checkedVals('stopFilter'), times: checkedVals('timeFilter'), airlines: checkedVals('airlineFilter'),
       maxPrice: $('#maxPrice').value, sort: state.sort, currency: state.currency, lang: LANG,
+      bagCount: $('#bagCount').value !== '0' ? $('#bagCount').value : '', protected: $('#protectedF').checked ? '1' : '',
     };
   }
 
@@ -328,7 +449,13 @@ Object.assign(I18N.ru, {
     $('#resSub').textContent = `${dates} · ${t('fl_adults_n', { n: q.adults })}${q.children ? ', ' + t('fl_children_n', { n: q.children }) : ''}${q.infants ? ', ' + t('fl_infants_n', { n: q.infants }) : ''} · ${t(q.cabin === 'business' ? 'fl_business' : 'fl_economy')}`
       + (d.stats ? ' · ' + t('fl_results', { n: d.stats.count, o: d.stats.offers }) : '');
     renderFilters(d);
+    renderRegulated(d);
     renderCalendar(d);
+    $('#calTools').hidden = !!d.regulated;
+    $('#watchBtn').hidden = !!d.regulated || !d.groups.length;
+    $('#monthBtn').setAttribute('aria-expanded', String(state.month.open));
+    if (d.regulated) { $('#monthCal').hidden = true; } else if (state.month.open) loadMonth(state.month.month || q.depart.slice(0, 7));
+    $('#sorts').hidden = !!d.regulated; $('#sources').hidden = !!d.regulated;
     $('#sorts').innerHTML = ['price', 'fastest', 'best'].map((k) => {
       const s = d.summary[k];
       return `<button type="button" role="tab" data-sort="${k}" class="${state.sort === k ? 'active' : ''}" aria-selected="${state.sort === k}"><b>${esc(t('fl_sort_' + k))}</b><span>${s ? money(s.price, cur) + ' · ' + esc(dur(s.durationMin)) : '—'}</span></button>`;
@@ -384,6 +511,23 @@ Object.assign(I18N.ru, {
     const agent = state.agent;
     const cs = carrierNames(g);
     const picked = state.picked.has(g.id);
+    const reg = !!state.data.regulated;
+    const risks = riskList(g);
+    const riskHtml = risks.length ? `<div class="fl-risks">${risks.map((r) => `<button type="button" class="fl-risk ${RISK_BAD.includes(r.k) ? 'bad' : ''}" data-risk="${i}" data-rk="${esc(r.k)}" title="${esc(r.desc)}" aria-controls="rtip-${i}">⚠ ${esc(t('risk_' + r.k))}</button>`).join('')}</div>
+      <div class="fl-risk-tip" id="rtip-${i}" role="note" hidden></div>` : '';
+    if (reg) {
+      return `<article class="fl-card fl-card-reg" data-g="${i}">
+      <div class="fl-body">
+        <div class="fl-carrier">${cs.map(([c, n]) => `<span class="fl-logo" style="background:${carrierColor(c)}">${esc(c)}</span><span>${esc(n)}</span>`).join('')}<span class="badge demo">DEMO</span></div>
+        ${legRow(g.outbound, g.inbound ? t('fl_outbound') : '')}
+        ${g.inbound ? legRow(g.inbound, t('fl_inbound')) : ''}
+        ${riskHtml}
+        <button type="button" class="fl-toggle" data-toggle="${i}" aria-expanded="false">${esc(t('fl_details'))} ▾</button>
+        <div class="fl-details" id="det-${i}" hidden></div>
+      </div>
+      <div class="fl-price"><div><div class="from">${esc(t('fl_reg_price'))}</div></div><button class="btn sm" type="button" data-book="${i}">${esc(t('fl_reg_btn'))}</button></div>
+    </article>`;
+    }
     const priceBlock = agent
       ? `<div class="from">${esc(t('fl_cheapest_at', { src: b.sourceName }))}</div>
          <div class="fl-net"><span>${esc(t('fl_net'))}</span><b>${money(b.price, cur)}</b><span>${esc(t('fl_comm_amt'))} ${esc(state.commission)}%</span><b>${money(clientPrice(b.price) - b.price, cur)}</b></div>
@@ -392,6 +536,10 @@ Object.assign(I18N.ru, {
       : `<div class="from">${esc(t('fl_cheapest_at', { src: b.sourceName }))}</div>
          <div class="amount">${money(b.price, cur)}</div><div class="from">${esc(t('fl_total_pax', { n: paxCount(q) }))}</div>
          ${g.savings > 0 ? `<div class="save">${esc(t('save', { n: money(g.savings, cur) }))}</div>` : ''}`;
+    const bk = b.breakdown || { fare: b.price, tax: 0, bags: 0 };
+    const breakHtml = `<div class="fl-break" title="${esc(t('fl_break_tax'))}">
+      <span>${esc(t('fl_break_fare'))} ${money(bk.fare, cur)}</span><span>+ ${esc(t('fl_break_tax'))} ${money(bk.tax, cur)}</span>
+      ${q.bagCount ? `<span>+ ${esc(t('fl_break_bags'))} ${bk.bags ? money(bk.bags, cur) : esc(t('fl_bags_included'))}</span>` : ''}</div>`;
     return `<article class="fl-card ${picked ? 'picked' : ''}" data-g="${i}">
       <div class="fl-body">
         <div class="fl-carrier">${cs.map(([c, n]) => `<span class="fl-logo" style="background:${carrierColor(c)}">${esc(c)}</span><span>${esc(n)}</span>`).join('')}<span class="badge demo">DEMO</span></div>
@@ -402,12 +550,14 @@ Object.assign(I18N.ru, {
           <span class="badge ${b.fare.checked ? 'good' : ''}">🧳 ${esc(baggageText(b.fare))}</span>
           <span class="badge">${esc(t('fl_refund_' + b.fare.refund))}</span>
           <span class="badge">${esc(famLabel(b.fare))}</span>
+          ${q.bagCount ? `<span class="badge good">🧳 ${esc(t('fl_bag_sel', { n: q.bagCount }))}</span>` : ''}
         </div>
+        ${riskHtml}
         <div class="compare">${g.providers.map((o, j) => `<span class="op ${j === 0 ? 'best' : ''}" title="${esc(famLabel(o.fare))} · ${esc(baggageText(o.fare))}"><span class="dot" style="background:${color(o.sourceColor)}"></span>${esc(o.sourceName)} · ${money(o.price, cur)}</span>`).join('')}</div>
         <button type="button" class="fl-toggle" data-toggle="${i}" aria-expanded="false">${esc(t('fl_details'))} ▾</button>
         <div class="fl-details" id="det-${i}" hidden></div>
       </div>
-      <div class="fl-price"><div>${priceBlock}</div><button class="btn sm" type="button" data-book="${i}">${esc(t('fl_book'))}</button></div>
+      <div class="fl-price"><div>${priceBlock}${breakHtml}</div><button class="btn sm" type="button" data-book="${i}">${esc(t('fl_book'))}</button></div>
     </article>`;
   }
 
@@ -416,7 +566,7 @@ Object.assign(I18N.ru, {
     it.segments.forEach((s, k) => {
       if (k > 0) {
         const l = it.layovers[k - 1];
-        rows.push(`<div class="fl-lay">⏱ ${esc(t('fl_layover_at', { city: l.city, code: l.airport }))} · ${esc(t('fl_wait', { d: dur(l.minutes) }))}</div>`);
+        rows.push(`<div class="fl-lay ${l.risks && l.risks.some((k) => RISK_BAD.includes(k)) ? 'bad' : ''}">⏱ ${esc(t('fl_layover_at', { city: l.city, code: l.toAirport ? l.airport + ' → ' + l.toAirport : l.airport }))} · ${esc(t('fl_wait', { d: dur(l.minutes) }))}${(l.risks || []).map((k) => ` · ⚠ ${esc(t('risk_' + k))}`).join('')}</div>`);
       }
       rows.push(`<div class="fl-seg"><span class="fl-logo" style="background:${carrierColor(s.carrier)}">${esc(s.carrier)}</span>
         <div><b>${esc(hm(s.dep))} ${esc(s.from)} → ${esc(hm(s.arr))} ${esc(s.to)}</b> <span class="muted">· ${esc(dur(s.durationMin))}</span>
@@ -428,7 +578,10 @@ Object.assign(I18N.ru, {
   function detailsHtml(g, i) {
     const cur = state.data.query.currency; const agent = state.agent;
     const offers = g.offers;
-    return `${segmentsHtml(g.outbound, t('fl_outbound'))}${g.inbound ? segmentsHtml(g.inbound, t('fl_inbound')) : ''}
+    const segs = `${segmentsHtml(g.outbound, t('fl_outbound'))}${g.inbound ? segmentsHtml(g.inbound, t('fl_inbound')) : ''}`;
+    if (state.data.regulated) return segs;
+    return `${segs}${familiesHtml(g, i)}
+      <div class="fl-leg-label fl-sub">${esc(t('fl_all_offers'))}</div>
       <div class="fl-offers-wrap"><table class="fl-offers"><thead><tr><th>${esc(t('fl_source'))}</th><th>${esc(t('fl_fare'))}</th><th>${esc(t('fl_conditions'))}</th>
         <th class="num">${esc(agent ? t('fl_net') : t('fl_price'))}</th>${agent ? `<th class="num">${esc(t('fl_client_price'))}</th>` : ''}<th></th></tr></thead><tbody>
       ${offers.map((o) => `<tr class="${o.id === g.best.id ? 'best' : ''}">
@@ -450,6 +603,14 @@ Object.assign(I18N.ru, {
       tg.textContent = (open ? t('fl_hide') + ' ▴' : t('fl_details') + ' ▾');
       return;
     }
+    const rk = e.target.closest('[data-risk]');
+    if (rk) {
+      const i = +rk.dataset.risk; const tip = $('#rtip-' + i);
+      const r = riskList(state.data.groups[i]).find((x) => x.k === rk.dataset.rk);
+      const same = !tip.hidden && tip.dataset.k === rk.dataset.rk;
+      tip.textContent = r ? r.desc : ''; tip.dataset.k = rk.dataset.rk; tip.hidden = same;
+      return;
+    }
     const bk = e.target.closest('[data-book]');
     if (bk) openRequest(state.data.groups[+bk.dataset.book], bk.dataset.offer);
   });
@@ -465,20 +626,20 @@ Object.assign(I18N.ru, {
   function flightSummary(g, cur, price) {
     const leg = (it) => `${esc(fmtDate(it.dep.slice(0, 10)))} ${esc(hm(it.dep))} ${esc(it.from)} → ${esc(hm(it.arr))} ${esc(it.to)} · ${esc(it.stops ? t('fl_n_stops', { n: it.stops }) : t('fl_direct'))}`;
     return `<div class="fl-sum"><b>${carrierNames(g).map(([, n]) => esc(n)).join(' + ')}</b> <span class="badge demo">DEMO</span><br>
-      ✈ ${leg(g.outbound)}${g.inbound ? `<br>✈ ${leg(g.inbound)}` : ''}<br><b>${money(price, cur)}</b></div>`;
+      ✈ ${leg(g.outbound)}${g.inbound ? `<br>✈ ${leg(g.inbound)}` : ''}<br><b>${price != null ? money(price, cur) : esc(t('fl_reg_price'))}</b></div>`;
   }
 
   function openRequest(g, offerId) {
     const cur = state.data.query.currency;
     const offer = g.offers.find((o) => o.id === offerId) || g.best;
     $('#modalBody').innerHTML = `<h3>${esc(t('fl_req_title'))}</h3>
-      ${flightSummary(g, cur, state.agent ? clientPrice(offer.price) : offer.price)}
+      ${flightSummary(g, cur, offer.price == null ? null : state.agent ? clientPrice(offer.price) : offer.price)}
       <p class="hint">${esc(t('fl_req_hint'))}</p>
       <form id="reqForm" novalidate>
         <input name="name" required maxlength="80" autocomplete="name" placeholder="${esc(t('lead_name'))}"><div class="err" data-err="name" hidden></div>
         <input name="phone" required maxlength="22" inputmode="tel" autocomplete="tel" placeholder="${esc(t('lead_phone'))}"><div class="err" data-err="phone" hidden></div>
         <input name="email" type="email" maxlength="120" autocomplete="email" placeholder="${esc(t('fl_req_email'))}"><div class="err" data-err="email" hidden></div>
-        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea><div class="err" data-err="note" hidden></div>${HONEYPOT_HTML}
+        <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}">${state.data.regulated ? esc(t('fl_reg_note')) : ''}</textarea><div class="err" data-err="note" hidden></div>${HONEYPOT_HTML}
         <div class="err" data-err="flightId" hidden></div>
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
       </form>`;
@@ -571,10 +732,358 @@ Object.assign(I18N.ru, {
     $('#modal').classList.add('open');
   }
 
+  // ---- Aktarma riskləri ----
+  const RISK_ORDER = ['selfTransfer', 'airportChange', 'short', 'night', 'long'];
+  const RISK_BAD = ['selfTransfer', 'airportChange'];
+  function riskList(g) {
+    const lays = [g.outbound, g.inbound].filter(Boolean).flatMap((it) => it.layovers || []);
+    return RISK_ORDER.filter((k) => (g.risks || []).includes(k)).map((k) => {
+      const l = lays.find((x) => (x.risks || []).includes(k)) || {};
+      return { k, desc: t('risk_' + k + '_d', { a: l.airport || '', b: l.toAirport || '', n: l.shortLimit || 60 }) };
+    });
+  }
+
+  // ---- Tarif ailələri cədvəli (detal paneli) ----
+  const kgText = (f) => (f.checked ? (f.pieces > 1 ? `${f.pieces}×${f.checked} kq` : `${f.checked} kq`) : '—');
+  function familiesHtml(g, i) {
+    if (!g.families || !g.families.length) return '';
+    const cur = state.data.query.currency; const agent = state.agent;
+    const rows = g.families.map((f) => {
+      const x = f.fare;
+      const price = agent ? clientPrice(f.price) : f.price;
+      return `<tr class="${f.offerId === g.best.id ? 'best' : ''}">
+        <td data-l="${esc(t('fl_fare'))}"><b>${esc(t('fam_' + f.family))}</b><br><small class="muted">${esc(f.sourceName)}</small></td>
+        <td data-l="${esc(t('fl_col_hand'))}">${esc(x.hand)} kq</td>
+        <td data-l="${esc(t('fl_col_bag'))}">${esc(kgText(x))}${f.bagFee ? `<br><small class="muted">+${money(f.bagFee, cur)}</small>` : ''}</td>
+        <td data-l="${esc(t('fl_col_change'))}">${esc(t('fl_change_' + x.change))}</td>
+        <td data-l="${esc(t('fl_col_refund'))}">${esc(t('fl_ref_' + x.refund))}</td>
+        <td data-l="${esc(t('fl_col_seat'))}">${esc(t('fl_seat_' + (x.seat || 'fee')))}</td>
+        <td data-l="${esc(t('fl_price'))}" class="num"><b>${money(price, cur)}</b></td>
+        <td class="num"><button type="button" class="btn sm" data-book="${i}" data-offer="${esc(f.offerId)}">${esc(t('fl_choose'))}</button></td></tr>`;
+    }).join('');
+    return `<div class="fl-leg-label fl-sub">${esc(t('fl_fam_title'))}</div>
+      <table class="fl-offers fl-fams"><thead><tr><th>${esc(t('fl_fare'))}</th><th>${esc(t('fl_col_hand'))}</th><th>${esc(t('fl_col_bag'))}</th><th>${esc(t('fl_col_change'))}</th>
+        <th>${esc(t('fl_col_refund'))}</th><th>${esc(t('fl_col_seat'))}</th><th class="num">${esc(agent ? t('fl_client_price') : t('fl_price'))}</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="fl-note">${esc(t('fl_fam_note'))}</p>`;
+  }
+
+  // ---- Naxçıvan (tənzimlənən tariflər) ----
+  function renderRegulated(d) {
+    const box = $('#regulated');
+    box.hidden = !d.regulated;
+    if (!d.regulated) { box.innerHTML = ''; return; }
+    box.innerHTML = `<h3>ℹ ${esc(t('fl_reg_title'))}</h3>
+      <p>${esc(t('fl_reg_text'))}</p>
+      <p class="muted">${esc(t('fl_reg_early'))}</p>
+      <button type="button" class="btn" id="regBook">${esc(t('fl_reg_btn'))}</button>
+      <p class="fl-note">${esc(d.groups.length ? t('fl_reg_sched') : t('fl_reg_no_flights'))}</p>`;
+  }
+  $('#regulated').addEventListener('click', (e) => {
+    if (!e.target.closest('#regBook') || !state.data) return;
+    if (!state.data.groups.length) return toast(t('fl_reg_no_flights'));
+    openRequest(state.data.groups[0]);
+  });
+
+  // ---- Ay təqvimi ----
+  const MONTHS = {
+    az: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'İyun', 'İyul', 'Avqust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'],
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+  };
+  const monthName = (ym) => `${(MONTHS[LANG] || MONTHS.az)[Number(ym.slice(5, 7)) - 1]} ${ym.slice(0, 4)}`;
+  const compact = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : Number(n).toLocaleString('az-AZ').replace(/,/g, ' '));
+
+  function monthParams(month) {
+    const p = params();
+    const q = { ...p, month, depart: undefined, return: undefined, sort: undefined, maxPrice: undefined, trip: state.trip };
+    if (state.trip === 'round') q.nights = String(Math.min(30, Math.max(0, dayDiff(p.depart, p.return || p.depart))));
+    return q;
+  }
+  let monthSeq = 0;
+  async function loadMonth(month) {
+    const q = monthParams(month);
+    const key = JSON.stringify(q);
+    state.month.open = true; state.month.month = month;
+    $('#monthCal').hidden = false;
+    $('#monthBtn').setAttribute('aria-expanded', 'true');
+    $('#monthBtn').querySelector('span').textContent = t('fl_month_hide');
+    if (state.month.data && state.month.key === key) return renderMonth();
+    $('#monthCal').innerHTML = `<div class="spinner"></div><p class="muted" style="text-align:center">${esc(t('fl_month_load'))}</p>`;
+    const my = ++monthSeq;
+    try {
+      const data = await api('/api/flights/calendar', q);
+      if (my !== monthSeq) return;
+      state.month.data = data; state.month.key = key;
+      renderMonth();
+    } catch (err) {
+      if (my !== monthSeq) return;
+      $('#monthCal').innerHTML = `<p class="muted" style="text-align:center">${esc(err.message)}</p>`;
+    }
+  }
+  function closeMonth() {
+    state.month.open = false; $('#monthCal').hidden = true;
+    $('#monthBtn').setAttribute('aria-expanded', 'false');
+    $('#monthBtn').querySelector('span').textContent = t('fl_month_btn');
+  }
+  function renderMonth() {
+    const d = state.month.data; if (!d) return;
+    const cur = d.currency; const sel = $('#depart').value;
+    const offset = (new Date(d.month + '-01T00:00:00Z').getUTCDay() + 6) % 7; // bazar ertəsi ilk gün
+    const wd = WD[LANG] || WD.az;
+    const head = [1, 2, 3, 4, 5, 6, 0].map((k) => `<span class="fl-wd">${esc(wd[k])}</span>`).join('');
+    const blanks = Array.from({ length: offset }, () => '<span class="fl-mblank"></span>').join('');
+    const cells = d.days.map((x) => {
+      const cls = x.disabled ? 'off' : x.price == null ? 'none' : x.cheap ? 'cheap' : '';
+      const label = `${fmtDate(x.date)} · ${x.price != null ? money(x.price, cur) : t('fl_month_none')}`;
+      return `<button type="button" class="fl-mday ${cls} ${x.date === sel ? 'sel' : ''}" data-mdate="${esc(x.date)}" ${x.disabled ? 'disabled' : ''} title="${esc(label)}" aria-label="${esc(label)}">
+        <span class="d">${Number(x.date.slice(8))}</span><span class="p">${x.price != null ? esc(compact(x.price)) : '—'}</span></button>`;
+    }).join('');
+    $('#monthCal').innerHTML = `<div class="fl-month-head">
+        <button type="button" class="fl-mnav" data-mnav="${esc(d.prevMonth || '')}" ${d.prevMonth ? '' : 'disabled'} aria-label="${esc(t('fl_month_prev'))}">‹</button>
+        <b>${esc(monthName(d.month))}</b>
+        <button type="button" class="fl-mnav" data-mnav="${esc(d.nextMonth || '')}" ${d.nextMonth ? '' : 'disabled'} aria-label="${esc(t('fl_month_next'))}">›</button></div>
+      <div class="fl-mgrid">${head}${blanks}${cells}</div>
+      <div class="fl-mlegend"><span><i class="lg cheap"></i>${esc(t('fl_month_cheap'))}</span><span><i class="lg none"></i>${esc(t('fl_month_none'))}</span>
+        ${d.nights != null ? `<span>${esc(t('fl_month_rt', { n: d.nights }))}</span>` : ''}</div>
+      <p class="fl-note">${esc(t('fl_month_note', { cur }))}</p>`;
+  }
+  $('#monthBtn').addEventListener('click', () => {
+    if (state.month.open) return closeMonth();
+    loadMonth(($('#depart').value || localDate(21)).slice(0, 7));
+  });
+  $('#monthCal').addEventListener('click', (e) => {
+    const nav = e.target.closest('[data-mnav]');
+    if (nav && nav.dataset.mnav) return loadMonth(nav.dataset.mnav);
+    const b = e.target.closest('[data-mdate]'); if (!b || !state.month.data) return;
+    const day = state.month.data.days.find((x) => x.date === b.dataset.mdate);
+    if (!day || day.disabled) return;
+    $('#depart').value = day.date;
+    if (day.return) $('#ret').value = day.return;
+    run();
+  });
+
+  // ---- "Hara uça bilərəm?" ----
+  const exState = { data: null, seq: 0 };
+  function fillExMonths() {
+    const el = $('#exMonth'); const v = el.value;
+    const now = new Date();
+    el.innerHTML = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() + i, 1));
+      const ym = d.toISOString().slice(0, 7);
+      return `<option value="${ym}">${esc(monthName(ym))}</option>`;
+    }).join('');
+    el.value = v || el.options[1].value;
+  }
+  fillExMonths();
+  airportAC($('#exFrom'));
+  $('#exMode').addEventListener('change', () => {
+    const m = $('#exMode').value === 'month';
+    $('#exMonthF').hidden = !m; $('#exDateF').hidden = m;
+  });
+  $('#exDate').min = localDate(0);
+  async function openExplore() {
+    $('#explore').hidden = false; $('#exploreBtn').setAttribute('aria-expanded', 'true');
+    if (!$('#exFrom').value) {
+      $('#exFrom').value = $('#from').value; $('#exFrom').dataset.code = $('#from').dataset.code || 'GYD';
+      if (!$('#exFrom').value) { $('#exFrom').dataset.code = 'GYD'; $('#exFrom').value = 'GYD'; }
+    }
+    if (!$('#exDate').value) $('#exDate').value = $('#depart').value || localDate(21);
+    $('#explore').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!exState.data) runExplore();
+  }
+  const closeExplore = () => { $('#explore').hidden = true; $('#exploreBtn').setAttribute('aria-expanded', 'false'); };
+  $('#exploreBtn').addEventListener('click', () => ($('#explore').hidden ? openExplore() : closeExplore()));
+  $('#exClose').addEventListener('click', closeExplore);
+  $('#exForm').addEventListener('submit', (e) => { e.preventDefault(); runExplore(); });
+
+  async function runExplore() {
+    const from = (await ensureCode($('#exFrom'))) || 'GYD';
+    const month = $('#exMode').value === 'month';
+    const p = { from, month: month ? $('#exMonth').value : '', depart: month ? '' : $('#exDate').value, budget: $('#exBudget').value, direct: $('#exDirect').checked ? '1' : '', currency: state.currency, lang: LANG };
+    $('#exResults').innerHTML = `<div class="spinner"></div><p class="muted" style="text-align:center">${esc(t('fl_ex_loading'))}</p>`;
+    const my = ++exState.seq;
+    try {
+      const data = await api('/api/flights/explore', p);
+      if (my !== exState.seq) return;
+      exState.data = data; renderExplore();
+    } catch (err) {
+      if (my !== exState.seq) return;
+      exState.data = null;
+      $('#exResults').innerHTML = `<div class="panel empty">${esc(err.message)}</div>`;
+    }
+  }
+  function renderExplore() {
+    const d = exState.data; if (!d) return;
+    const cur = d.currency;
+    const cards = d.items.map((x, i) => `<button type="button" class="fl-ex-card" data-ex="${i}">
+        <span class="fl-ex-top"><span><b class="fl-ex-city">${esc(x.city)}</b><small class="muted">${esc(x.country)} · ${esc(x.to.replace(/,/g, '/'))}</small></span>
+          <span class="fl-ex-price"><small>${esc(t('fl_ex_approx'))}</small>${money(x.price, cur)}</span></span>
+        <span class="fl-ex-meta">📅 ${esc(fmtDate(x.date))} ${esc(weekday(x.date))} · <span class="${x.direct ? 'direct' : 'stop'}">${esc(x.direct ? t('fl_direct') : t('fl_n_stops', { n: x.stops }))}</span> · ${esc(dur(x.durationMin))}</span>
+        <span class="fl-ex-meta">✈ ${esc(x.carrierName)}${x.selfTransfer ? ` · <span class="fl-ex-warn">⚠ ${esc(t('fl_ex_self'))}</span>` : ''}</span>
+      </button>`).join('');
+    const reg = d.regulated.length ? `<div class="fl-ex-reg">ℹ ${esc(t('fl_ex_regulated'))} ${d.regulated.map((x, i) => `<button type="button" class="fl-link" data-exreg="${i}">${esc(x.city)}</button>`).join(' ')}</div>` : '';
+    $('#exResults').innerHTML = `<div class="muted fl-ex-count">${esc(t('fl_ex_count', { n: d.total }))}</div>
+      ${d.items.length ? `<div class="fl-ex-grid">${cards}</div>` : `<div class="panel empty">${esc(t('fl_ex_empty'))}</div>`}${reg}`;
+  }
+  function searchRoute(fromAirport, fromCode, toItem, date) {
+    $('#from').dataset.code = fromCode; $('#from').value = placeLabel({ ...fromAirport, code: fromCode, isCity: fromCode.includes(',') });
+    $('#to').dataset.code = toItem.to; $('#to').value = placeLabel({ city: toItem.city, code: toItem.to, isCity: toItem.to.includes(',') });
+    if (date) $('#depart').value = date;
+    setTrip('oneway');
+    closeExplore();
+    run();
+    $('#resultsLayout').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('#exResults').addEventListener('click', (e) => {
+    const d = exState.data; if (!d) return;
+    const c = e.target.closest('[data-ex]');
+    if (c) return searchRoute(d.fromAirport, d.from, d.items[+c.dataset.ex], d.items[+c.dataset.ex].date);
+    const r = e.target.closest('[data-exreg]');
+    if (r) searchRoute(d.fromAirport, d.from, d.regulated[+r.dataset.exreg], d.depart || null);
+  });
+
+  // ---- Qiyməti izlə ----
+  // localStorage-də YALNIZ izləmə id-si, açar (token) və marşrut saxlanılır — e-poçt və ya digər şəxsi məlumat yox.
+  const WATCH_KEY = 'flightAlerts';
+  const WATCH_MAX = 20;
+  const ROUTE_KEYS = ['from', 'to', 'trip', 'depart', 'return', 'adults', 'children', 'infants', 'cabin', 'bagCount', 'currency'];
+  const watchList = () => {
+    const v = store.get(WATCH_KEY, []);
+    return Array.isArray(v) ? v.filter((x) => x && /^fa_[A-Za-z0-9_-]{16}$/.test(x.id) && /^[A-Za-z0-9_-]{43}$/.test(x.token) && x.route) : [];
+  };
+  const saveWatch = (list) => { store.set(WATCH_KEY, list.slice(0, WATCH_MAX)); updateWatchCount(); };
+  function updateWatchCount() {
+    const n = watchList().length;
+    $('#watchCount').hidden = !n; $('#watchCount').textContent = n;
+  }
+  updateWatchCount();
+  const paxText = (r) => `${t('fl_adults_n', { n: r.adults })}${r.children ? ', ' + t('fl_children_n', { n: r.children }) : ''}${r.infants ? ', ' + t('fl_infants_n', { n: r.infants }) : ''}`;
+  const routeDates = (r) => fmtDate(r.depart) + (r.return ? ' – ' + fmtDate(r.return) : '');
+
+  function openWatch() {
+    const d = state.data; if (!d || d.regulated) return;
+    if (watchList().length >= WATCH_MAX) return toast(t('fl_watch_max'));
+    const q = d.query;
+    $('#modalBody').innerHTML = `<h3>🔔 ${esc(t('fl_watch_title'))}</h3>
+      <div class="fl-sum"><b>${esc(placeLabel(q.fromAirport))} → ${esc(placeLabel(q.toAirport))}</b><br>
+        ${esc(routeDates(q))} · ${esc(paxText(q))}${q.bagCount ? ' · 🧳 ' + esc(t('fl_bag_sel', { n: q.bagCount })) : ''}<br>
+        ${esc(t('fl_watch_now'))}: <b>${d.stats ? money(d.stats.min, q.currency) : '—'}</b></div>
+      <form id="watchForm" novalidate>
+        <input name="email" type="email" maxlength="120" autocomplete="email" placeholder="${esc(t('fl_watch_email'))}"><div class="err" data-err="email" hidden></div>
+        <fieldset class="fl-radio"><legend>${esc(t('fl_watch_mode'))}</legend>
+          <label><input type="radio" name="mode" value="drop10" checked> ${esc(t('fl_watch_drop10'))}</label>
+          <label><input type="radio" name="mode" value="daily"> ${esc(t('fl_watch_daily'))}</label>
+        </fieldset>${HONEYPOT_HTML}
+        <p class="fl-note">${esc(t('fl_watch_honest'))}</p>
+        <p class="hint">${esc(t('fl_watch_local'))}</p>
+        <div class="err" data-err="general" hidden></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button><button class="btn sm">${esc(t('fl_watch_save'))}</button></div>
+      </form>`;
+    $('#modal').classList.add('open');
+    $('#watchForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const form = ev.target; const btn = form.querySelector('button:not([type])');
+      const fd = Object.fromEntries(new FormData(form));
+      $$('[data-err]', form).forEach((el) => { el.hidden = true; });
+      const route = {}; for (const k of ROUTE_KEYS) route[k] = q[k] == null ? '' : q[k];
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/flights/alerts', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...route, email: fd.email || '', mode: fd.mode, website: fd.website || '' }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (r.ok) {
+          if (data.id && data.token) saveWatch([{ id: data.id, token: data.token, route }, ...watchList()]);
+          $('#modal').classList.remove('open'); toast(t('fl_watch_ok')); return;
+        }
+        const fields = data.fields || { general: data.error || t('fl_watch_err') };
+        for (const [k, msg] of Object.entries(fields)) {
+          const el = $(`[data-err="${k === 'email' ? 'email' : 'general'}"]`, form);
+          if (el) { el.textContent = msg; el.hidden = false; }
+        }
+      } catch { toast(t('fl_watch_err')); } finally { btn.disabled = false; }
+    });
+  }
+  $('#watchBtn').addEventListener('click', openWatch);
+
+  const watchViews = new Map();
+  async function fetchWatch(item) {
+    const r = await fetch(`/api/flights/alerts/${encodeURIComponent(item.id)}?lang=${encodeURIComponent(LANG)}`, { headers: { 'X-Alert-Token': item.token }, cache: 'no-store' });
+    if (r.status === 404) return { gone: true };
+    if (!r.ok) throw new Error('err');
+    return r.json();
+  }
+  function watchRow(item, v) {
+    if (!v) return `<div class="fl-w-item" data-w="${esc(item.id)}"><div class="muted">${esc(item.route.from)} → ${esc(item.route.to)} · ${esc(routeDates(item.route))}</div><div class="spinner sm"></div></div>`;
+    if (v.error) return `<div class="fl-w-item" data-w="${esc(item.id)}"><div class="muted">${esc(item.route.from)} → ${esc(item.route.to)} · ${esc(t('fl_watch_err'))}</div></div>`;
+    const cur = v.currency;
+    const pct = v.changePct;
+    const cls = pct == null || pct === 0 ? 'same' : pct > 0 ? 'up' : 'down';
+    const chg = pct == null ? '' : pct === 0 ? `= ${esc(t('fl_watch_same'))}` : `${pct > 0 ? '↑' : '↓'} ${Math.abs(pct)}%`;
+    return `<div class="fl-w-item" data-w="${esc(item.id)}">
+      <div class="fl-w-main"><b>${esc(placeLabel(v.route.fromAirport))} → ${esc(placeLabel(v.route.toAirport))}</b>
+        <div class="muted">${esc(routeDates(v.route))} · ${esc(paxText(v.route))}${v.route.bagCount ? ' · 🧳 ' + esc(v.route.bagCount) : ''}</div>
+        <div class="fl-w-prices">${esc(t('fl_watch_initial'))}: ${v.initialPrice != null ? money(v.initialPrice, cur) : '—'} · ${esc(t('fl_watch_current'))}: <b>${v.currentPrice != null ? money(v.currentPrice, cur) : '—'}</b> <span class="fl-chg ${cls}">${chg}</span></div>
+        <small class="muted">${esc(t(v.mode === 'daily' ? 'fl_watch_daily' : 'fl_watch_drop10'))} · ${esc(t('fl_watch_pending'))}</small></div>
+      <div class="fl-w-btns"><button type="button" class="btn secondary sm" data-wsearch="${esc(item.id)}">${esc(t('fl_watch_search'))}</button><button type="button" class="btn secondary sm" data-wdel="${esc(item.id)}">${esc(t('fl_watch_delete'))}</button></div>
+    </div>`;
+  }
+  function renderWatchList(notes = []) {
+    const list = watchList();
+    const box = $('#watchItems'); if (!box) return;
+    box.innerHTML = notes.map((n) => `<p class="fl-note">${esc(n)}</p>`).join('')
+      + (list.length ? list.map((x) => watchRow(x, watchViews.get(x.id))).join('') : `<p class="muted">${esc(t('fl_watch_empty'))}</p>`);
+  }
+  async function openWatchList() {
+    watchViews.clear();
+    $('#modalBody').innerHTML = `<h3>🔔 ${esc(t('fl_watch_list'))}</h3>
+      <p class="fl-note">${esc(t('fl_watch_honest'))}</p><div id="watchItems"></div><p class="hint">${esc(t('fl_watch_local'))}</p>
+      <div style="display:flex;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button></div>`;
+    $('#modal').classList.add('open');
+    renderWatchList();
+    const notes = [];
+    await Promise.all(watchList().map(async (item) => {
+      try {
+        const v = await fetchWatch(item);
+        if (v.gone) { saveWatch(watchList().filter((x) => x.id !== item.id)); notes.push(t('fl_watch_gone')); } else watchViews.set(item.id, v);
+      } catch { watchViews.set(item.id, { error: true }); }
+    }));
+    renderWatchList([...new Set(notes)]);
+  }
+  $('#watchListBtn').addEventListener('click', openWatchList);
+  $('#modalBody').addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-wdel]');
+    if (del) {
+      const item = watchList().find((x) => x.id === del.dataset.wdel); if (!item) return;
+      del.disabled = true;
+      try {
+        const r = await fetch(`/api/flights/alerts/${encodeURIComponent(item.id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: item.token }) });
+        if (r.ok || r.status === 404) { saveWatch(watchList().filter((x) => x.id !== item.id)); watchViews.delete(item.id); toast(t('fl_watch_deleted')); renderWatchList(); } else toast(t('fl_watch_err'));
+      } catch { toast(t('fl_watch_err')); } finally { del.disabled = false; }
+      return;
+    }
+    const sr = e.target.closest('[data-wsearch]');
+    if (sr) {
+      const item = watchList().find((x) => x.id === sr.dataset.wsearch); const v = watchViews.get(sr.dataset.wsearch);
+      if (!item || !v || !v.route) return;
+      const r = v.route;
+      $('#from').dataset.code = r.from; $('#from').value = placeLabel(r.fromAirport);
+      $('#to').dataset.code = r.to; $('#to').value = placeLabel(r.toAirport);
+      $('#depart').value = r.depart; if (r.return) $('#ret').value = r.return;
+      for (const k of ['adults', 'children', 'infants', 'cabin']) $('#' + k).value = String(r[k]);
+      $('#bagCount').value = String(r.bagCount || 0);
+      setTrip(r.trip === 'round' ? 'round' : 'oneway');
+      $('#modal').classList.remove('open');
+      run();
+    }
+  });
+
   // ---- Dil dəyişəndə ----
   document.addEventListener('langchange', () => {
-    fillPax(); renderPopular();
+    fillPax(); fillBags(); renderPopular(); fillExMonths(); updateWatchCount();
     if (state.data) run();
+    if (!$('#explore').hidden && exState.data) renderExplore();
   });
 
   // ---- URL-dən bərpa (paylaşılan link) ----
@@ -582,6 +1091,8 @@ Object.assign(I18N.ru, {
   if (u.get('from') && u.get('to')) {
     for (const [id, key] of [['depart', 'depart'], ['ret', 'return'], ['adults', 'adults'], ['children', 'children'], ['infants', 'infants'], ['cabin', 'cabin']]) if (u.get(key)) $('#' + id).value = u.get(key);
     $('#direct').checked = u.get('direct') === '1'; $('#bags').checked = u.get('bags') === '1';
+    if (['1', '2'].includes(u.get('bagCount'))) $('#bagCount').value = u.get('bagCount');
+    $('#protectedF').checked = u.get('protected') === '1';
     if (u.get('maxPrice')) $('#maxPrice').value = u.get('maxPrice');
     if (['price', 'fastest', 'best'].includes(u.get('sort'))) state.sort = u.get('sort');
     setTrip(u.get('trip') === 'oneway' || !u.get('return') ? 'oneway' : 'round');

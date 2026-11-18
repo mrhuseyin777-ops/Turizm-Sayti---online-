@@ -7,7 +7,7 @@
 //   FlightOffer: {
 //     id, sourceId,
 //     outbound: Itinerary, inbound: Itinerary|null,   // Itinerary formatı: schedule.js -> makeItinerary
-//     fare: { family, cabin, hand, checked, pieces, refund, change },
+//     fare: { family, cabin, hand, checked, pieces, refund, change, seat },
 //     price,       // bütün sərnişinlər üçün yekun qiymət (vergi + mənbə xidmət haqqı daxil)
 //     currency: 'AZN',
 //   }
@@ -80,7 +80,7 @@ function createDemoFlightProvider(opts) {
           flightId,
           outbound: c.outbound,
           inbound: c.inbound,
-          fare: { family: fam.id, cabin: fam.cabin, hand: fam.hand, checked: fam.checked, pieces: fam.pieces, refund: fam.refund, change: fam.change },
+          fare: { family: fam.id, cabin: fam.cabin, hand: fam.hand, checked: fam.checked, pieces: fam.pieces, refund: fam.refund, change: fam.change, seat: fam.seat },
           price,
           currency: 'AZN',
         });

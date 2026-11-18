@@ -2,8 +2,18 @@
 // (hash əsaslı, hər dəfə eyni) uçuşlar və aktarmalı marşrutlar qurur.
 // Real inteqrasiyada bu fayl istifadə olunmur — itinerarları provayder özü qaytarır.
 
-const { getAirport, distanceKm, utcOffsetMin } = require('./airports');
+const { airports, getAirport, distanceKm, utcOffsetMin } = require('./airports');
 const { getCarrier, canConnect, edgesFrom } = require('./carriers');
+
+// Eyni şəhərin digər hava limanları (IST↔SAW, SVO↔VKO↔DME) — "hava limanı dəyişir" aktarmaları üçün
+const sameCity = new Map();
+for (const a of airports) sameCity.set(a.code, airports.filter((b) => b.code !== a.code && b.city.en === a.city.en).map((b) => b.code));
+
+// Minimum aktarma vaxtı (dəq): eyni/tərəfdaş bilet; ayrı biletlər (baqajı yenidən qeydiyyat); hava limanı dəyişir
+const MCT = { same: 60, partner: 90, self: 150, airportChange: 240 };
+// Böyük hub-larda "qısa aktarma" həddi daha yüksəkdir (uzun keçidlər, pasport nəzarəti)
+const BIG_HUBS = new Set(['IST', 'SAW', 'DXB', 'DOH', 'AUH', 'FRA', 'MUC', 'SVO', 'LHR', 'CDG']);
+const shortLimit = (code) => (BIG_HUBS.has(code) ? 90 : 60);
 
 // FNV-1a 32-bit
 function hash(str) {
@@ -48,7 +58,25 @@ function findPaths(from, to) {
   if (paths[0].length + one.length < 3) {
     two = paths[2].filter((p) => total(p) / direct <= 2.4).sort((a, b) => total(a) - total(b)).slice(0, 6);
   }
-  const result = [...paths[0], ...one, ...two];
+  // DEMO "ayrı biletlər" (self-transfer): tərəfdaş olmayan daşıyıcıların birləşməsi və ya
+  // eyni şəhərdə hava limanı dəyişməsi (IST→SAW). Aktarma qorunmur — nəticədə risk nişanı ilə göstərilir.
+  const self = [];
+  for (const e1 of out) {
+    if (e1.to === to) continue;
+    for (const e2 of edgesFrom.get(e1.to) || []) {
+      if (e2.to === to && !canConnect(e1.carrier, e2.carrier)) self.push([e1, e2]);
+    }
+    for (const alt of sameCity.get(e1.to) || []) {
+      if (alt === from || alt === to) continue;
+      for (const e2 of edgesFrom.get(alt) || []) if (e2.to === to) self.push([e1, e2]);
+    }
+  }
+  const selfPaths = self
+    .filter((p) => total(p) / direct <= (hasDirect ? 1.4 : 2.0))
+    .sort((a, b) => total(a) - total(b) || (a[0].carrier + a[1].carrier).localeCompare(b[0].carrier + b[1].carrier))
+    .slice(0, hasDirect ? 2 : 4);
+  for (const p of selfPaths) p.self = true;
+  const result = [...paths[0], ...one, ...two, ...selfPaths];
   pathCache.set(key, result);
   return result;
 }
@@ -92,7 +120,9 @@ function legsOn(edge, dayIdx) {
 
 // Hub-da sonrakı uçuşu tap (minimum aktarma vaxtı ilə)
 function nextConnection(prev, edge) {
-  const mct = prev.carrier === edge.carrier ? 60 : 90;
+  let mct = prev.carrier === edge.carrier ? MCT.same : MCT.partner;
+  if (edge.from !== prev.to) mct = MCT.airportChange;
+  else if (!canConnect(prev.carrier, edge.carrier)) mct = MCT.self;
   const arrDay = Math.floor((prev.arrUtc + utcOffsetMin(getAirport(edge.from), prev.arr)) / DAY);
   const cands = [...legsOn(edge, arrDay), ...legsOn(edge, arrDay + 1)]
     .filter((l) => l.depUtc - prev.arrUtc >= mct && l.depUtc - prev.arrUtc <= 20 * 60)
@@ -106,7 +136,25 @@ function makeItinerary(legs) {
     return { carrier: l.carrier, carrierName: c.name, flightNo: l.flightNo, from: l.from, to: l.to, dep: l.dep, arr: l.arr, durationMin: l.durationMin };
   });
   const layovers = [];
-  for (let i = 1; i < legs.length; i++) layovers.push({ airport: legs[i].from, minutes: legs[i].depUtc - legs[i - 1].arrUtc });
+  let selfTransfer = false;
+  for (let i = 1; i < legs.length; i++) {
+    const prev = legs[i - 1]; const cur = legs[i];
+    const minutes = cur.depUtc - prev.arrUtc;
+    const airportChange = cur.from !== prev.to;
+    const self = airportChange || !canConnect(prev.carrier, cur.carrier);
+    if (self) selfTransfer = true;
+    // Gecə aktarması: gözləmə yerli vaxtla 00:00–05:00 aralığına ən azı 90 dəq düşür
+    const start = Number(prev.arr.slice(11, 13)) * 60 + Number(prev.arr.slice(14, 16));
+    let night = 0;
+    for (let d = 0; d <= 1440 * 2; d += 1440) night += Math.max(0, Math.min(start + minutes, d + 300) - Math.max(start, d));
+    const risks = [];
+    if (self) risks.push('selfTransfer');
+    if (airportChange) risks.push('airportChange');
+    if (minutes < shortLimit(prev.to)) risks.push('short');
+    if (night >= 90) risks.push('night');
+    if (minutes > 8 * 60) risks.push('long');
+    layovers.push({ airport: prev.to, ...(airportChange ? { toAirport: cur.from } : {}), minutes, risks, ...(risks.includes('short') ? { shortLimit: shortLimit(prev.to) } : {}) });
+  }
   const first = legs[0]; const last = legs[legs.length - 1];
   return {
     id: legs.map((l) => `${l.flightNo}:${l.from}${l.to}:${l.dep.replace(/[-:T]/g, '')}`).join('_'),
@@ -121,6 +169,8 @@ function makeItinerary(legs) {
     carriers: [...new Set(legs.map((l) => l.carrier))],
     segments,
     layovers,
+    selfTransfer,
+    risks: [...new Set(layovers.flatMap((l) => l.risks))],
     _depUtc: first.depUtc,
   };
 }
@@ -153,4 +203,4 @@ function buildItineraries(from, to, dateIso, opts = {}) {
   return result;
 }
 
-module.exports = { hash, buildItineraries, findPaths, dayIndex, isoFromDay };
+module.exports = { hash, buildItineraries, findPaths, dayIndex, isoFromDay, MCT, shortLimit };

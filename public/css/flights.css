@@ -138,3 +138,122 @@
   .fl-sorts button b { font-size: 13px; }
   .fl-lay { margin-left: 0; }
 }
+
+/* ---------------------------------------------------------------- P1 */
+:root { --fl-bad: #b91c1c; --fl-bad-soft: #fee2e2; --fl-off: #f1f5f9; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fl-bad: #fca5a5; --fl-bad-soft: #3b1414; --fl-off: #0f1726; } }
+:root[data-theme="dark"] { --fl-bad: #fca5a5; --fl-bad-soft: #3b1414; --fl-off: #0f1726; }
+
+.fl-link { border: 0; background: none; color: var(--primary); font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 2px; display: inline-flex; gap: 4px; align-items: center; }
+.fl-link:hover { text-decoration: underline; }
+.fl-count { background: var(--primary); color: var(--primary-ink); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; }
+.fl-bagf { flex: 0 1 170px; }
+.fl-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+.fl-info { border: 0; background: none; color: var(--primary); cursor: pointer; padding: 2px 0; font-size: 13px; }
+.fl-head-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Risk nişanları */
+.fl-risks { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.fl-risk { border: 1px solid var(--border); background: var(--warn-soft); color: var(--accent); border-radius: 6px; font-size: 12px; font-weight: 600; padding: 3px 8px; cursor: help; text-align: left; }
+.fl-risk.bad { background: var(--fl-bad-soft); color: var(--fl-bad); border-color: transparent; }
+.fl-risk-tip { font-size: 13px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; margin: 4px 0; color: var(--text); }
+.fl-lay.bad { background: var(--fl-bad-soft); color: var(--fl-bad); }
+
+/* Qiymət bölgüsü */
+.fl-break { display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+
+/* Tarif ailələri */
+.fl-sub { margin-top: 12px; }
+.fl-fams td { vertical-align: top; }
+.fl-fams tr.best td { background: var(--good-soft); }
+
+/* Ay təqvimi */
+.fl-cal-tools { display: flex; justify-content: flex-end; margin: -6px 0 8px; }
+.fl-month { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
+.fl-month-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.fl-month-head b { font-size: 16px; }
+.fl-mnav { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 20px; cursor: pointer; line-height: 1; }
+.fl-mnav:disabled { opacity: .35; cursor: default; }
+.fl-mgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.fl-wd { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; padding: 2px 0; }
+.fl-mday { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 4px 2px; min-width: 0; min-height: 46px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: var(--text); }
+.fl-mday .d { font-size: 12px; font-weight: 700; }
+.fl-mday .p { font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fl-mday:hover:not(:disabled) { border-color: var(--primary); }
+.fl-mday.cheap { background: var(--good-soft); border-color: var(--good); }
+.fl-mday.cheap .p { color: var(--good); font-weight: 700; }
+.fl-mday.none, .fl-mday.off { background: var(--fl-off); color: var(--muted); }
+.fl-mday.off { opacity: .5; cursor: default; }
+.fl-mday.sel { box-shadow: inset 0 0 0 2px var(--primary); }
+.fl-mlegend { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.fl-mlegend span { display: inline-flex; align-items: center; gap: 5px; }
+.fl-mlegend .lg { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid var(--border); }
+.fl-mlegend .lg.cheap { background: var(--good-soft); border-color: var(--good); }
+.fl-mlegend .lg.none { background: var(--fl-off); }
+
+/* Explore */
+.fl-explore { margin-top: 18px; padding: 16px; }
+.fl-ex-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fl-ex-head h2 { margin: 0; font-size: 20px; }
+.fl-x { border: 0; background: var(--surface-2); color: var(--text); width: 34px; height: 34px; border-radius: 10px; font-size: 20px; cursor: pointer; }
+.fl-ex-form { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto auto; gap: 10px; align-items: end; margin-top: 12px; }
+.fl-ex-form .field { min-width: 0; }
+.fl-ex-direct { padding-bottom: 12px; }
+.fl-ex-count { margin: 12px 0 8px; font-size: 13px; }
+.fl-ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.fl-ex-card { text-align: left; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 12px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; min-width: 0; font: inherit; }
+.fl-ex-card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+.fl-ex-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; width: 100%; }
+.fl-ex-top > span:first-child { display: flex; flex-direction: column; min-width: 0; }
+.fl-ex-city { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fl-ex-price { font-size: 18px; font-weight: 800; white-space: nowrap; text-align: right; display: flex; flex-direction: column; }
+.fl-ex-price small { font-size: 10px; color: var(--muted); font-weight: 600; }
+.fl-ex-meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.fl-ex-meta .direct { color: var(--good); font-weight: 600; }
+.fl-ex-meta .stop { color: var(--accent); }
+.fl-ex-warn { color: var(--fl-bad); font-weight: 600; }
+.fl-ex-reg { margin-top: 12px; font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+
+/* Naxçıvan bloku */
+.fl-regulated { background: var(--primary-soft); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+.fl-regulated h3 { margin: 0 0 6px; font-size: 17px; }
+.fl-regulated p { margin: 6px 0; font-size: 14px; }
+.fl-card-reg .fl-price .from { font-size: 13px; color: var(--text); font-weight: 600; max-width: 220px; }
+
+/* İzləmə */
+.fl-radio { border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin: 0 0 10px; }
+.fl-radio legend { font-size: 13px; color: var(--muted); padding: 0 4px; }
+.fl-radio label { display: flex; gap: 8px; align-items: center; padding: 4px 0; cursor: pointer; font-size: 14px; }
+.fl-modal input[type="radio"], .fl-modal input[type="checkbox"] { width: auto; margin: 0; }
+.fl-w-item { display: flex; gap: 10px; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 10px 0; flex-wrap: wrap; font-size: 14px; }
+.fl-w-main { min-width: 0; flex: 1 1 260px; }
+.fl-w-prices { margin-top: 2px; }
+.fl-w-btns { display: flex; gap: 6px; }
+.fl-chg { font-weight: 700; white-space: nowrap; }
+.fl-chg.up { color: var(--fl-bad); }
+.fl-chg.down { color: var(--good); }
+.fl-chg.same { color: var(--muted); }
+.spinner.sm { width: 18px; height: 18px; border-width: 2px; margin: 4px; }
+
+@media (max-width: 980px) {
+  .fl-ex-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fl-ex-form .btn { grid-column: 1 / -1; }
+  .fl-break { align-items: flex-start; }
+}
+@media (max-width: 600px) {
+  .fl-bagf { flex: 1 1 100%; max-width: none; }
+  .fl-top .fl-grow { display: block; flex-basis: 100%; height: 0; }
+  .fl-month { padding: 8px; }
+  .fl-mgrid { gap: 3px; }
+  .fl-mday { min-height: 42px; padding: 3px 1px; border-radius: 6px; }
+  .fl-mday .p { font-size: 10px; letter-spacing: -.2px; }
+  .fl-ex-grid { grid-template-columns: minmax(0, 1fr); }
+  /* Tarif ailələri: mobildə hər ailə ayrıca blok (cədvəl üfüqi sürüşmür) */
+  .fl-fams thead { display: none; }
+  .fl-fams, .fl-fams tbody, .fl-fams tr, .fl-fams td { display: block; width: 100%; }
+  .fl-fams tr { border: 1px solid var(--border); border-radius: 10px; padding: 6px 8px; margin-bottom: 8px; }
+  .fl-fams td { border: 0; padding: 3px 0; display: flex; justify-content: space-between; gap: 10px; text-align: right; }
+  .fl-fams td[data-l]::before { content: attr(data-l); color: var(--muted); font-size: 12px; text-align: left; }
+  .fl-fams td:last-child { justify-content: flex-end; }
+}

@@ -151,7 +151,9 @@ test('axtarış validasiyası', () => {
 });
 
 test('müraciət validasiyası (pasport məlumatı saxlanılmır)', async () => {
-  const r = await searchFlights({ from: 'GYD', to: 'NAJ', depart: future(15), calendar: '0' });
+  // GYD–NAJ demo xətti hər gün uçmur — reysi olan ilk günü götür (həftə gününə görə testin təsadüfi düşməməsi üçün)
+  let r;
+  for (let d = 15; d < 22 && !(r && r.groups.length); d++) r = await searchFlights({ from: 'GYD', to: 'NAJ', depart: future(d), calendar: '0' });
   const g = r.groups[0];
   assert.ok(validFlightId(g.id));
   const good = { name: 'Əli Məmmədov', phone: '+994 50 123 45 67', email: 'ali@example.az', flightId: g.id, offerId: g.best.id, passport: 'AA1234567', passportNo: 'X' };
