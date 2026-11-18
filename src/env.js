@@ -46,4 +46,10 @@ module.exports = {
   demoAccount: !isProd && raw.B2B_DEMO_USER && raw.B2B_DEMO_PASSWORD
     ? { agency: raw.B2B_DEMO_AGENCY || 'Demo Agentlik', username: raw.B2B_DEMO_USER, password: raw.B2B_DEMO_PASSWORD, displayName: raw.B2B_DEMO_NAME || 'Demo Menecer' }
     : null,
+  // Hostinq üçün ilk admin hesabı (production-da da işləyir). Parol YALNIZ hostinqin gizli env
+  // dəyişənində saxlanılır (repoda yox). Terminalı olmayan hostinqlərdə (məs. Render pulsuz) B2B-yə
+  // ilk girişi təmin edir; hesab yaddaşda yaradılır və hər açılışda yenidən yoxlanılır.
+  bootstrapAdmin: raw.B2B_ADMIN_USER && raw.B2B_ADMIN_PASSWORD
+    ? { agency: raw.B2B_ADMIN_AGENCY || 'TurTap', username: raw.B2B_ADMIN_USER, password: raw.B2B_ADMIN_PASSWORD, displayName: raw.B2B_ADMIN_NAME || 'Admin' }
+    : null,
 };

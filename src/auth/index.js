@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const env = require('../env');
 const { store: defaultStore } = require('./store');
 const sessions = require('./sessions');
-const { verifyPassword, dummyVerify, needsRehash, hashPassword, POLICY } = require('./password');
+const { verifyPassword, dummyVerify, needsRehash, hashPassword, checkPolicy, POLICY } = require('./password');
 const { createCounter } = require('../security/rateLimit');
 const { maskIp } = require('../security/http');
 
@@ -116,4 +116,19 @@ async function seedDemoAccount(acc = env.demoAccount) {
   return user;
 }
 
-module.exports = { login, resolve, requireAuth, requireCsrf, publicMe, seedDemoAccount, AuthError, useStore, getStore, LOCK, _ipFails: ipFails, _acctFails: acctFails };
+// Hostinq üçün ilk admin (B2B_ADMIN_USER / B2B_ADMIN_PASSWORD env). Production-da da işləyir, amma
+// parol siyasətinə uyğun olmayan parolla hesab YARADILMIR. Hesab fayla yazılmır (yaddaşda), çünki
+// pulsuz hostinqlərdə disk müvəqqətidir; hər açılışda env-dən yenidən yaradılır.
+async function seedBootstrapAdmin(acc = env.bootstrapAdmin) {
+  if (!acc) return null;
+  if (!/^[a-z0-9._-]{3,32}$/i.test(acc.username)) { console.error('[auth] B2B_ADMIN_USER formatı yanlışdır (3–32: hərf, rəqəm, . _ -)'); return null; }
+  const bad = checkPolicy(acc.password, { username: acc.username });
+  if (bad) { console.error(`[auth] B2B_ADMIN_PASSWORD qəbul edilmədi: ${bad}`); return null; }
+  if (storeRef.findUserByUsername(acc.username)) return null;
+  const agency = storeRef.findAgencyByName(acc.agency) || storeRef.createAgency(acc.agency, { persist: false });
+  const user = storeRef.createUser({ agencyId: agency.id, username: acc.username, displayName: acc.displayName, role: 'admin', passwordHash: await hashPassword(acc.password) }, { persist: false });
+  console.info(`[auth] Admin hesabı env-dən hazırlandı: ${user.username} (${agency.name})`);
+  return user;
+}
+
+module.exports = { login, resolve, requireAuth, requireCsrf, publicMe, seedDemoAccount, seedBootstrapAdmin, AuthError, useStore, getStore, LOCK, _ipFails: ipFails, _acctFails: acctFails };

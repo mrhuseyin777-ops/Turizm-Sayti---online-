@@ -1,0 +1,27 @@
+# Render.com Blueprint — TurTap (Node/Express)
+# Render Dashboard → New → Blueprint → bu repo. Gizli dəyərlər (sync: false) Render-də əl ilə daxil edilir,
+# repoda saxlanılmır.
+services:
+  - type: web
+    name: turtap
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /api/config
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22.12.0"
+      # Render-də tətbiqin qarşısında bir proxy var — real IP üçün (rate limit) lazımdır
+      - key: TRUST_PROXY
+        value: "1"
+      # İlk B2B admin hesabı. Dəyərləri Render paneldə yazın (min. 12 simvollu güclü parol).
+      - key: B2B_ADMIN_USER
+        sync: false
+      - key: B2B_ADMIN_PASSWORD
+        sync: false
+      - key: B2B_ADMIN_AGENCY
+        value: TurTap

@@ -8,7 +8,7 @@ const { providers } = require('./src/providers');
 const { boardLabels } = require('./src/data/catalog');
 const { securityHeaders, parseQueryString, sanitizeBody, requireJson, checkOrigin, notFound, errorHandler } = require('./src/security/http');
 const { rateLimit } = require('./src/security/rateLimit');
-const { seedDemoAccount } = require('./src/auth');
+const { seedDemoAccount, seedBootstrapAdmin } = require('./src/auth');
 
 const app = express();
 app.disable('x-powered-by');
@@ -86,7 +86,10 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Dev/test: env ilə demo B2B hesabı (production-da işləmir)
-const ready = seedDemoAccount().catch((e) => console.error('[auth] demo hesab yaradılmadı:', e.message));
+const ready = Promise.all([
+  seedDemoAccount().catch((e) => console.error('[auth] demo hesab yaradılmadı:', e.message)),
+  seedBootstrapAdmin().catch((e) => console.error('[auth] admin hesabı yaradılmadı:', e.message)),
+]);
 app.locals.ready = ready;
 
 if (require.main === module) {

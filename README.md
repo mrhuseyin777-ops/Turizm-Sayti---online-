@@ -70,3 +70,20 @@ docs/PLAN.md              Ad təklifləri, inteqrasiya planı, əlavə ideyalar
 `src/providers/` daxilində `search(query)` funksiyası olan modul yaradın — o, `Offer[]` qaytarmalıdır
 (sahələr üçün `mockProvider.js`-ə baxın) — və onu `src/providers/index.js`-də qeyd edin.
 Qalan hər şey (müqayisə, sıralama, B2B matrisi) avtomatik işləyir.
+
+## İnternetə yerləşdirmə (Render.com)
+
+1. render.com-da GitHub hesabı ilə qeydiyyatdan keçin → **New → Web Service** → bu repo.
+2. Ayarlar: Runtime **Node**, Build Command `npm ci --omit=dev`, Start Command `node server.js`, Plan **Free**.
+   (Alternativ: **New → Blueprint** — repodakı `render.yaml` avtomatik oxunur.)
+3. **Environment** bölməsində:
+   - `NODE_ENV` = `production`
+   - `TRUST_PROXY` = `1`
+   - `B2B_ADMIN_USER` = admin istifadəçi adı (3–32 simvol: hərf, rəqəm, `. _ -`)
+   - `B2B_ADMIN_PASSWORD` = güclü parol (min. 12 simvol) — yalnız Render-də saxlanılır, repoda yox
+   - `B2B_ADMIN_AGENCY` = agentlik adı (məs. `TurTap`)
+4. Deploy bitəndə sayt `https://<ad>.onrender.com` ünvanında açılır; B2B: `/b2b`.
+
+Qeyd: pulsuz planda disk müvəqqətidir — müraciətlər, seçim linkləri və `create-agency` ilə yaradılan
+hesablar yenidən başlamada itir (admin hesabı hər dəfə env-dən yenidən yaradılır). Daimi saxlama üçün
+verilənlər bazası lazımdır (bax SECURITY.md).
