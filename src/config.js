@@ -1,9 +1,9 @@
 // Brend və əsas parametrlər — ad dəyişəndə yalnız burada dəyişmək kifayətdir.
 module.exports = {
   brand: {
-    name: 'TurTap',
+    name: 'eTour',
     slogan: 'Bütün tur operatorları bir axtarışda — ən ucuzdan bahalıya.',
-    domain: 'turtap.az', // hələ alınmayıb, nümunədir
+    domain: 'etour.com', // hələ alınmayıb: etour.com başqasına məxsusdur — alternativ etour.az
   },
   // Operator məzənnəsi: Azərbaycan operatorları (SAMO-tour) xarici turları adətən USD ilə qiymətləndirir
   // və "Gündəlik məzənnə DD.MM.YYYY USD/AZN X" göstərir. DEMO dəyər.

@@ -1,9 +1,9 @@
-# Render.com Blueprint — TurTap (Node/Express)
+# Render.com Blueprint — eTour (Node/Express)
 # Render Dashboard → New → Blueprint → bu repo. Gizli dəyərlər (sync: false) Render-də əl ilə daxil edilir,
 # repoda saxlanılmır.
 services:
   - type: web
-    name: turtap
+    name: etour
     runtime: node
     plan: free
     buildCommand: npm ci --omit=dev
@@ -24,4 +24,4 @@ services:
       - key: B2B_ADMIN_PASSWORD
         sync: false
       - key: B2B_ADMIN_AGENCY
-        value: TurTap
+        value: eTour

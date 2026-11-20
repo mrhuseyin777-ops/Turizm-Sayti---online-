@@ -140,7 +140,7 @@ async function safeFetch(op, req, o = {}) {
 // ---------------------------------------------------------------------------------------------
 // Normalizasiya
 // ---------------------------------------------------------------------------------------------
-// SamoItem — TurTap-ın DAXİLİ aralıq formatı (operatorun real cavab formatı DEYİL!).
+// SamoItem — eTour-ın DAXİLİ aralıq formatı (operatorun real cavab formatı DEYİL!).
 // SAMO-tour-un ümumi məlumat modelinə (tur, otel, rayon/şəhər, otaq tipi, yerləşmə, qida, qiymət,
 // valyuta, otel yer statusu, stop-sale, uçuş) əsaslanır. Operatorun rəsmi sənədi alınanda
 // parseResponse() real cavabı bu formata gətirəcək; sahə adları/kodlar o zaman dəqiqləşdiriləcək.
@@ -149,7 +149,7 @@ async function safeFetch(op, req, o = {}) {
 //   tour:          { id, name }                       — tur (TOURINC)
 //   hotel:         { id, name, stars }                — otel
 //   town:          { id, name } | null                — kurort/şəhər (və ya rayon/district)
-//   destinationId: 'antalya' | ...                    — (ixtiyari) TurTap istiqaməti, xəritə məlumdursa
+//   destinationId: 'antalya' | ...                    — (ixtiyari) eTour istiqaməti, xəritə məlumdursa
 //   room:          string                             — otaq tipi
 //   accommodation: string                             — yerləşmə (məs. "DBL", "DBL+CHD")
 //   meal:          string                             — qida kodu/adı (BB, HB, FB, AI, UAI, ...)
@@ -217,7 +217,7 @@ function normalizeSamoItem(raw, ctx) {
   let destinationId = typeof raw.destinationId === 'string' && DEST_IDS.has(raw.destinationId)
     && (!qDest.length || qDest.includes(raw.destinationId)) ? raw.destinationId : null;
   if (!destinationId && qDest.length === 1) destinationId = qDest[0];
-  if (!destinationId) return null; // TODO: SAMO town/district ID → TurTap istiqamət xəritəsi
+  if (!destinationId) return null; // TODO: SAMO town/district ID → eTour istiqamət xəritəsi
 
   const board = mapBoard(raw.meal);
   const includesFlight = !!(flight && flight.included);

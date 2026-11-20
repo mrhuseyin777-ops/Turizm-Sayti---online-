@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const env = require('../env');
 
-const COOKIE = env.cookieSecure ? '__Host-turtap_sid' : 'turtap_sid';
+const COOKIE = env.cookieSecure ? '__Host-etour_sid' : 'etour_sid';
 const IDLE_MS = env.sessionIdleMinutes * 60 * 1000;
 const MAX_MS = env.sessionMaxMinutes * 60 * 1000;
 const MAX_SESSIONS = 20000;

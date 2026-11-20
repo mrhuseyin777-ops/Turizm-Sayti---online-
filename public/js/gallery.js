@@ -1,4 +1,4 @@
-// TurTap — otel kartı qalereyası: 3 slayd, oxlar, nöqtələr, swipe (pointer events), klaviatura,
+// eTour — otel kartı qalereyası: 3 slayd, oxlar, nöqtələr, swipe (pointer events), klaviatura,
 // lightbox (modal: Esc, fokus tələsi, fokusun geri qaytarılması), IntersectionObserver ilə lazy render.
 // Asılılıq: hotel-art.js (window.HotelArt). CSP-uyğun: inline handler yoxdur, yalnız addEventListener.
 // Otel adı yalnız DOM xassələri ilə (alt, aria-label, textContent) yazılır — innerHTML-ə düşmür.

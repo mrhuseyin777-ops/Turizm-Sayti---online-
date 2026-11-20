@@ -181,12 +181,12 @@ test('auth: yanlış parol və mövcud olmayan istifadəçi eyni cavab (401); se
   assert.strictEqual(ok.res.status, 200);
   assert.strictEqual(ok.body.agency.name, 'Auth Agentlik');
   assert.ok(!JSON.stringify(ok.body).includes('scrypt'), 'hash cavabda yoxdur');
-  const sc = ok.setCookie.find((c) => c.startsWith('turtap_sid='));
+  const sc = ok.setCookie.find((c) => c.startsWith('etour_sid='));
   assert.match(sc, /HttpOnly/);
   assert.match(sc, /SameSite=Strict/);
   assert.match(sc, /Path=\//);
   assert.match(sc, /Max-Age=\d+/);
-  assert.match(ok.cookie, /^turtap_sid=[A-Za-z0-9_-]{43}$/, '256 bitlik təsadüfi id');
+  assert.match(ok.cookie, /^etour_sid=[A-Za-z0-9_-]{43}$/, '256 bitlik təsadüfi id');
   assert.match(ok.csrf, /^[A-Za-z0-9_-]{43}$/);
 
   const me = await (await client(S.base, ok).get('/api/b2b/me')).json();
@@ -198,7 +198,7 @@ test('auth: yanlış parol və mövcud olmayan istifadəçi eyni cavab (401); se
 
 test('auth: sessiyasız / saxta sessiya ilə B2B API-ləri 401', async () => {
   assert.deepStrictEqual(await (await fetch(S.base + '/api/b2b/me')).json(), { authenticated: false });
-  for (const cookie of [undefined, 'turtap_sid=' + 'A'.repeat(43), 'turtap_sid=../../x', 'turtap_sid=']) {
+  for (const cookie of [undefined, 'etour_sid=' + 'A'.repeat(43), 'etour_sid=../../x', 'etour_sid=']) {
     const c = client(S.base, { cookie });
     assert.strictEqual((await c.get('/api/b2b/leads')).status, 401);
     assert.strictEqual((await c.get('/api/b2b/leads?agency=Auth%20Agentlik')).status, 401);
@@ -319,7 +319,7 @@ test('XSS: payload-lar JSON kimi data qayıdır, frontend esc() onları zərərs
   const sel = await r.json();
 
   // public/js/common.js-dəki esc() funksiyasını real kodla yoxla
-  const ctx = { localStorage: { getItem: () => null, setItem() {} }, document: { addEventListener() {}, querySelectorAll: () => [] }, location: { origin: 'https://turtap.az' }, URL };
+  const ctx = { localStorage: { getItem: () => null, setItem() {} }, document: { addEventListener() {}, querySelectorAll: () => [] }, location: { origin: 'https://etour.az' }, URL };
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'common.js'), 'utf8') + ';this.esc=esc;this.safeUrl=safeUrl;', ctx);
   for (const v of [...payloads, sel.agency, sel.client, sel.message]) {

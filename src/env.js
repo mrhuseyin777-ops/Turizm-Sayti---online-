@@ -30,7 +30,7 @@ module.exports = {
   port: int(raw.PORT, 3000, 1, 65535),
   host: raw.HOST || undefined,
   trustProxy: parseTrustProxy(raw.TRUST_PROXY),
-  // Əlavə icazəli Origin-lər (vergüllə), məs. "https://turtap.az,https://www.turtap.az".
+  // Əlavə icazəli Origin-lər (vergüllə), məs. "https://etour.az,https://www.etour.az".
   // Öz host-umuz həmişə icazəlidir.
   allowedOrigins: (raw.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean),
   // Hesabların saxlandığı qovluq (git-ə düşmür, bax .gitignore)
@@ -50,6 +50,6 @@ module.exports = {
   // dəyişənində saxlanılır (repoda yox). Terminalı olmayan hostinqlərdə (məs. Render pulsuz) B2B-yə
   // ilk girişi təmin edir; hesab yaddaşda yaradılır və hər açılışda yenidən yoxlanılır.
   bootstrapAdmin: raw.B2B_ADMIN_USER && raw.B2B_ADMIN_PASSWORD
-    ? { agency: raw.B2B_ADMIN_AGENCY || 'TurTap', username: raw.B2B_ADMIN_USER, password: raw.B2B_ADMIN_PASSWORD, displayName: raw.B2B_ADMIN_NAME || 'Admin' }
+    ? { agency: raw.B2B_ADMIN_AGENCY || 'eTour', username: raw.B2B_ADMIN_USER, password: raw.B2B_ADMIN_PASSWORD, displayName: raw.B2B_ADMIN_NAME || 'Admin' }
     : null,
 };

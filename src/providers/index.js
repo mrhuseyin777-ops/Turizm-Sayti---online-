@@ -34,7 +34,7 @@ function samoOrMock(mock) {
 //   memberships — [{ name, claim: 'operator' | 'verified', source }]
 //                 claim:'operator' = "operatorun öz məlumatına görə", müstəqil yoxlanılmayıb
 //   since       — fəaliyyətə başlama ili
-//   verified    — TurTap tərəfindən sənədlə yoxlanılıbmı
+//   verified    — eTour tərəfindən sənədlə yoxlanılıbmı
 const unverified = () => ({ licenseNo: null, memberships: [], since: null, verified: false });
 
 const providers = [

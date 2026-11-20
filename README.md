@@ -1,4 +1,4 @@
-# TurTap — tur və otel müqayisə platforması
+# eTour — tur və otel müqayisə platforması
 
 Azərbaycandakı tur operatorlarının (Summer Tour, Funsun, Kompas və s.) tur və otel
 qiymətlərini bir axtarışda toplayıb **ən ucuzdan bahalıya** düzən platforma. İki hissə var:
@@ -81,7 +81,7 @@ Qalan hər şey (müqayisə, sıralama, B2B matrisi) avtomatik işləyir.
    - `TRUST_PROXY` = `1`
    - `B2B_ADMIN_USER` = admin istifadəçi adı (3–32 simvol: hərf, rəqəm, `. _ -`)
    - `B2B_ADMIN_PASSWORD` = güclü parol (min. 12 simvol) — yalnız Render-də saxlanılır, repoda yox
-   - `B2B_ADMIN_AGENCY` = agentlik adı (məs. `TurTap`)
+   - `B2B_ADMIN_AGENCY` = agentlik adı (məs. `eTour`)
 4. Deploy bitəndə sayt `https://<ad>.onrender.com` ünvanında açılır; B2B: `/b2b`.
 
 Qeyd: pulsuz planda disk müvəqqətidir — müraciətlər, seçim linkləri və `create-agency` ilə yaradılan

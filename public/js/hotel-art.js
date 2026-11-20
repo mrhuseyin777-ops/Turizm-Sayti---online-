@@ -1,4 +1,4 @@
-// TurTap — otel illüstrasiyaları (real foto olmayanda).
+// eTour — otel illüstrasiyaları (real foto olmayanda).
 // Kənar resurs yoxdur, nəticə deterministikdir: eyni otel + variant => eyni SVG.
 // TƏHLÜKƏSİZLİK: SVG yalnız bu fayldakı sabit fraqmentlərdən və hesablanmış rəqəmlərdən qurulur.
 // Otelin adı, tag mətni və s. heç vaxt SVG-yə yazılmır — id yalnız hash üçün, destinationId yalnız
