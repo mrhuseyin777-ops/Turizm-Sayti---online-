@@ -65,12 +65,38 @@ B2B_DEMO_USER=demo B2B_DEMO_PASSWORD='öz-lokal-parolunuz-12+' npm start
 
 Təhlükəsizlik modeli, tətbiq olunan qorunmalar və production üçün qalan addımlar: [`SECURITY.md`](SECURITY.md).
 
+## Keyfiyyət və CI
+
+```bash
+npm run lint       # ESLint (eslint.config.js): server — Node/CommonJS, brauzer — public/js (adi script)
+npm test           # bütün unit/inteqrasiya testləri (yaddaş rejimi; DB testləri TEST_DATABASE_URL olmadan skip)
+npm run check      # lint + test (commit/PR-dan əvvəl)
+TEST_DATABASE_URL=postgres://user:pass@127.0.0.1:5432/etour_test npm run test:db   # yalnız test/db.test.js (real Postgres)
+npm run test:e2e   # E2E: Playwright + Chromium (aşağıya bax)
+```
+
+- **Lint**: `@eslint/js` tövsiyə olunan qaydalar + `no-unused-vars` (`_` prefiksli arqumentlər istisna), `no-undef`,
+  `eqeqeq` (smart), `no-eval`, `no-implied-eval`, `no-new-func`. Formatlama qaydası (Prettier) yoxdur. `public/js/common.js`-in
+  yuxarı səviyyə köməkçiləri digər səhifə skriptləri üçün qlobal kimi avtomatik elan olunur.
+- **DB testləri**: `TEST_DATABASE_URL`-ə **yalnız test bazası** verin — hər işə salınma ayrıca müvəqqəti sxem yaradıb sonda silir.
+- **E2E** (`test/e2e/*.spec.js`): Playwright-ın öz runner-i yox, `node:test` + `require('playwright')`. Playwright layihənin
+  asılılığı deyil: mühitdə varsa işləyir (`NODE_PATH`-də və ya `npm install --no-save playwright@1.63.0` +
+  `npx playwright install chromium`), yoxdursa testlər skip olunur. Server təsadüfi portda, yaddaş rejimində və müvəqqəti demo
+  B2B hesabı ilə açılır; ana səhifə axtarışı, aviabilet, avtomobil, B2B giriş → axtarış, how/privacy/terms yoxlanılır —
+  hər səhifədə konsol/JS xətası, CSP pozuntusu, brauzer xətası bildirişi və 390px-də üfüqi scroll olmamalıdır.
+- **CI** (`.github/workflows/ci.yml`, hər push və PR): `test` — `npm ci`, lint, test, `npm audit --omit=dev --audit-level=high`;
+  `test-db` — `postgres:16` service konteyneri ilə `npm test` (DB testləri daxil); `e2e` — Chromium ilə `npm run test:e2e`.
+  `permissions: contents: read`, köhnə işlər `concurrency` ilə ləğv olunur, npm cache.
+- **Monitorinq**: strukturlaşdırılmış loglar (`LOG_LEVEL`, production-da JSON), `X-Request-Id`, ixtiyari Sentry (`SENTRY_DSN`),
+  brauzer xətaları (`/api/client-errors`), `GET /healthz` və `GET /readyz` — bax [`docs/OPERATIONS.md`](docs/OPERATIONS.md) → 8.
+
 ## Struktur
 
 ```
 server.js                 Express server: təhlükəsizlik qatı, API (/api/search, /api/suggest), 404/xəta handler
 src/env.js                Mühit konfiqurasiyası (env)
-src/security/             Başlıqlar/CSP, rate limit, Origin (CSRF), body/query yoxlaması
+src/security/             Başlıqlar/CSP, rate limit, Origin (CSRF), body/query yoxlaması, log maskalanması
+src/observability/        Strukturlaşdırılmış logger, request id / sorğu logu, ixtiyari Sentry
 src/auth/                 B2B hesablar (scrypt), sessiyalar, brute-force qorunması
 src/storage/              Saxlama qatı: vahid repository interfeysi — postgres.js (DATABASE_URL) və memory.js (fayl/yaddaş),
                           cleanup.js (data retention)

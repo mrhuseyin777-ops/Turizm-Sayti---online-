@@ -1,6 +1,10 @@
 // HTTP təhlükəsizlik qatı: başlıqlar (CSP və s.), sorğu parametrlərinin təhlükəsiz parse-ı,
 // JSON body yoxlaması (prototype pollution), Origin (CSRF) yoxlaması, xəta və 404 handler-ləri.
 const env = require('../env');
+const { maskPhone, maskEmail, maskName, maskIp } = require('./mask');
+const { logger } = require('../observability/logger');
+const { routePath } = require('../observability/http');
+const sentry = require('../observability/sentry');
 
 // ---------------------------------------------------------------- Başlıqlar
 // CSP:
@@ -153,22 +157,7 @@ function honeypot(req, res, next) {
 }
 
 // ---------------------------------------------------------------- Loglarda şəxsi məlumatın maskalanması
-const maskPhone = (p) => {
-  const d = String(p || '').replace(/\D/g, '');
-  return d.length <= 4 ? '***' : `${'*'.repeat(Math.max(3, d.length - 4))}${d.slice(-2)}`;
-};
-const maskEmail = (e) => {
-  const s = String(e || '');
-  const i = s.indexOf('@');
-  return i < 1 ? '***' : `${s[0]}***@${s.slice(i + 1)}`;
-};
-const maskName = (n) => { const s = String(n || ''); return s ? `${s[0]}***` : ''; };
-const maskIp = (ip) => {
-  const s = String(ip || '');
-  if (s.includes('.')) return s.replace(/\.\d+$/, '.x');
-  if (s.includes(':')) return s.split(':').slice(0, 3).join(':') + ':…';
-  return s;
-};
+// Köməkçilər src/security/mask.js-dədir (logger da istifadə edir); geriyə uyğunluq üçün buradan da export olunur.
 
 // ---------------------------------------------------------------- 404 və xəta handler-ləri
 function notFound(req, res) {
@@ -184,7 +173,10 @@ function errorHandler(err, req, res, next) {
   if (status === 413 || err.type === 'entity.too.large') return res.status(413).json({ error: 'Sorğu həddən böyükdür' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON formatı düzgün deyil' });
   if (status >= 400 && status < 500) return res.status(status).json({ error: err.expose && err.message ? err.message : 'Sorğu düzgün deyil' });
-  console.error('[error]', req.method, req.path, err && err.stack ? err.stack : err);
+  // Logda: metod, yol şablonu (query-siz), request id, xəta (e-poçt/telefon maskalanır); Sentry — DSN varsa
+  const meta = { method: req.method, path: routePath(req), requestId: req.id };
+  logger.error('unhandled error', { ...meta, err });
+  sentry.captureException(err, meta);
   res.status(500).json({ error: 'Daxili xəta' });
 }
 

@@ -62,6 +62,14 @@ module.exports = {
   cleanupIntervalMinutes: int(raw.DATA_CLEANUP_INTERVAL_MINUTES, 60, 1, 24 * 60),
   // İstəyə görə: IP hash-i üçün gizli açar (HMAC). Təyin olunmasa sadə SHA-256 (prefiksli) istifadə olunur.
   ipHashSecret: raw.IP_HASH_SECRET || '',
+  // Loglama: debug | info | warn | error | silent. Default: test rejimində warn (sorğu logları testləri
+  // doldurmasın), qalanında info. Production-da JSON (sətir başına bir obyekt), dev-də oxunaqlı format.
+  logLevel: ['debug', 'info', 'warn', 'error', 'silent'].includes(raw.LOG_LEVEL) ? raw.LOG_LEVEL
+    : (nodeEnv === 'test' || !!raw.NODE_TEST_CONTEXT ? 'warn' : 'info'),
+  logFormat: raw.LOG_FORMAT === 'json' || raw.LOG_FORMAT === 'pretty' ? raw.LOG_FORMAT : (isProd ? 'json' : 'pretty'),
+  // İstəyə görə: Sentry (server xətaları). Boşdursa @sentry/node yüklənmir və heç bir şəbəkə sorğusu getmir.
+  sentryDsn: (raw.SENTRY_DSN || '').trim(),
+  sentryEnvironment: raw.SENTRY_ENVIRONMENT || nodeEnv,
   // Hostinq üçün ilk admin hesabı (production-da da işləyir). Parol YALNIZ hostinqin gizli env
   // dəyişənində saxlanılır (repoda yox). Terminalı olmayan hostinqlərdə (məs. Render pulsuz) B2B-yə
   // ilk girişi təmin edir; hesab yaddaşda yaradılır və hər açılışda yenidən yoxlanılır.

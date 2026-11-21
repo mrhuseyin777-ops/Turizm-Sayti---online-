@@ -1,4 +1,4 @@
-# eTour — əməliyyatlar: verilənlər bazası, backup, bərpa, data retention, sirlər
+# eTour — əməliyyatlar: verilənlər bazası, backup, bərpa, data retention, sirlər, monitorinq
 
 Bu sənəd eTour-ı production-da işlədən şəxs üçündür. Təhlükəsizlik modeli: [`SECURITY.md`](../SECURITY.md).
 
@@ -142,3 +142,42 @@ yenidən başlatmaq lazımdır. Dəqiq addımlar provayderin sənədindədir.
 `npm run create-agency` həm DB, həm fayl rejimində işləyir (`DATABASE_URL`-ə görə). DB rejimində əvvəlcə miqrasiyalar
 yoxlanılır. Parol interaktiv və ya `TURTAP_PASSWORD` env ilə; `--reset-password` istifadəçinin bütün DB sessiyalarını
 silir. Bax README → "B2B agentlik hesabı yaratmaq".
+
+## 8. Monitorinq, loglar və health check
+
+### Health check
+
+| Yol | Məna | Uğurlu | Uğursuz |
+|---|---|---|---|
+| `GET /healthz` | Proses canlıdır (liveness) | `200 {"status":"ok"}` | cavab yoxdur |
+| `GET /readyz` | Sorğu qəbul etməyə hazırdır (readiness): miqrasiyalar bitib, DB rejimində `SELECT 1` ≤ 2 s | `200 {"status":"ok"}` | `503 {"status":"unavailable"}` |
+
+Render-də `healthCheckPath: /readyz` (render.yaml). Kubernetes/Docker: liveness → `/healthz`, readiness → `/readyz`.
+Cavabda daxili detal yoxdur — səbəbi loglarda axtarın (`[readyz] DB yoxlaması alınmadı`, `[db] hovuz xətası`).
+
+### Loglar
+
+- Production (`NODE_ENV=production`) default olaraq JSON: sətir başına bir obyekt
+  `{"time":"…","level":"info","msg":"request","requestId":"…","method":"GET","path":"/api/search","status":200,"durationMs":41.2}`.
+  Dev-də oxunaqlı format. `LOG_FORMAT=json|pretty` ilə dəyişdirilir; `LOG_LEVEL=debug|info|warn|error|silent` (default `info`).
+- `warn`/`error` → stderr, qalanı → stdout. Hostinq log axtarışında `requestId` ilə bir sorğunun bütün loglarını tapın —
+  istifadəçi dəstəyə müraciət edəndə cavab başlığındakı `X-Request-Id` dəyərini soruşun.
+- Əsas hadisələr: `request` (yalnız `/api/*`), `unhandled error` (5xx, stack ilə), `client error` (brauzer xətası),
+  `[storage] …`, `[db] hovuz xətası`, `[cleanup] …`, `[process] tutulmamış xəta`.
+- Loglarda şəxsi məlumat maskalanır (SECURITY.md → 2.7.1). Yenə də log saxlama müddətini hostinq panelində məhdudlaşdırın
+  (tövsiyə: ≤ 30 gün) və log girişini yalnız etibarlı şəxslərə verin.
+
+### Sentry (ixtiyari)
+
+1. sentry.io-da (və ya öz Sentry serverinizdə) Node.js layihəsi yaradın, DSN-i kopyalayın.
+2. Hostinq panelində `SENTRY_DSN=<dsn>` (gizli dəyər kimi; repoya YAZMAYIN), istəyə görə `SENTRY_ENVIRONMENT=production`.
+3. Yenidən başladın: açılış logunda `"sentry":true` görünməlidir. DSN boş olanda Sentry kodu yüklənmir və şəbəkə sorğusu getmir.
+
+Yalnız server 5xx xətaları (metod, yol şablonu, request id ilə) və başlanğıc xətası göndərilir; cookie, başlıqlar, body,
+query, IP, istifadəçi göndərilmir. Sentry layihəsində "Data Scrubber" və "IP adreslərini saxlama" seçimlərini də aktiv edin.
+
+### Brauzer xətaları
+
+Səhifələrdəki JS xətaları `client error` (səviyyə `warn`) kimi server loguna düşür: `kind`, `message`, `file`
+(`/js/*.js` və ya `external`), `line`, `col`, `page` (query-siz). Çoxlu eyni xəta = son deploy-da regressiya ola bilər.
+

@@ -10,6 +10,7 @@ const env = require('../env');
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9._@-]{2,63}$/;
 const ROLES = ['admin', 'manager'];
+// eslint-disable-next-line no-control-regex -- qəsdən: idarəetmə simvollarını təmizləmək üçün
 const clean = (s, max) => String(s ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max);
 const normUsername = (u) => String(u ?? '').trim().toLowerCase();
 const agencyNameKey = (name) => clean(name, 80).toLocaleLowerCase('az');
@@ -35,7 +36,7 @@ function createStore(dir = env.dataDir) {
       const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
       db = { version: 1, agencies: Array.isArray(parsed.agencies) ? parsed.agencies : [], users: Array.isArray(parsed.users) ? parsed.users : [] };
     } catch (e) {
-      if (e.code !== 'ENOENT') throw new Error(`Hesab faylı oxunmadı (${file}): ${e.message}`);
+      if (e.code !== 'ENOENT') throw new Error(`Hesab faylı oxunmadı (${file}): ${e.message}`, { cause: e });
       db = { version: 1, agencies: [], users: [] };
     }
     return db;

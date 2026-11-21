@@ -138,9 +138,35 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
   IP heç bir cədvəldə açıq saxlanılmır — yalnız məqsədə görə prefiksli hash (`src/security/ipHash.js`; `IP_HASH_SECRET`
   təyin olunsa HMAC). Parol və sessiya id-si heç vaxt loglanmır.
 
+### 2.7.1 Monitorinq və strukturlaşdırılmış loglar (`src/observability/`)
+
+- **Logger** (`logger.js`): production-da sətir başına bir JSON (`time`, `level`, `msg`, `requestId`, sahələr), dev-də
+  oxunaqlı format; `LOG_LEVEL` (`debug|info|warn|error|silent`), `LOG_FORMAT` (`json|pretty`). Həssas açarlar
+  (`password`, `token`, `cookie`, `authorization`, `csrf`, `session`, `secret`, `dsn` ...) `[gizli]` ilə əvəzlənir;
+  `email/phone/name/ip` açarları maskalanır; sərbəst mətndə (mesaj, xəta mətni, stack) e-poçt və telefon kimi rəqəm
+  ardıcıllıqları maskalanır (`src/security/mask.js`).
+- **Request id**: hər cavabda `X-Request-Id`. Gələn başlıq yalnız `^[A-Za-z0-9._-]{8,64}$` formatındadırsa qəbul olunur
+  (log injection / header injection yoxdur), əks halda yeni UUID. id loglara AsyncLocalStorage ilə avtomatik düşür.
+- **Sorğu logu** (`/api/*`): metod, yol şablonu (query string YOX; marşrut şablonu, məs. `/api/selections/:id` —
+  paylaşılan link id-ləri və tokenlər loglanmır), status, müddət. IP, başlıqlar və body loglanmır.
+- **Sentry (ixtiyari)**: yalnız `SENTRY_DSN` təyin olunanda `@sentry/node` yüklənir; yoxdursa modul yüklənmir və heç bir
+  şəbəkə sorğusu getmir (testlə yoxlanılır). `sendDefaultPii: false`, tracing söndürülüb, `includeLocalVariables: false`;
+  `beforeSend` cookie/authorization/CSRF/X-Forwarded-For başlıqlarını, body-ni, query string-i, `user`-i və stack
+  dəyişənlərini silir, mətnlərdə e-poçt/telefonu maskalayır; konsol breadcrumb-ları göndərilmir. Yalnız 5xx xətalar
+  (metod, yol şablonu, request id ilə) göndərilir. DSN yalnız hostinq panelində saxlanılır.
+- **Brauzer xətaları**: `public/js/errors.js` (bütün səhifələrdə, `common.js`-dən əvvəl) `error`/`unhandledrejection`-u
+  `POST /api/client-errors`-a göndərir (sendBeacon, ehtiyat: `fetch keepalive`): yalnız mesaj (≤300), skript yolu,
+  sətir/sütun, səhifə yolu — query/hash, forma dəyərləri, cookie göndərilmir. Səhifə başına ≤5 bildiriş. Server
+  (`src/routes/observability.js`): body ≤ 4 KB, IP üzrə 10/dəq, ümumi `/api/*` qorunmaları (Origin, yalnız JSON,
+  prototype pollution); sahələr yenidən təmizlənir (fayl yalnız `/js/*.js`, əks halda `external`; `/s/<id>` → `/s/:id`).
+  CSP dəyişmir (`connect-src 'self'`).
+- **Health**: `GET /healthz` (liveness), `GET /readyz` (readiness: başlanğıc/miqrasiyalar bitib və DB rejimində
+  `SELECT 1` ≤ 2 s; eyni anda gələn yoxlamalar bir sorğunu paylaşır). Cavab yalnız `{"status":"ok"|"unavailable"}` —
+  versiya, DB adı, xəta mətni qaytarılmır.
+
 ### 2.8 Asılılıqlar və konfiqurasiya
 
-- Runtime asılılıqlar: `express`, `pg` — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
+- Runtime asılılıqlar: `express`, `pg`, `@sentry/node` (yalnız `SENTRY_DSN` olanda yüklənir) — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
   `npm audit` — 0 zəiflik (audit tarixində). `engines.node >= 22.12`.
 - Konfiqurasiya env-dən (`.env.example`), repoda sirr yoxdur (`DATABASE_URL` yalnız hostinq panelində / Render
   `fromDatabase`); `data/`, `backups/`, `*.dump`, `.env*` `.gitignore`-dadır.
@@ -152,6 +178,12 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
 rate limit, parol hash-i, yanlış parol/mövcud olmayan istifadəçi, brute-force bloku (hesab və IP), sessiyasız 401,
 cookie atributları, logout/vaxtı bitmiş/parolu dəyişmiş sessiya, CSRF token və Origin, IDOR (başqa agentliyin leadləri),
 XSS payload-larının escape olunması, honeypot, log maskalanması, agentlik limitləri. `npm test` ilə işləyir.
+
+`test/observability.test.js`: request id formatı, sorğu logunda query/id olmaması, health check-lər, `/api/client-errors`
+(sahə ağ siyahısı, 4 KB, Origin, 415, rate limit), logger maskalanması, Sentry-nin DSN-siz yüklənməməsi və lokal saxta
+qəbuledici ilə PII-siz göndərilməsi. `test/e2e/*.spec.js` (Playwright, `npm run test:e2e`): əsas axınlarda konsol xətası,
+CSP pozuntusu və 390px-də üfüqi scroll olmaması. Statik analiz: `npm run lint` (ESLint: `no-eval`, `no-implied-eval`,
+`no-new-func`, `eqeqeq`, `no-undef`). CI: `.github/workflows/ci.yml` (`permissions: contents: read`).
 
 `test/db.test.js` (yalnız `TEST_DATABASE_URL` verilsə; müvəqqəti sxemdə): miqrasiyaların idempotentliyi və paralel
 nüsxələrdə advisory lock, dəyişdirilmiş miqrasiyanın rədd edilməsi, hesab CRUD və DB məhdudiyyətləri, sessiya hash-i və

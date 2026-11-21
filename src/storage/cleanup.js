@@ -7,6 +7,7 @@
 // söndürülüb (DATA_CLEANUP=1 ilə açılır). Bir neçə nüsxədə hamısı işləyə bilər: DELETE idempotentdir.
 const env = require('../env');
 const storage = require('./index');
+const { logger } = require('../observability/logger');
 
 const DAY_MS = 24 * 3600 * 1000;
 
@@ -16,7 +17,7 @@ async function runCleanup({ repos = storage.get(), now = Date.now(), retentionDa
   const cutoff = new Date(now - retentionDays * DAY_MS);
   const out = {};
   const step = async (name, fn) => {
-    try { out[name] = await fn(); } catch (e) { out[name] = null; console.error(`[cleanup] ${name} alınmadı:`, e.message); }
+    try { out[name] = await fn(); } catch (e) { out[name] = null; logger.error(`[cleanup] ${name} alınmadı`, { err: e.message }); }
   };
   await step('leads', () => repos.leads.purgeBefore(cutoff));
   await step('flightRequests', () => repos.flightRequests.purgeBefore(cutoff));
@@ -25,14 +26,14 @@ async function runCleanup({ repos = storage.get(), now = Date.now(), retentionDa
   await step('flightAlerts', () => repos.flightAlerts.purgeDepartedBefore(new Date(now).toISOString().slice(0, 10)));
   await step('sessions', () => repos.sessions.purgeExpired({ now, idleMs: IDLE_MS }));
   const total = Object.values(out).reduce((a, b) => a + (b || 0), 0);
-  if (total) console.info('[cleanup] silindi', out);
+  if (total) logger.info('[cleanup] silindi', { deleted: out });
   return out;
 }
 
 let timer = null;
 function startCleanup({ intervalMs = env.cleanupIntervalMinutes * 60 * 1000, runNow = true } = {}) {
   if (timer) return timer;
-  const tick = () => runCleanup().catch((e) => console.error('[cleanup] xəta:', e.message));
+  const tick = () => runCleanup().catch((e) => logger.error('[cleanup] xəta', { err: e.message }));
   if (runNow) tick();
   timer = setInterval(tick, intervalMs);
   timer.unref();

@@ -2,6 +2,11 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const env = require('./src/env');
+// Xəta monitorinqi (Sentry) — yalnız SENTRY_DSN varsa yüklənir; yoxdursa no-op, şəbəkə sorğusu yoxdur
+const sentry = require('./src/observability/sentry');
+sentry.init();
+const { logger } = require('./src/observability/logger');
+const { requestContext, requestLogger } = require('./src/observability/http');
 const config = require('./src/config');
 const { search, suggest, QueryError } = require('./src/search');
 const { providers } = require('./src/providers');
@@ -18,6 +23,10 @@ app.set('trust proxy', env.trustProxy);
 // Sorğu parametrləri: yalnız sadə string-lər (iç-içə obyekt/massiv yox) — bax src/security/http.js
 app.set('query parser', parseQueryString);
 app.set('json spaces', 0);
+
+// 0) Request id (X-Request-Id) və /api/* sorğu logu (metod, yol — query-siz, status, müddət)
+app.use(requestContext);
+app.use('/api/', requestLogger);
 
 // 1) Təhlükəsizlik başlıqları (CSP, nosniff, frame-ancestors, HSTS və s.) — hər cavaba
 app.use(securityHeaders);
@@ -90,16 +99,21 @@ app.use(errorHandler);
 // Saxlama qatı: PostgreSQL rejimində miqrasiyalar (advisory lock ilə), sonra hesabların seed-i.
 // Dev/test: env ilə demo B2B hesabı (production-da işləmir); hostinq: env-dən ilk admin.
 const ready = storage.init().then(() => Promise.all([
-  seedDemoAccount().catch((e) => console.error('[auth] demo hesab yaradılmadı:', e.message)),
-  seedBootstrapAdmin().catch((e) => console.error('[auth] admin hesabı yaradılmadı:', e.message)),
+  seedDemoAccount().catch((e) => logger.error('[auth] demo hesab yaradılmadı', { err: e.message })),
+  seedBootstrapAdmin().catch((e) => logger.error('[auth] admin hesabı yaradılmadı', { err: e.message })),
 ]));
+// /readyz: başlanğıc bitməyibsə və ya alınmayıbsa 503
+app.locals.readyState = 'pending';
+ready.then(() => { app.locals.readyState = 'ok'; }, () => { app.locals.readyState = 'failed'; });
 ready.catch(() => {}); // xəta aşağıda (main) və ya ready-ni gözləyən testdə işlənir
 app.locals.ready = ready;
 
 if (require.main === module) {
-  if (env.isProd && !env.trustProxy) console.warn('[config] TRUST_PROXY təyin olunmayıb: proxy arxasındasınızsa rate limit bütün istifadəçiləri bir IP kimi görəcək.');
+  // Tutulmamış xəta prosesi dayandırmazdan əvvəl loga düşsün (davranışı dəyişmir — yalnız müşahidə)
+  process.on('uncaughtExceptionMonitor', (err, origin) => logger.error('[process] tutulmamış xəta', { origin, err }));
+  if (env.isProd && !env.trustProxy) logger.warn('[config] TRUST_PROXY təyin olunmayıb: proxy arxasındasınızsa rate limit bütün istifadəçiləri bir IP kimi görəcək.');
   ready.then(() => {
-    const server = app.listen(env.port, env.host, () => console.log(`${config.brand.name} işləyir: http://localhost:${env.port} (${env.nodeEnv}, saxlama: ${storage.mode()})`));
+    const server = app.listen(env.port, env.host, () => logger.info(`${config.brand.name} işləyir: http://localhost:${env.port}`, { env: env.nodeEnv, storage: storage.mode(), sentry: sentry.enabled() }));
     // Yavaş klient (slowloris) və asılı qalan bağlantılara qarşı vaxt limitləri
     server.headersTimeout = 20 * 1000;
     server.requestTimeout = 30 * 1000;
@@ -109,8 +123,8 @@ if (require.main === module) {
     if (env.cleanupEnabled) startCleanup();
     // Hostinq dayandırma siqnalı: yeni bağlantıları qəbul etmə, DB hovuzunu bağla
     const shutdown = (sig) => {
-      console.info(`[server] ${sig}: dayandırılır`);
-      server.close(() => storage.close().catch(() => {}).finally(() => process.exit(0)));
+      logger.info(`[server] ${sig}: dayandırılır`);
+      server.close(() => Promise.all([storage.close().catch(() => {}), sentry.flush(2000).catch(() => {})]).finally(() => process.exit(0)));
       server.closeIdleConnections();
       setTimeout(() => process.exit(0), 10 * 1000).unref();
     };
@@ -118,8 +132,9 @@ if (require.main === module) {
     process.once('SIGINT', shutdown);
   }, (e) => {
     // DB-yə qoşulmaq / miqrasiya alınmadı — server açılmır (hostinq prosesi yenidən başladacaq)
-    console.error('[storage] başlanğıc alınmadı:', e.message);
-    process.exit(1);
+    logger.error('[storage] başlanğıc alınmadı', { err: e.message });
+    sentry.captureException(e);
+    sentry.flush(2000).finally(() => process.exit(1));
   });
 }
 

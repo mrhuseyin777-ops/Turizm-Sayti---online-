@@ -51,7 +51,7 @@ function createRepos(pool) {
         const { rows } = await q('INSERT INTO agencies (id, name, name_key) VALUES ($1, $2, $3) RETURNING id, name, created_at', [newId('ag'), n, agencyNameKey(n)]);
         return agencyRow(rows[0]);
       } catch (e) {
-        if (e.code === UNIQUE_VIOLATION) throw new Error('Bu adda agentlik artıq var');
+        if (e.code === UNIQUE_VIOLATION) throw new Error('Bu adda agentlik artıq var', { cause: e });
         throw e;
       }
     },
@@ -70,7 +70,7 @@ function createRepos(pool) {
           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`, [newId('usr'), agencyId, u, clean(displayName, 80) || u, role, passwordHash]);
         return userRow(rows[0]);
       } catch (e) {
-        if (e.code === UNIQUE_VIOLATION) throw new Error('Bu istifadəçi adı artıq mövcuddur');
+        if (e.code === UNIQUE_VIOLATION) throw new Error('Bu istifadəçi adı artıq mövcuddur', { cause: e });
         throw e;
       }
     },

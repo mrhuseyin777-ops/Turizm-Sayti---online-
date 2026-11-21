@@ -134,7 +134,7 @@ function createAlertStore(dirOrOpts = env.dataDir) {
     const results = [];
     const patches = [];
     for (const a of alerts) {
-      let price = null;
+      let price;
       try { price = (await cheapestPrice({ ...a.route })).price; } catch { continue; }
       const change = a.lastPrice && price != null ? (price - a.lastPrice) / a.lastPrice : 0;
       const due = a.email && (a.mode === 'daily' || Math.abs(change) >= 0.1);
@@ -154,7 +154,7 @@ function createAlertStore(dirOrOpts = env.dataDir) {
 
 // Klientə qaytarılan görünüş: tokenHash, e-poçt və ipKey GÖSTƏRİLMİR
 async function publicView(a, lang = 'az') {
-  let current = null;
+  let current;
   try { current = (await cheapestPrice({ ...a.route, lang })).price; } catch { current = null; }
   const changePct = a.initialPrice && current != null ? Math.round(((current - a.initialPrice) / a.initialPrice) * 1000) / 10 : null;
   return {

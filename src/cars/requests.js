@@ -16,6 +16,7 @@ const QUERY_KEYS = {
 const NAME_RE = /^\p{L}[\p{L}\p{M} .'’-]{1,79}$/u;
 const PHONE_RE = /^\+?[0-9][0-9 ()-]{5,22}$/;
 const OFFER_RE = /^[a-z0-9-]{1,40}\|[a-z0-9-]{1,40}$/;
+// eslint-disable-next-line no-control-regex -- qəsdən: idarəetmə simvollarını təmizləmək üçün
 const CTRL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 function validateRequest(body) {

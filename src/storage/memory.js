@@ -140,7 +140,7 @@ function createFileAlertRepo(dir = env.dataDir) {
       const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
       db = { version: 1, alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [] };
     } catch (e) {
-      if (e.code !== 'ENOENT') throw new Error(`İzləmə faylı oxunmadı (${file}): ${e.message}`);
+      if (e.code !== 'ENOENT') throw new Error(`İzləmə faylı oxunmadı (${file}): ${e.message}`, { cause: e });
       db = { version: 1, alerts: [] };
     }
     return db;

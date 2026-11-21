@@ -22,6 +22,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // ---------------- Leads ----------------
 const NAME_RE = /^\p{L}[\p{L}\p{M} .'’-]{1,79}$/u;
+// eslint-disable-next-line no-control-regex -- qəsdən: idarəetmə simvollarını təmizləmək üçün
 const CTRL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const text = (v, max) => str(v, max * 2).replace(CTRL_RE, '').slice(0, max);
 const validPhone = (p) => PHONE_RE.test(p) && (() => { const d = p.replace(/\D/g, '').length; return d >= 7 && d <= 15; })();

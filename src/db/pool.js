@@ -1,6 +1,7 @@
 // PostgreSQL bağlantı hovuzu (pg). Yalnız DATABASE_URL təyin olunanda yaradılır.
 // Bütün sorğular parametrləşdirilmişdir ($1, $2 ...) — SQL mətninə istifadəçi dəyəri birləşdirilmir.
 const env = require('../env');
+const { logger } = require('../observability/logger');
 
 let pool = null;
 
@@ -25,7 +26,7 @@ function createPool(url = env.databaseUrl, { ssl = env.databaseSsl, max = env.da
     application_name: 'etour',
   });
   // Boşda qalan bağlantının xətası prosesi yıxmasın (məs. DB yenidən başladı)
-  p.on('error', (e) => console.error('[db] hovuz xətası:', e.message));
+  p.on('error', (e) => logger.error('[db] hovuz xətası', { err: e.message, code: e.code }));
   return p;
 }
 

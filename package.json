@@ -11,6 +11,10 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test \"test/**/*.test.js\"",
+    "test:db": "node --test test/db.test.js",
+    "test:e2e": "node --test --test-concurrency=1 \"test/e2e/*.spec.js\"",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test",
     "create-agency": "node scripts/create-agency.js",
     "migrate": "node scripts/migrate.js",
     "backup": "node scripts/backup.js",
@@ -27,11 +31,17 @@
   },
   "homepage": "https://github.com/mrhuseyin777-ops/Turizm-Sayti---online-#readme",
   "dependencies": {
+    "@sentry/node": "11.16.0",
     "express": "4.22.3",
     "pg": "8.16.3"
   },
   "private": true,
   "engines": {
     "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.15.0",
+    "globals": "17.14.0"
   }
 }

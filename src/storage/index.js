@@ -20,6 +20,7 @@
 // Rate limit və brute-force sayğacları qəsdən yaddaşda qalır (src/security/rateLimit.js): bir neçə
 // nüsxədə limit hər nüsxə üçün ayrıca sayılır — bax SECURITY.md.
 const env = require('../env');
+const { logger } = require('../observability/logger');
 
 let repos = null;
 let initPromise = null;
@@ -47,7 +48,7 @@ function init() {
   initPromise = (async () => {
     if (mode() !== 'postgres') {
       if (env.isProd) {
-        console.warn('[storage] XƏBƏRDARLIQ: DATABASE_URL təyin olunmayıb — hesablar, sessiyalar, müraciətlər və seçim linkləri ' +
+        logger.warn('[storage] XƏBƏRDARLIQ: DATABASE_URL təyin olunmayıb — hesablar, sessiyalar, müraciətlər və seçim linkləri ' +
           'yaddaşda/müvəqqəti diskdə saxlanılır və yenidən başlamada İTİR. Bax docs/OPERATIONS.md.');
       }
       return { mode: 'memory' };
@@ -55,7 +56,7 @@ function init() {
     const r = get();
     const { migrate } = require('../db/migrate');
     const res = await migrate(r.pool);
-    console.info(`[storage] PostgreSQL hazırdır (${res.total} miqrasiya, yeni: ${res.applied.length})`);
+    logger.info('[storage] PostgreSQL hazırdır', { migrations: res.total, applied: res.applied.length });
     return { mode: 'postgres', ...res };
   })();
   return initPromise;

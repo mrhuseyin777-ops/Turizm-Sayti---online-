@@ -381,3 +381,12 @@ test('bootstrap admin (DB): hesab DB-də yaradılır, env-dəki parol dəyişən
   assert.ok(Date.parse(after.passwordChangedAt) >= Date.parse(before.passwordChangedAt));
   assert.strictEqual((await login(S.base, 'boot-db', 'Gx7!kq2#Lm9vTz-2', { 'X-Forwarded-For': ip() })).res.status, 200);
 });
+
+// ---------------------------------------------------------------- Health check (DB rejimi)
+test('/readyz: PostgreSQL rejimində SELECT 1 ilə 200; /healthz 200; cavabda daxili detal yoxdur', async () => {
+  for (const p of ['/readyz', '/healthz']) {
+    const r = await fetch(S.base + p);
+    assert.strictEqual(r.status, 200, p);
+    assert.deepStrictEqual(await r.json(), { status: 'ok' });
+  }
+});

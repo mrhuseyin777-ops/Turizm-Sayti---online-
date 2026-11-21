@@ -10,7 +10,8 @@ services:
     buildCommand: npm ci --omit=dev
     # Miqrasiyalar server açılışında avtomatik tətbiq olunur (advisory lock ilə, bir neçə nüsxə üçün təhlükəsiz)
     startCommand: node server.js
-    healthCheckPath: /api/config
+    # Readiness: başlanğıc (miqrasiyalar) bitib və DB-yə SELECT 1 keçir (2 s timeout); liveness: /healthz
+    healthCheckPath: /readyz
     autoDeploy: true
     envVars:
       - key: NODE_ENV

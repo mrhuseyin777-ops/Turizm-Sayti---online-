@@ -58,7 +58,7 @@ async function migrate(pool, { dir = MIGRATIONS_DIR, log = console } = {}) {
           await client.query('COMMIT');
         } catch (e) {
           await client.query('ROLLBACK');
-          throw new Error(`Miqrasiya ${m.name} alınmadı: ${e.message}`);
+          throw new Error(`Miqrasiya ${m.name} alınmadı: ${e.message}`, { cause: e });
         }
         applied.push(m.name);
         if (log) log.info(`[db] miqrasiya tətbiq olundu: ${m.name}`);
