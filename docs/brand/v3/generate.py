@@ -9,6 +9,7 @@ CY = (BASE + XTOP) / 2
 ORANGE, DEEP, SUN, WARM, INK = '#ff7a00', '#e8590c', '#ffc23c', '#ff9f1c', '#2a1a10'
 P = dict(o1=24, d=65, i=100, o2=132, l=162, a=192)
 W, H = 234, BASE + 8
+HS = BASE + 30   # gülüşlü variantların hündürlüyü
 
 DEFS = f'''<defs>
 <linearGradient id="gt" gradientUnits="userSpaceOnUse" x1="8" y1="0" x2="210" y2="0"><stop offset="0" stop-color="{DEEP}"/><stop offset=".55" stop-color="{ORANGE}"/><stop offset="1" stop-color="{SUN}"/></linearGradient>
@@ -59,11 +60,27 @@ V = {
   'c-two-tone': lambda dark: word('#fff7ed' if dark else INK, G) + flight(P['o1'] - 6, CY - R - 10, 105, -14, P['a'] + 24, ASC - 4, WARM, ORANGE),
 }
 
+def smile(arrow):
+    x0, x1 = P['o2'] - 16, P['a'] + R + 10
+    y = BASE + 10
+    d = f'<path d="M{x0} {y} Q {(x0 + x1) / 2} {y + 18} {x1} {y - 2}" fill="none" stroke="url(#gt)" stroke-width="5" stroke-linecap="round"/>'
+    if arrow:
+        d += f'<path d="M{x1 - 9} {y - 3.5} L{x1} {y - 2} L{x1 - 4} {y + 6}" fill="none" stroke="{SUN}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'
+    return d
+
+V.update({
+  'a-smile-arrow': lambda dark: V['a-globe-flight'](dark) + smile(True),
+  'b-smile-arrow': lambda dark: V['b-short-flight'](dark) + smile(True),
+  'a-smile': lambda dark: V['a-globe-flight'](dark) + smile(False),
+  'b-smile': lambda dark: V['b-short-flight'](dark) + smile(False),
+})
+
 def svg(body, w=W, h=H): return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" aria-label="Odiola">{DEFS}{body}</svg>\n'
 os.makedirs(OUT, exist_ok=True)
 for k, f in V.items():
-    open(f'{OUT}/odiola-{k}.svg', 'w').write(svg(f(False)))
-    open(f'{OUT}/odiola-{k}-dark.svg', 'w').write(svg(f(True)))
+    h = HS if 'smile' in k else H
+    open(f'{OUT}/odiola-{k}.svg', 'w').write(svg(f(False), h=h))
+    open(f'{OUT}/odiola-{k}-dark.svg', 'w').write(svg(f(True), h=h))
 # ikon: günəşli "i" yox — kürə + təyyarə, narıncı fonda (favicon/tətbiq ikonu)
 icon = (f'<rect width="64" height="64" rx="14" fill="url(#gt)"/>'
         f'<g transform="translate({32-P["o1"]} {34-CY})">{globe(P["o1"], "#fff")}</g>'
