@@ -5,7 +5,7 @@
 .tg { position: absolute; inset: 0; overflow: hidden; background: #0f1a2e; isolation: isolate; z-index: 0; }
 .tg::after { content: ""; position: absolute; inset: auto 0 0 0; height: 34%; background: linear-gradient(to top, rgba(2, 6, 23, .42), rgba(2, 6, 23, 0)); pointer-events: none; z-index: 1; }
 .tg-track { display: flex; height: 100%; transition: transform .38s cubic-bezier(.2, .7, .2, 1); touch-action: pan-y; cursor: zoom-in; outline: none; will-change: transform; }
-.tg-track:focus-visible { box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--primary, #0e7c86); }
+.tg-track:focus-visible { box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--primary, #c2410c); }
 .tg-slide { flex: 0 0 100%; height: 100%; min-width: 0; }
 .tg-slide img, .tg-lb-slide img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 
@@ -24,7 +24,7 @@
 .tg-next::before { transform: translate(-70%, -50%) rotate(-45deg); }
 .tg:hover .tg-nav, .tg:focus-within .tg-nav { opacity: 1; }
 .tg-nav:hover { transform: scale(1.06); }
-.tg-nav:focus-visible { opacity: 1; outline: 3px solid var(--primary, #0e7c86); outline-offset: 2px; }
+.tg-nav:focus-visible { opacity: 1; outline: 3px solid var(--primary, #c2410c); outline-offset: 2px; }
 .tg-nav:disabled { opacity: 0 !important; pointer-events: none; }
 @media (hover: none) { .tg-nav { opacity: .9; width: 30px; height: 30px; margin-top: -15px; } }
 

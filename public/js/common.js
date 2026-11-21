@@ -132,7 +132,7 @@ function defaultDate(daysAhead = 30) {
 }
 
 // Otel kartı üçün istiqamətə görə rəng (şəkil yerinə; real versiyada operator şəkilləri)
-const GRADIENTS = ['#0e7c86,#38bdf8', '#f97316,#facc15', '#1e3a8a,#0ea5e9', '#15803d,#84cc16', '#9333ea,#f472b6', '#0f766e,#22d3ee', '#b45309,#f59e0b'];
+const GRADIENTS = ['#ea580c,#f59e0b', '#c2410c,#fb923c', '#0e7490,#22d3ee', '#be123c,#fb7185', '#b45309,#fbbf24', '#0369a1,#38bdf8', '#9a3412,#f97316'];
 const gradFor = (id) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return `linear-gradient(135deg, ${GRADIENTS[h % GRADIENTS.length]})`; };
 
 document.addEventListener('DOMContentLoaded', () => {
