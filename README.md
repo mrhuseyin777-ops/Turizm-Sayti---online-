@@ -1,4 +1,4 @@
-# eTour — tur və otel müqayisə platforması
+# Odiola — tur və otel müqayisə platforması
 
 Azərbaycandakı tur operatorlarının (Summer Tour, Funsun, Kompas və s.) tur və otel
 qiymətlərini bir axtarışda toplayıb **ən ucuzdan bahalıya** düzən platforma. İki hissə var:
@@ -29,7 +29,7 @@ tətbiq olunur. `DATABASE_URL` yoxdursa — dev/test üçün fayl/yaddaş rejimi
 DATABASE_URL=postgres://... npm run migrate        # miqrasiyalar (açılışda da avtomatik); --status
 DATABASE_URL=postgres://... npm run backup         # pg_dump ilə sıxılmış backup → ./backups
 DATABASE_URL=postgres://... npm run restore -- backups/<fayl>.dump   # TƏHLÜKƏLİ: təsdiq tələb edir
-TEST_DATABASE_URL=postgres://.../etour_test npm test   # + real Postgres üzərində test/db.test.js
+TEST_DATABASE_URL=postgres://.../odiola_test npm test   # + real Postgres üzərində test/db.test.js
 ```
 
 Backup strategiyası, bərpa, data retention (`DATA_RETENTION_DAYS`, default 180 gün) və sirlərin idarəsi:
@@ -71,7 +71,7 @@ Təhlükəsizlik modeli, tətbiq olunan qorunmalar və production üçün qalan 
 npm run lint       # ESLint (eslint.config.js): server — Node/CommonJS, brauzer — public/js (adi script)
 npm test           # bütün unit/inteqrasiya testləri (yaddaş rejimi; DB testləri TEST_DATABASE_URL olmadan skip)
 npm run check      # lint + test (commit/PR-dan əvvəl)
-TEST_DATABASE_URL=postgres://user:pass@127.0.0.1:5432/etour_test npm run test:db   # yalnız test/db.test.js (real Postgres)
+TEST_DATABASE_URL=postgres://user:pass@127.0.0.1:5432/odiola_test npm run test:db   # yalnız test/db.test.js (real Postgres)
 npm run test:e2e   # E2E: Playwright + Chromium (aşağıya bax)
 ```
 
@@ -125,8 +125,8 @@ Daimi saxlama üçün PostgreSQL lazımdır (pulsuz hostinqdə disk müvəqqəti
 ### A) Blueprint (tövsiyə olunur)
 
 1. render.com-da GitHub hesabı ilə qeydiyyatdan keçin → **New → Blueprint** → bu repo.
-2. Render repodakı [`render.yaml`](render.yaml)-ı oxuyur və iki resurs yaradır: **etour** (Web Service) və
-   **etour-db** (PostgreSQL). `DATABASE_URL` web servisə avtomatik bağlanır (`fromDatabase`), `IP_HASH_SECRET`
+2. Render repodakı [`render.yaml`](render.yaml)-ı oxuyur və iki resurs yaradır: **odiola** (Web Service) və
+   **odiola-db** (PostgreSQL). `DATABASE_URL` web servisə avtomatik bağlanır (`fromDatabase`), `IP_HASH_SECRET`
    təsadüfi yaradılır.
 3. Soruşulan gizli dəyərləri daxil edin:
    - `B2B_ADMIN_USER` = admin istifadəçi adı (3–32 simvol: hərf, rəqəm, `. _ -`)
@@ -138,15 +138,15 @@ Pulsuz Postgres planının məhdudiyyətləri (yaşama müddəti, həcm, backup)
 
 ### B) Əl ilə: Web Service + Postgres
 
-1. **New → PostgreSQL** → ad (məs. `etour-db`), region (web servislə **eyni** region), plan. Yaradıldıqdan sonra
+1. **New → PostgreSQL** → ad (məs. `odiola-db`), region (web servislə **eyni** region), plan. Yaradıldıqdan sonra
    **Internal Database URL**-i kopyalayın.
 2. **New → Web Service** → bu repo. Runtime **Node**, Build Command `npm ci --omit=dev`, Start Command `node server.js`.
 3. **Environment** bölməsində:
    - `NODE_ENV` = `production`, `TRUST_PROXY` = `1`
    - `DATABASE_URL` = 1-ci addımdakı daxili URL (daxili şəbəkədə `DATABASE_SSL` lazım deyil)
    - `IP_HASH_SECRET` = uzun təsadüfi dəyər
-   - `B2B_ADMIN_USER`, `B2B_ADMIN_PASSWORD`, `B2B_ADMIN_AGENCY` (məs. `eTour`)
-   - `PUBLIC_BASE_URL` = saytın ictimai ünvanı (məs. `https://etour.az`) — domen alınanda əlavə edin:
+   - `B2B_ADMIN_USER`, `B2B_ADMIN_PASSWORD`, `B2B_ADMIN_AGENCY` (məs. `Odiola`)
+   - `PUBLIC_BASE_URL` = saytın ictimai ünvanı (məs. `https://odiola.az`) — domen alınanda əlavə edin:
      bu olmadan `/sitemap.xml` 404 qaytarır və `robots.txt`-də `Sitemap:` sətiri olmur (Host başlığına etibar edilmir)
 4. Deploy. Miqrasiyalar açılışda avtomatik tətbiq olunur.
 

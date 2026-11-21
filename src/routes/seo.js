@@ -2,7 +2,7 @@
 //
 // Sitemap mütləq URL tələb edir. Host başlığına ETİBAR EDİLMİR (saxtalaşdırıla bilər → sitemap-a
 // və robots.txt-ə başqasının domeni düşə bilər). Domen yalnız env PUBLIC_BASE_URL-dən götürülür
-// (məs. https://etour.az). Təyin olunmayıbsa və ya düzgün deyilsə: /sitemap.xml → 404,
+// (məs. https://odiola.az). Təyin olunmayıbsa və ya düzgün deyilsə: /sitemap.xml → 404,
 // robots.txt-də "Sitemap:" sətiri olmur. Dəyər hər sorğuda oxunur (testlərdə dəyişdirmək üçün).
 const express = require('express');
 

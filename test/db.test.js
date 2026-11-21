@@ -1,6 +1,6 @@
 // PostgreSQL repository testləri (real Postgres ilə). TEST_DATABASE_URL yoxdursa — skip.
-//   TEST_DATABASE_URL=postgres://user:pass@127.0.0.1:5432/etour_test npm test
-// Hər işə salınma TEST bazasında ayrıca müvəqqəti sxem (etour_t_<təsadüfi>) yaradır və sonda onu silir —
+//   TEST_DATABASE_URL=postgres://user:pass@127.0.0.1:5432/odiola_test npm test
+// Hər işə salınma TEST bazasında ayrıca müvəqqəti sxem (odiola_t_<təsadüfi>) yaradır və sonda onu silir —
 // mövcud cədvəllərə toxunmur. Yenə də TEST_DATABASE_URL-ə yalnız test bazasını verin.
 const test = require('node:test');
 
@@ -16,7 +16,7 @@ const crypto = require('crypto');
 const assert = require('node:assert');
 const { Client } = require('pg');
 
-const SCHEMA = `etour_t_${crypto.randomBytes(5).toString('hex')}`;
+const SCHEMA = `odiola_t_${crypto.randomBytes(5).toString('hex')}`;
 const SCHEMA2 = `${SCHEMA}_m`;
 const withSchema = (schema) => {
   const u = new URL(process.env.TEST_DATABASE_URL);

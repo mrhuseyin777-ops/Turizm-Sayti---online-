@@ -1,9 +1,9 @@
 // Brend və əsas parametrlər — ad dəyişəndə yalnız burada dəyişmək kifayətdir.
 module.exports = {
   brand: {
-    name: 'eTour',
+    name: 'Odiola',
     slogan: 'Bütün tur operatorları bir axtarışda — ən ucuzdan bahalıya.',
-    domain: 'etour.com', // hələ alınmayıb: etour.com başqasına məxsusdur — alternativ etour.az
+    domain: 'odiola.com', // hələ qeydiyyatdan keçməyib (21.11.2026 boş idi) — tez alınmalıdır; alternativ odiola.az
   },
   // Operator məzənnəsi: Azərbaycan operatorları (SAMO-tour) xarici turları adətən USD ilə qiymətləndirir
   // və "Gündəlik məzənnə DD.MM.YYYY USD/AZN X" göstərir. DEMO dəyər.

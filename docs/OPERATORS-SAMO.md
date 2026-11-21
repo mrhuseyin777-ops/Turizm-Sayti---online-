@@ -44,7 +44,7 @@ Qeyd: sahibin göndərdiyi FS nümunə URL-ində `STATEFROM=367404` var — bu, 
 
 ### Ölkələr (STATEINC)
 
-| eTour | Summer Tour | Kompas | FS Travel |
+| Odiola | Summer Tour | Kompas | FS Travel |
 |---|---|---|---|
 | Türkiyə | 9 | yoxlanılmadı | 18803 |
 | BƏƏ | yoxlanılmadı | yoxlanılmadı | 20613 |
@@ -97,7 +97,7 @@ göstərdiyi qaydada (limit, saat, endpoint) mümkündür — əks halda etmirik
 
 ### (c) Deeplink — indi işləyir
 
-`buildOperatorSearchUrl(operatorId, query)` eTour axtarışını operatorun ictimai `search_tour`
+`buildOperatorSearchUrl(operatorId, query)` Odiola axtarışını operatorun ictimai `search_tour`
 səhifəsinin linkinə çevirir (çıxış şəhəri, ölkə, tarix aralığı, gecə, böyük, uşaq və yaşları,
 valyuta). Server heç bir sorğu göndərmir — istifadəçi linkə özü keçir. Məhdudiyyətlər:
 - uşaq yaşlarının (AGE1..AGE3) URL-dən avtomatik doldurulması **yoxlanılmadı**;
@@ -106,11 +106,11 @@ valyuta). Server heç bir sorğu göndərmir — istifadəçi linkə özü keçi
 
 ## 4. Operatora məktub şablonu
 
-> **Mövzu:** eTour — onlayn tur müqayisə platforması ilə əməkdaşlıq təklifi
+> **Mövzu:** Odiola — onlayn tur müqayisə platforması ilə əməkdaşlıq təklifi
 >
 > Hörmətli [Operatorun adı] komandası,
 >
-> Biz eTour-ıq — Azərbaycanda tur paketlərini və otelləri bir axtarışda müqayisə edən onlayn
+> Biz Odiola-ıq — Azərbaycanda tur paketlərini və otelləri bir axtarışda müqayisə edən onlayn
 > platforma (B2C sayt + agentliklər üçün B2B panel). Məqsədimiz müştərini ən uyğun tura və
 > birbaşa operatora yönləndirməkdir; ödəniş və rezervasiya operatorda qalır.
 >
@@ -120,7 +120,7 @@ valyuta). Server heç bir sorğu göndərmir — istifadəçi linkə özü keçi
 > 2. **Agent / tərəfdaşlıq müqaviləsi** — komissiya və ya müraciət (lead) başına ödəniş modeli.
 >
 > Sizə faydası:
-> - əlavə müştəri axını — eTour istifadəçiləri birbaşa sizin turlarınıza yönləndirilir;
+> - əlavə müştəri axını — Odiola istifadəçiləri birbaşa sizin turlarınıza yönləndirilir;
 > - satış başına komissiya — yalnız nəticəyə görə ödəniş;
 > - qiymətləriniz real vaxtda və düzgün göstərilir (köhnəlmiş qiymət riski yoxdur);
 > - sorğu yükü sizin müəyyən etdiyiniz limitlərdə qalır, keşləmə tətbiq edirik.
@@ -131,7 +131,7 @@ valyuta). Server heç bir sorğu göndərmir — istifadəçi linkə özü keçi
 > Görüş üçün uyğun vaxtınızı bildirməyinizi xahiş edirik.
 >
 > Hörmətlə,
-> [Ad Soyad], eTour · [telefon] · [e-poçt]
+> [Ad Soyad], Odiola · [telefon] · [e-poçt]
 
 ## 5. Real inteqrasiya üçün texniki checklist
 
@@ -139,9 +139,9 @@ valyuta). Server heç bir sorğu göndərmir — istifadəçi linkə özü keçi
 2. [ ] Rəsmi API sənədi: endpoint, protokol, autentifikasiya, sorğu/cavab sxemi, xəta kodları, rate limit, test (sandbox) mühiti.
 3. [ ] `operators.js` → `apiHosts`-a rəsmi host-u əlavə et (kod review ilə; yalnız https).
 4. [ ] Etimadnamələri hosting panelində env kimi təyin et (`SAMO_<OP>_API_URL`, `_API_TOKEN` və ya `_API_LOGIN/_API_PASSWORD`); repoya yazma.
-5. [ ] `buildRequest(query, {op, cfg})` — sənədə uyğun sorğu (eTour query → operator ID-ləri: çıxış, ölkə, tarix, gecə, pax, yaşlar, valyuta).
+5. [ ] `buildRequest(query, {op, cfg})` — sənədə uyğun sorğu (Odiola query → operator ID-ləri: çıxış, ölkə, tarix, gecə, pax, yaşlar, valyuta).
 6. [ ] `parseResponse(text, {op})` — real cavabı daxili `SamoItem` formatına gətir; sxemdən kənar sahələri at.
-7. [ ] Kurort/rayon (town/district) ID → eTour `destinationId` xəritəsi (hazırda yalnız tək istiqamətli sorğuda işləyir).
+7. [ ] Kurort/rayon (town/district) ID → Odiola `destinationId` xəritəsi (hazırda yalnız tək istiqamətli sorğuda işləyir).
 8. [ ] Otel ID xəritəsi (operatorlar arası eyni oteli qruplaşdırmaq üçün; məs. GIATA və ya ad+koordinat uyğunlaşdırması).
 9. [ ] Qida/otaq kodlarının sənədə uyğun xəritəsi (`mapBoard`), yer statusu və stop-sale kodları.
 10. [ ] Qiymət: ümumi qiymət vs. adambaşı, valyuta, erkən rezervasiya, ilkin ödəniş/ləğv şərtləri (`prepayment`, `freeCancelUntil`).

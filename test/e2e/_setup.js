@@ -34,7 +34,7 @@ function freePort() {
 
 async function startApp() {
   const port = await freePort();
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'etour-e2e-'));
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'odiola-e2e-'));
   const demo = { user: 'e2e-demo', password: `E2e-${crypto.randomBytes(12).toString('hex')}` };
   const env = {
     ...process.env,

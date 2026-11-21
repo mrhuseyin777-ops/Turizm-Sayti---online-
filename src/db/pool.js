@@ -23,7 +23,7 @@ function createPool(url = env.databaseUrl, { ssl = env.databaseSsl, max = env.da
     idleTimeoutMillis: 30 * 1000,
     connectionTimeoutMillis: 10 * 1000,
     statement_timeout: 15 * 1000,
-    application_name: 'etour',
+    application_name: 'odiola',
   });
   // Boşda qalan bağlantının xətası prosesi yıxmasın (məs. DB yenidən başladı)
   p.on('error', (e) => logger.error('[db] hovuz xətası', { err: e.message, code: e.code }));

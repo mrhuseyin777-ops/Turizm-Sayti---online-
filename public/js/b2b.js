@@ -369,7 +369,7 @@
     const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${csvCell(c)}"`).join(';')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `etour-${state.data.query.checkIn}.csv`;
+    a.download = `odiola-${state.data.query.checkIn}.csv`;
     a.click();
   });
 

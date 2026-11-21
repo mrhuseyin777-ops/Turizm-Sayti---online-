@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PostgreSQL bərpası (pg_restore) — TƏHLÜKƏLİ ƏMƏLİYYAT: hədəf bazadakı cədvəllər dump-dakı
 // vəziyyətlə ƏVƏZ OLUNUR (--clean). Dump-dan sonra yaranmış məlumat (yeni leadlər, hesablar) itir.
-//   DATABASE_URL=postgres://... npm run restore -- backups/etour-etour-20261121T101500Z.dump
+//   DATABASE_URL=postgres://... npm run restore -- backups/odiola-odiola-20261121T101500Z.dump
 // Təsdiq: interaktiv terminalda baza adını yazmaq tələb olunur; avtomatlaşdırmada
 //   npm run restore -- <fayl> --confirm <baza_adı>
 // Əvvəlcə cari vəziyyətin backup-ını götürün (npm run backup). Bax: docs/OPERATIONS.md

@@ -62,7 +62,7 @@ test('privacy.html və terms.html: mövcuddur, CSP uyğun, i18n açarları 3 dil
   // Koda uyğun məzmun: placeholder-lər, cookie, saxlama, IP
   assert.match(az.pv_controller_p1, /\[Şirkətin hüquqi adı\]/);
   assert.match(az.pv_controller_p1, /\[VÖEN\]/);
-  assert.match(az.pv_cookies_p1, /etour_sid/);
+  assert.match(az.pv_cookies_p1, /odiola_sid/);
   assert.match(az.pv_cookies_p2, /Reklam, analitika/);
   assert.match(az.pv_retention_li1, /180/);
   assert.match(az.pv_retention_li1, /konfiqurasiya/);
@@ -76,7 +76,7 @@ test('privacy.html və terms.html: mövcuddur, CSP uyğun, i18n açarları 3 dil
 
 test('cookie bəyanatı kodla uyğundur: sessiya cookie adı src/auth/sessions.js ilə eyni', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'auth', 'sessions.js'), 'utf8');
-  assert.match(src, /'__Host-etour_sid' : 'etour_sid'/);
+  assert.match(src, /'__Host-odiola_sid' : 'odiola_sid'/);
   assert.match(src, /HttpOnly/);
   assert.match(src, /SameSite=Strict/);
 });
@@ -166,17 +166,17 @@ test('robots.txt və sitemap.xml: PUBLIC_BASE_URL olmadan sitemap 404, robots-da
   process.env.PUBLIC_BASE_URL = 'javascript:alert(1)';
   assert.strictEqual((await fetch(`${s.base}/sitemap.xml`)).status, 404);
 
-  process.env.PUBLIC_BASE_URL = 'https://etour.example/';
+  process.env.PUBLIC_BASE_URL = 'https://odiola.example/';
   r = await fetch(`${s.base}/robots.txt`, { headers: { Host: 'evil.example' } });
   body = await r.text();
-  assert.ok(body.includes('Sitemap: https://etour.example/sitemap.xml'));
+  assert.ok(body.includes('Sitemap: https://odiola.example/sitemap.xml'));
   assert.ok(!body.includes('evil.example'));
   r = await fetch(`${s.base}/sitemap.xml`, { headers: { Host: 'evil.example' } });
   assert.strictEqual(r.status, 200);
   assert.match(r.headers.get('content-type'), /xml/);
   body = await r.text();
   assert.match(body, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
-  for (const p of ['/', '/flights.html', '/cars.html', '/how.html', '/privacy.html', '/terms.html']) assert.ok(body.includes(`<loc>https://etour.example${p}</loc>`), p);
+  for (const p of ['/', '/flights.html', '/cars.html', '/how.html', '/privacy.html', '/terms.html']) assert.ok(body.includes(`<loc>https://odiola.example${p}</loc>`), p);
   assert.ok(!body.includes('/b2b') && !body.includes('/s/') && !body.includes('evil.example'));
 
   // Statik robots.txt faylı yoxdur (marşrut onu kölgələməsin deyə)

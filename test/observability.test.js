@@ -210,19 +210,19 @@ test('Sentry scrubEvent: cookie/authorization/body/query/user silinir, mətnlər
     user: { ip_address: '1.2.3.4', email: 'u@x.com' },
     message: 'fail for u@x.com',
     request: {
-      url: 'https://etour.az/api/b2b/login?token=abc', query_string: 'token=abc', data: { password: 'p' }, cookies: { etour_sid: 's' },
-      headers: { Cookie: 'etour_sid=s', Authorization: 'Bearer x', 'X-CSRF-Token': 't', 'X-Forwarded-For': '1.2.3.4', 'User-Agent': 'ua' },
+      url: 'https://odiola.az/api/b2b/login?token=abc', query_string: 'token=abc', data: { password: 'p' }, cookies: { odiola_sid: 's' },
+      headers: { Cookie: 'odiola_sid=s', Authorization: 'Bearer x', 'X-CSRF-Token': 't', 'X-Forwarded-For': '1.2.3.4', 'User-Agent': 'ua' },
     },
     exception: { values: [{ value: 'Key (email)=(u@x.com)', stacktrace: { frames: [{ vars: { password: 'p' } }] } }] },
     breadcrumbs: [{ category: 'console', message: 'u@x.com' }, { category: 'http', data: { url: 'http://h/p?q=1' } }],
   });
   assert.strictEqual(ev.user, undefined);
-  assert.strictEqual(ev.request.url, 'https://etour.az/api/b2b/login');
+  assert.strictEqual(ev.request.url, 'https://odiola.az/api/b2b/login');
   assert.strictEqual(ev.request.query_string, undefined);
   assert.strictEqual(ev.request.data, undefined);
   assert.strictEqual(ev.request.cookies, undefined);
   assert.deepStrictEqual(Object.keys(ev.request.headers), ['User-Agent']);
-  assert.doesNotMatch(JSON.stringify(ev), /u@x\.com|"p"|etour_sid|Bearer/);
+  assert.doesNotMatch(JSON.stringify(ev), /u@x\.com|"p"|odiola_sid|Bearer/);
   assert.strictEqual(ev.breadcrumbs.length, 1);
   assert.strictEqual(ev.breadcrumbs[0].data.url, 'http://h/p');
 });

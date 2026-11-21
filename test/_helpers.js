@@ -23,7 +23,7 @@ async function login(base, username, password, headers = {}) {
   const res = await fetch(`${base}/api/b2b/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify({ username, password }) });
   const body = await res.json();
   const setCookie = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie')];
-  const cookie = (setCookie.find((c) => c && c.includes('etour_sid=')) || '').split(';')[0];
+  const cookie = (setCookie.find((c) => c && c.includes('odiola_sid=')) || '').split(';')[0];
   return { res, body, cookie, csrf: body.csrfToken, setCookie };
 }
 

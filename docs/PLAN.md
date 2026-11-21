@@ -1,10 +1,10 @@
-# eTour — məhsul planı
+# Odiola — məhsul planı
 
 ## 1. Ad təklifləri
 
 | Ad | Mənası / niyə | Domen ideyası |
 |---|---|---|
-| **eTour** ⭐ (işçi ad) | "Tur tap" — azərbaycanca aydındır, xarici dildə də asan oxunur, qısa | etour.az / turtap.com |
+| **Odiola** ⭐ (işçi ad) | "Tur tap" — azərbaycanca aydındır, xarici dildə də asan oxunur, qısa | odiola.az / turtap.com |
 | **Turbaz** | Tur + bazar — "bütün turlar bir bazarda" | turbaz.az |
 | **Gəzinti** | Yumşaq, yerli, emosional | gezinti.az |
 | **Tripsa** | Beynəlxalq səslənir, 6 hərf | tripsa.com |

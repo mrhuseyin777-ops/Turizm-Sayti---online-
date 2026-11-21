@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 64" width="250" height="64" role="img" aria-label="Odiola"><g transform="translate(6 0)"><circle cx="32" cy="34" r="17" fill="none" stroke="#0e7c86" stroke-width="7"/>
+<path d="M6 40 C 8 14, 50 6, 58 22" fill="none" stroke="#f97316" stroke-width="3" stroke-dasharray="4 4" stroke-linecap="round"/>
+<path d="M58 22 l-9 -1 l3 3 l-6 4 l2 1 l7 -3 l1 4 l2 -1 z" fill="#f97316" transform="rotate(-20 56 22)"/></g><text x="84" y="47" font-family="Inter, 'Segoe UI', Roboto, Arial, sans-serif" font-size="40" font-weight="800" letter-spacing="-1" fill="#ffffff">odi<tspan fill="#2bb3bd">ola</tspan></text></svg>

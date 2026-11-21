@@ -1,5 +1,5 @@
 {
-  "_note": "HİPOTETİK fixture. Bu, heç bir operatorun real cavabı DEYİL. eTour-ın daxili aralıq formatıdır (SamoItem, bax src/providers/samo/samoProvider.js). Otel adları uydurmadır.",
+  "_note": "HİPOTETİK fixture. Bu, heç bir operatorun real cavabı DEYİL. Odiola-ın daxili aralıq formatıdır (SamoItem, bax src/providers/samo/samoProvider.js). Otel adları uydurmadır.",
   "items": [
     {
       "tour": { "id": 1001, "name": "HYPOTHETICAL tour" },

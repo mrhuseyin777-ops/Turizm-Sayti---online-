@@ -10,7 +10,7 @@ const maxmem = (N, r) => 128 * N * r * 2;
 
 const POLICY = { min: 12, max: 256 };
 // Ən çox yayılmış zəif parolların kiçik siyahısı (tam siyahı üçün HIBP k-anonymity API tövsiyə olunur)
-const COMMON = new Set(['123456789012', 'password1234', 'qwertyuiop12', '111111111111', 'etour1234567', 'administrator', 'passwordpassword', 'qwerty123456', '1234567890123']);
+const COMMON = new Set(['123456789012', 'password1234', 'qwertyuiop12', '111111111111', 'odiola123456', 'administrator', 'passwordpassword', 'qwerty123456', '1234567890123']);
 
 function checkPolicy(pw, { username = '' } = {}) {
   if (typeof pw !== 'string') return 'Parol mətn olmalıdır';

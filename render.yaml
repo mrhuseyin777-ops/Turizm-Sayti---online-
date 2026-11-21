@@ -1,10 +1,10 @@
-# Render.com Blueprint — eTour (Node/Express + PostgreSQL)
+# Render.com Blueprint — Odiola (Node/Express + PostgreSQL)
 # Render Dashboard → New → Blueprint → bu repo. Gizli dəyərlər (sync: false) Render-də əl ilə daxil edilir,
 # repoda saxlanılmır. DATABASE_URL Render tərəfindən verilənlər bazasından avtomatik bağlanır (fromDatabase).
 # Əməliyyatlar (backup, bərpa, miqrasiya, data retention): docs/OPERATIONS.md
 services:
   - type: web
-    name: etour
+    name: odiola
     runtime: node
     plan: free
     buildCommand: npm ci --omit=dev
@@ -25,7 +25,7 @@ services:
       # Xarici bağlantı sətri istifadə etsəniz DATABASE_SSL=require yazın.
       - key: DATABASE_URL
         fromDatabase:
-          name: etour-db
+          name: odiola-db
           property: connectionString
       # Şəxsi məlumatların saxlanma müddəti (gün): leadlər və avia/avto müraciətləri
       - key: DATA_RETENTION_DAYS
@@ -39,16 +39,16 @@ services:
       - key: B2B_ADMIN_PASSWORD
         sync: false
       - key: B2B_ADMIN_AGENCY
-        value: eTour
+        value: Odiola
 
 databases:
   # Pulsuz Postgres planının məhdudiyyətləri (yaşama müddəti, yaddaş həcmi, backup, bağlantı sayı) dəyişə bilər —
   # Render sənədində yoxlayın (render.com/docs → Postgres → Free). Pulsuz planda avtomatik backup olmaya bilər:
   # vacib məlumat üçün ödənişli plan və ya `npm run backup` ilə müntəzəm dump (docs/OPERATIONS.md).
-  - name: etour-db
+  - name: odiola-db
     plan: free
-    databaseName: etour
-    user: etour
+    databaseName: odiola
+    user: odiola
     # Boş siyahı: bazaya internetdən birbaşa bağlantı yoxdur, yalnız Render daxili şəbəkəsindən.
     # Lokal kompüterdən backup/miqrasiya üçün öz IP-nizi müvəqqəti əlavə edin (Render panel → Database → Networking).
     ipAllowList: []

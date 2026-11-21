@@ -1,5 +1,5 @@
-// "Operatorun saytında yoxla" linki: eTour axtarış parametrlərini SAMO-tour Online
-// /search_tour səhifəsinin URL parametrlərinə çevirir. Bu sadəcə linkdir — eTour serveri
+// "Operatorun saytında yoxla" linki: Odiola axtarış parametrlərini SAMO-tour Online
+// /search_tour səhifəsinin URL parametrlərinə çevirir. Bu sadəcə linkdir — Odiola serveri
 // operatorun saytına heç bir sorğu göndərmir (icazə tələb etmir).
 //
 // Parametr adları operatorların ictimai axtarış formasının sahə adlarıdır (TOWNFROMINC, STATEINC,
@@ -59,7 +59,7 @@ function resolveChildAges(op, q) {
   const max = op.limits.childAgeMax;
   return ages.slice(0, op.limits.childrenMax).map((a) => {
     const n = Number(a);
-    // yaşı bilinməyən uşaq → 7 (eTour config.defaultChildAge ilə eyni), operator limitinə sıxılır
+    // yaşı bilinməyən uşaq → 7 (Odiola config.defaultChildAge ilə eyni), operator limitinə sıxılır
     return Math.min(max, Math.max(0, Number.isInteger(n) && a !== null && a !== '' ? n : 7));
   });
 }

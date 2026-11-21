@@ -1,6 +1,6 @@
-# eTour — əməliyyatlar: verilənlər bazası, backup, bərpa, data retention, sirlər, monitorinq
+# Odiola — əməliyyatlar: verilənlər bazası, backup, bərpa, data retention, sirlər, monitorinq
 
-Bu sənəd eTour-ı production-da işlədən şəxs üçündür. Təhlükəsizlik modeli: [`SECURITY.md`](../SECURITY.md).
+Bu sənəd Odiola-ı production-da işlədən şəxs üçündür. Təhlükəsizlik modeli: [`SECURITY.md`](../SECURITY.md).
 
 > Hostinq provayderlərinin (Render, Neon və s.) plan şərtləri — backup müddəti, PITR, pulsuz planın limitləri,
 > disk şifrələməsi — tez-tez dəyişir. Bu sənəd onları **təxmin etmir**: hər bəndi provayderin cari sənədində yoxlayın.
@@ -77,11 +77,11 @@ Tövsiyə olunan iki qat:
 ### `npm run backup`
 
 ```bash
-DATABASE_URL=postgres://... BACKUP_DIR=/secure/etour-backups BACKUP_KEEP=14 npm run backup
+DATABASE_URL=postgres://... BACKUP_DIR=/secure/odiola-backups BACKUP_KEEP=14 npm run backup
 ```
 
 - `pg_dump --format=custom --compress=6 --no-owner --no-privileges` — sıxılmış, `pg_restore` ilə bərpa olunan fayl.
-- Ad: `etour-<baza>-<YYYYMMDDTHHMMSSZ>.dump` (UTC). Fayl `0600`, qovluq `0700` icazə ilə; yarımçıq dump silinir.
+- Ad: `odiola-<baza>-<YYYYMMDDTHHMMSSZ>.dump` (UTC). Fayl `0600`, qovluq `0700` icazə ilə; yarımçıq dump silinir.
 - Parol komanda sətrində görünmür (`DATABASE_URL` libpq mühit dəyişənlərinə çevrilir).
 - `pg_dump` lazımdır (PostgreSQL klient alətləri, versiyası serverinkindən köhnə olmamalıdır). Yoxdursa skript aydın
   xəta verir: Debian/Ubuntu — `apt-get install postgresql-client`, macOS — `brew install libpq`.
@@ -109,7 +109,7 @@ Addımlar:
 3. **Tətbiqi dayandırın** və ya texniki xidmət rejiminə keçirin (yazılar bərpa ilə toqquşmasın).
 4. Bərpa:
    ```bash
-   DATABASE_URL=postgres://... npm run restore -- /secure/etour-backups/etour-etour-20261121T101500Z.dump
+   DATABASE_URL=postgres://... npm run restore -- /secure/odiola-backups/odiola-odiola-20261121T101500Z.dump
    # interaktiv terminal baza adını yazmağı tələb edir; avtomatlaşdırmada:
    DATABASE_URL=postgres://... npm run restore -- <fayl> --confirm <baza_adı>
    ```

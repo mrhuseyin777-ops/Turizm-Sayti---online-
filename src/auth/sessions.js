@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const env = require('../env');
 const storage = require('../storage');
 
-const COOKIE = env.cookieSecure ? '__Host-etour_sid' : 'etour_sid';
+const COOKIE = env.cookieSecure ? '__Host-odiola_sid' : 'odiola_sid';
 const IDLE_MS = env.sessionIdleMinutes * 60 * 1000;
 const MAX_MS = env.sessionMaxMinutes * 60 * 1000;
 const MAX_PER_USER = 10;

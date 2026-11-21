@@ -5,7 +5,7 @@
 // QAYDA: yalnız HTML-də görünən ID-lər yazılır. Bilinməyənlər null + TODO qalır — UYDURULMUR.
 //
 // Sahələr:
-//   id              — eTour provider id (src/providers/index.js-dəki mock id ilə eyni)
+//   id              — Odiola provider id (src/providers/index.js-dəki mock id ilə eyni)
 //   baseUrl         — ictimai axtarış səhifəsi (deeplink yalnız bu origin-lərə qurulur)
 //   apiHosts        — RƏSMİ API host-ları (operatorun yazılı razılığı + sənədi ilə doldurulur).
 //                     Boşdursa real adapter heç bir halda şəbəkəyə çıxmır.
@@ -13,8 +13,8 @@
 //   townFrom        — çıxış şəhərləri (TOWNFROMINC)
 //   defaultTownFrom — deeplink-də istifadə olunan çıxış şəhəri
 //   currencies      — ISO kod → CURRENCY ID
-//   defaultCurrency — eTour valyutası operatorda yoxdursa istifadə olunur
-//   states          — eTour ölkə açarı → STATEINC ID (yalnız HTML-də görünənlər)
+//   defaultCurrency — Odiola valyutası operatorda yoxdursa istifadə olunur
+//   states          — Odiola ölkə açarı → STATEINC ID (yalnız HTML-də görünənlər)
 //   tours           — TOURINC siyahısı (məlumat üçün; deeplink-də göndərilmir, "hamısı" qalır)
 //   limits          — formadakı seçim aralıqları (ADULT, CHILD, AGEn, NIGHTS_*) — deeplink bunlara sıxılır
 //   extraParams     — operator formasında olan əlavə sabit sahələr (nümunə URL-dən / HTML-dən)
@@ -84,7 +84,7 @@ const operators = Object.freeze({
     currencies: Object.freeze({ USD: 2, KZT: 11, AZN: 25 }),
     defaultCurrency: 'USD',
     states: Object.freeze({
-      // Bakı çıxışı ilə açılan səhifənin STATEINC siyahısından (33 ölkə; burada eTour-a lazım olanlar + bəzi əlavələr)
+      // Bakı çıxışı ilə açılan səhifənin STATEINC siyahısından (33 ölkə; burada Odiola-a lazım olanlar + bəzi əlavələr)
       turkey: 18803,
       uae: 20613,
       egypt: 18498,
@@ -126,7 +126,7 @@ const operators = Object.freeze({
   }),
 });
 
-// eTour istiqaməti (src/data/catalog.js id) → ölkə açarı. Daxili istiqamətlər üçün açar yoxdur.
+// Odiola istiqaməti (src/data/catalog.js id) → ölkə açarı. Daxili istiqamətlər üçün açar yoxdur.
 const destinationCountry = Object.freeze({
   antalya: 'turkey', alanya: 'turkey', kemer: 'turkey', side: 'turkey', bodrum: 'turkey', istanbul: 'turkey',
   dubai: 'uae',

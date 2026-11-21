@@ -1,6 +1,6 @@
-# eTour — təhlükəsizlik
+# Odiola — təhlükəsizlik
 
-Bu sənəd eTour-ın təhdid modelini, kodda tətbiq olunan qorunmaları, production-a çıxmazdan əvvəl
+Bu sənəd Odiola-ın təhdid modelini, kodda tətbiq olunan qorunmaları, production-a çıxmazdan əvvəl
 görülməli işləri və zəiflik bildirmə qaydasını təsvir edir. Son audit: 2026-11 (OWASP Top 10 2021 /
 ASVS 4.0 əsasında).
 
@@ -244,7 +244,7 @@ müddət bitməsi, IDOR (agentlik A ↔ B), SQL injection payload-ları, qiymət
    (5xx artımı, çoxlu 401/429, uğursuz giriş dalğası), uptime monitorinqi; audit log (kim, nə vaxt, hansı lead-ə baxdı).
 6. **WAF / Cloudflare**: DDoS qorunması, bot idarəetməsi, origin IP-ni gizlətmək (yalnız Cloudflare IP-lərindən qəbul),
    `TRUST_PROXY` Cloudflare + proxy sxeminə uyğun. Login və müraciət formalarına Turnstile/CAPTCHA.
-7. **Ödənişlər (PCI DSS)**: kart məlumatı (PAN, CVV, son istifadə tarixi) **heç vaxt** eTour serverinə gəlməməli,
+7. **Ödənişlər (PCI DSS)**: kart məlumatı (PAN, CVV, son istifadə tarixi) **heç vaxt** Odiola serverinə gəlməməli,
    saxlanmamalı və loglanmamalıdır. Bankın **hosted payment page** (yönləndirmə) və ya bankın iframe/tokenizasiya həlli
    istifadə edilsin — bu, PCI DSS öhdəliyini minimuma (SAQ A) endirir. Ödəniş nəticəsi yalnız bankın server-server
    bildirişi (imza yoxlaması ilə) əsasında qəbul edilsin, brauzerin "uğurlu" yönləndirməsinə etibar edilməsin;

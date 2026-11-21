@@ -12,7 +12,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', '..', 'migrations');
-// Sabit advisory lock açarı (eTour miqrasiyaları üçün; ixtiyari 64-bit ədəd)
+// Sabit advisory lock açarı (Odiola miqrasiyaları üçün; ixtiyari 64-bit ədəd)
 const LOCK_KEY = '727274001';
 const FILE_RE = /^(\d{3,})_[a-z0-9_-]+\.sql$/;
 

@@ -1,4 +1,4 @@
-# eTour CI: lint, testlər (yaddaş rejimi və real PostgreSQL), asılılıq auditi, E2E (Playwright + Chromium).
+# Odiola CI: lint, testlər (yaddaş rejimi və real PostgreSQL), asılılıq auditi, E2E (Playwright + Chromium).
 # Sirr istifadə olunmur: Postgres yalnız bu iş üçün yaradılan müvəqqəti konteynerdir.
 name: CI
 
@@ -47,19 +47,19 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: etour
-          POSTGRES_PASSWORD: etour-ci-only
-          POSTGRES_DB: etour_test
+          POSTGRES_USER: odiola
+          POSTGRES_PASSWORD: odiola-ci-only
+          POSTGRES_DB: odiola_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U etour -d etour_test"
+          --health-cmd "pg_isready -U odiola -d odiola_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
       # Müvəqqəti CI bazası (sirr deyil). test/db.test.js ayrıca sxem yaradıb sonda silir.
-      TEST_DATABASE_URL: postgres://etour:etour-ci-only@127.0.0.1:5432/etour_test
+      TEST_DATABASE_URL: postgres://odiola:odiola-ci-only@127.0.0.1:5432/odiola_test
     steps:
       - uses: actions/checkout@v4
         with:
