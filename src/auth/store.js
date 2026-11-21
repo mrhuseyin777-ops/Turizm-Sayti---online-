@@ -1,8 +1,8 @@
-// Agentlik və istifadəçi hesablarının saxlanması — hələ DB olmadığı üçün JSON fayl
-// (<TURTAP_DATA_DIR>/accounts.json, default: data/accounts.json; qovluq .gitignore-dadır).
+// Agentlik və istifadəçi hesablarının "fayl" implementasiyası (DATABASE_URL olmayanda: dev/test) —
+// JSON fayl (<TURTAP_DATA_DIR>/accounts.json, default: data/accounts.json; qovluq .gitignore-dadır).
+// PostgreSQL implementasiyası: src/storage/postgres.js (eyni async interfeys, bax src/storage/index.js).
 // Yazma atomikdir: müvəqqəti fayl → fsync → rename (yarımçıq yazılmış fayl qalmır).
 // Fayl icazələri: qovluq 0700, fayl 0600. Parollar yalnız scrypt hash kimi saxlanılır.
-// Real istehsalda: PostgreSQL (+ disk şifrələməsi, backup) — bax SECURITY.md.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -12,6 +12,17 @@ const USERNAME_RE = /^[a-z0-9][a-z0-9._@-]{2,63}$/;
 const ROLES = ['admin', 'manager'];
 const clean = (s, max) => String(s ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, max);
 const normUsername = (u) => String(u ?? '').trim().toLowerCase();
+const agencyNameKey = (name) => clean(name, 80).toLocaleLowerCase('az');
+const USER_PATCH_FIELDS = ['passwordHash', 'disabled', 'displayName', 'role', 'lastLoginAt', 'passwordChangedAt'];
+
+// Yeni istifadəçi sahələrinin yoxlanması (fayl və PostgreSQL implementasiyaları üçün ortaq)
+function validateNewUser({ username, role, passwordHash }) {
+  const u = normUsername(username);
+  if (!USERNAME_RE.test(u)) throw new Error('İstifadəçi adı 3–64 simvol: kiçik hərf, rəqəm, . _ @ -');
+  if (!ROLES.includes(role)) throw new Error('Rol admin və ya manager olmalıdır');
+  if (typeof passwordHash !== 'string' || !passwordHash.startsWith('scrypt$')) throw new Error('Parol hash-i yoxdur');
+  return u;
+}
 
 function createStore(dir = env.dataDir) {
   const file = path.join(dir, 'accounts.json');
@@ -54,35 +65,35 @@ function createStore(dir = env.dataDir) {
     USERNAME_RE,
     ROLES,
     normUsername,
-    getAgency: (id) => load().agencies.find((a) => a.id === id) || null,
-    findAgencyByName: (name) => {
-      const n = clean(name, 80).toLocaleLowerCase('az');
+    kind: 'file',
+    describe: () => file,
+    // Bütün metodlar async-dir (PostgreSQL implementasiyası ilə eyni interfeys)
+    getAgency: async (id) => load().agencies.find((a) => a.id === id) || null,
+    findAgencyByName: async (name) => {
+      const n = agencyNameKey(name);
       return load().agencies.find((a) => a.name.toLocaleLowerCase('az') === n) || null;
     },
-    getUser: (id) => load().users.find((u) => u.id === id) || null,
-    findUserByUsername: (username) => {
+    getUser: async (id) => load().users.find((u) => u.id === id) || null,
+    findUserByUsername: async (username) => {
       const u = normUsername(username);
       return load().users.find((x) => x.username === u) || null;
     },
-    listAgencies: () => load().agencies.map((a) => ({ ...a, users: load().users.filter((u) => u.agencyId === a.id).length })),
+    listAgencies: async () => load().agencies.map((a) => ({ ...a, users: load().users.filter((u) => u.agencyId === a.id).length })),
 
-    createAgency(name, { persist = true } = {}) {
+    async createAgency(name, { persist = true } = {}) {
       const n = clean(name, 80);
       if (n.length < 2) throw new Error('Agentlik adı ən azı 2 simvol olmalıdır');
-      if (api.findAgencyByName(n)) throw new Error('Bu adda agentlik artıq var');
+      if (await api.findAgencyByName(n)) throw new Error('Bu adda agentlik artıq var');
       const a = { id: newId('ag'), name: n, createdAt: new Date().toISOString() };
       load().agencies.push(a);
       if (persist) save(); else seeded.add(a.id);
       return a;
     },
 
-    createUser({ agencyId, username, displayName, role = 'manager', passwordHash }, { persist = true } = {}) {
-      const u = normUsername(username);
-      if (!USERNAME_RE.test(u)) throw new Error('İstifadəçi adı 3–64 simvol: kiçik hərf, rəqəm, . _ @ -');
-      if (api.findUserByUsername(u)) throw new Error('Bu istifadəçi adı artıq mövcuddur');
-      if (!api.getAgency(agencyId)) throw new Error('Agentlik tapılmadı');
-      if (!ROLES.includes(role)) throw new Error('Rol admin və ya manager olmalıdır');
-      if (typeof passwordHash !== 'string' || !passwordHash.startsWith('scrypt$')) throw new Error('Parol hash-i yoxdur');
+    async createUser({ agencyId, username, displayName, role = 'manager', passwordHash }, { persist = true } = {}) {
+      const u = validateNewUser({ username, role, passwordHash });
+      if (await api.findUserByUsername(u)) throw new Error('Bu istifadəçi adı artıq mövcuddur');
+      if (!(await api.getAgency(agencyId))) throw new Error('Agentlik tapılmadı');
       const user = {
         id: newId('usr'), agencyId, username: u, displayName: clean(displayName, 80) || u, role,
         passwordHash, disabled: false, createdAt: new Date().toISOString(), passwordChangedAt: new Date().toISOString(),
@@ -92,10 +103,10 @@ function createStore(dir = env.dataDir) {
       return user;
     },
 
-    updateUser(id, patch) {
-      const u = api.getUser(id);
+    async updateUser(id, patch) {
+      const u = await api.getUser(id);
       if (!u) throw new Error('İstifadəçi tapılmadı');
-      for (const k of ['passwordHash', 'disabled', 'displayName', 'role', 'lastLoginAt', 'passwordChangedAt']) if (k in patch) u[k] = patch[k];
+      for (const k of USER_PATCH_FIELDS) if (k in patch) u[k] = patch[k];
       if (!seeded.has(u.id)) save();
       return u;
     },
@@ -106,4 +117,4 @@ function createStore(dir = env.dataDir) {
   return api;
 }
 
-module.exports = { createStore, store: createStore(), USERNAME_RE, ROLES };
+module.exports = { createStore, store: createStore(), USERNAME_RE, ROLES, USER_PATCH_FIELDS, clean, normUsername, agencyNameKey, validateNewUser };

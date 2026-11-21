@@ -1,7 +1,7 @@
 // B2B autentifikasiya: giriş (brute-force qorunması ilə), sessiya yoxlaması, CSRF token.
 const crypto = require('crypto');
 const env = require('../env');
-const { store: defaultStore } = require('./store');
+const storage = require('../storage');
 const sessions = require('./sessions');
 const { verifyPassword, dummyVerify, needsRehash, hashPassword, checkPolicy, POLICY } = require('./password');
 const { createCounter } = require('../security/rateLimit');
@@ -21,12 +21,14 @@ class AuthError extends Error {
 
 const GENERIC = 'İstifadəçi adı və ya parol yanlışdır';
 
-let storeRef = defaultStore;
-const useStore = (s) => { storeRef = s; };
-const getStore = () => storeRef;
+// Hesab repository-si: src/storage (DATABASE_URL varsa PostgreSQL, yoxdursa JSON fayl). useStore — testlər üçün.
+let storeOverride = null;
+const useStore = (s) => { storeOverride = s; };
+const getStore = () => storeOverride || storage.get().accounts;
 
 async function login(body, req, res) {
   const b = body && typeof body === 'object' ? body : {};
+  const storeRef = getStore();
   const username = typeof b.username === 'string' ? storeRef.normUsername(b.username) : '';
   const password = typeof b.password === 'string' ? b.password : '';
   if (!username || username.length > 64 || !password || password.length > POLICY.max) throw new AuthError(400, 'İstifadəçi adı və parol tələb olunur');
@@ -38,8 +40,8 @@ async function login(body, req, res) {
   if (ipE && ipE.count >= LOCK.perIp) throw new AuthError(429, 'Çox sayda uğursuz giriş cəhdi. Bir az sonra yenidən cəhd edin.', { retryAfter: retry(ipE) });
   if (acE && acE.count >= LOCK.perAccount) throw new AuthError(429, 'Bu hesab üçün çox sayda uğursuz cəhd olub. 15 dəqiqə sonra yenidən cəhd edin.', { retryAfter: retry(acE) });
 
-  const user = storeRef.findUserByUsername(username);
-  const agency = user ? storeRef.getAgency(user.agencyId) : null;
+  const user = await storeRef.findUserByUsername(username);
+  const agency = user ? await storeRef.getAgency(user.agencyId) : null;
   const ok = user && agency && !user.disabled ? await verifyPassword(password, user.passwordHash) : await dummyVerify(password);
   if (!ok) {
     ipFails.hit(ip);
@@ -50,13 +52,13 @@ async function login(body, req, res) {
   acctFails.reset(username);
 
   // Köhnə sessiya (varsa) bağlanır, yenisi yaradılır (session fixation qorunması)
-  const prev = sessions.fromRequest(req);
-  if (prev) sessions.destroy(prev.key);
-  const { session } = sessions.create(user, res);
+  const prev = await sessions.fromRequest(req);
+  if (prev) await sessions.destroy(prev.key);
+  const { session } = await sessions.create(user, res);
   try {
     const patch = { lastLoginAt: new Date().toISOString() };
     if (needsRehash(user.passwordHash)) patch.passwordHash = await hashPassword(password);
-    storeRef.updateUser(user.id, patch);
+    await storeRef.updateUser(user.id, patch);
   } catch (e) { console.error('[auth] lastLogin yazılmadı', e.message); }
   console.info('[auth] giriş', { user: user.id, agency: agency.id });
   return publicMe(user, agency, session);
@@ -73,25 +75,27 @@ function publicMe(user, agency, session) {
 }
 
 // Sessiyanı yoxla və req.auth-a yaz (yoxdursa null)
-function resolve(req) {
-  const found = sessions.fromRequest(req);
+async function resolve(req) {
+  const found = await sessions.fromRequest(req);
   if (!found) return null;
-  const user = storeRef.getUser(found.session.userId);
-  const agency = user ? storeRef.getAgency(user.agencyId) : null;
+  const storeRef = getStore();
+  const user = await storeRef.getUser(found.session.userId);
+  const agency = user ? await storeRef.getAgency(user.agencyId) : null;
   const pwChanged = user && user.passwordChangedAt ? Date.parse(user.passwordChangedAt) : 0;
   // İstifadəçi silinib/bloklanıb, agentliyi dəyişib və ya parol sessiyadan sonra dəyişibsə → etibarsız
   if (!user || !agency || user.disabled || user.agencyId !== found.session.agencyId || pwChanged > found.session.createdAt) {
-    sessions.destroy(found.key);
+    await sessions.destroy(found.key);
     return null;
   }
   return { user, agency, session: found.session, key: found.key };
 }
 
 function requireAuth(req, res, next) {
-  const a = resolve(req);
-  if (!a) return res.status(401).json({ error: 'Daxil olmaq tələb olunur' });
-  req.auth = a;
-  next();
+  resolve(req).then((a) => {
+    if (!a) return res.status(401).json({ error: 'Daxil olmaq tələb olunur' });
+    req.auth = a;
+    next();
+  }, next);
 }
 
 // CSRF qatı 2: vəziyyəti dəyişən B2B sorğularında X-CSRF-Token başlığı sessiyadakı tokenlə eyni olmalıdır.
@@ -106,27 +110,39 @@ function requireCsrf(req, res, next) {
   next();
 }
 
-// Yalnız dev/test: env ilə demo hesab (yaddaşda, fayla yazılmır). Production-da env.demoAccount = null.
+// Yalnız dev/test: env ilə demo hesab (fayl rejimində yaddaşda, fayla yazılmır; DB rejimində DB-yə yazılır).
+// Production-da env.demoAccount = null.
 async function seedDemoAccount(acc = env.demoAccount) {
   if (!acc || env.isProd) return null;
-  if (storeRef.findUserByUsername(acc.username)) return null;
-  const agency = storeRef.findAgencyByName(acc.agency) || storeRef.createAgency(acc.agency, { persist: false });
-  const user = storeRef.createUser({ agencyId: agency.id, username: acc.username, displayName: acc.displayName, role: 'admin', passwordHash: await hashPassword(acc.password) }, { persist: false });
+  const storeRef = getStore();
+  if (await storeRef.findUserByUsername(acc.username)) return null;
+  const agency = (await storeRef.findAgencyByName(acc.agency)) || (await storeRef.createAgency(acc.agency, { persist: false }));
+  const user = await storeRef.createUser({ agencyId: agency.id, username: acc.username, displayName: acc.displayName, role: 'admin', passwordHash: await hashPassword(acc.password) }, { persist: false });
   console.info(`[auth] DEV demo hesabı yaradıldı: ${user.username} (${agency.name}) — yalnız NODE_ENV!=production`);
   return user;
 }
 
 // Hostinq üçün ilk admin (B2B_ADMIN_USER / B2B_ADMIN_PASSWORD env). Production-da da işləyir, amma
-// parol siyasətinə uyğun olmayan parolla hesab YARADILMIR. Hesab fayla yazılmır (yaddaşda), çünki
-// pulsuz hostinqlərdə disk müvəqqətidir; hər açılışda env-dən yenidən yaradılır.
+// parol siyasətinə uyğun olmayan parolla hesab YARADILMIR. Fayl rejimində hesab fayla yazılmır (yaddaşda),
+// çünki pulsuz hostinqlərdə disk müvəqqətidir; hər açılışda env-dən yenidən yaradılır. DB rejimində hesab
+// DB-də saxlanılır; env-dəki parol DB-dəkindən fərqlidirsə, parol env-ə görə yenilənir (köhnə sessiyalar
+// etibarsız olur) — terminalsız hostinqdə parolu dəyişməyin yolu budur.
 async function seedBootstrapAdmin(acc = env.bootstrapAdmin) {
   if (!acc) return null;
   if (!/^[a-z0-9._-]{3,32}$/i.test(acc.username)) { console.error('[auth] B2B_ADMIN_USER formatı yanlışdır (3–32: hərf, rəqəm, . _ -)'); return null; }
   const bad = checkPolicy(acc.password, { username: acc.username });
   if (bad) { console.error(`[auth] B2B_ADMIN_PASSWORD qəbul edilmədi: ${bad}`); return null; }
-  if (storeRef.findUserByUsername(acc.username)) return null;
-  const agency = storeRef.findAgencyByName(acc.agency) || storeRef.createAgency(acc.agency, { persist: false });
-  const user = storeRef.createUser({ agencyId: agency.id, username: acc.username, displayName: acc.displayName, role: 'admin', passwordHash: await hashPassword(acc.password) }, { persist: false });
+  const storeRef = getStore();
+  const existing = await storeRef.findUserByUsername(acc.username);
+  if (existing) {
+    if (!(await verifyPassword(acc.password, existing.passwordHash))) {
+      await storeRef.updateUser(existing.id, { passwordHash: await hashPassword(acc.password), passwordChangedAt: new Date().toISOString() });
+      console.info(`[auth] Admin parolu env-ə görə yeniləndi: ${existing.username}`);
+    }
+    return null;
+  }
+  const agency = (await storeRef.findAgencyByName(acc.agency)) || (await storeRef.createAgency(acc.agency, { persist: false }));
+  const user = await storeRef.createUser({ agencyId: agency.id, username: acc.username, displayName: acc.displayName, role: 'admin', passwordHash: await hashPassword(acc.password) }, { persist: false });
   console.info(`[auth] Admin hesabı env-dən hazırlandı: ${user.username} (${agency.name})`);
   return user;
 }

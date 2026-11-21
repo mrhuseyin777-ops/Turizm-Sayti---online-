@@ -13,8 +13,8 @@ async function startServer(app) {
 // Yaddaşda (fayla yazmadan) agentlik + istifadəçi yarat
 async function createAccount({ agency, username, password = 'Test-Parol-Uzun-2026', displayName = 'Menecer', role = 'admin' }) {
   const store = getStore();
-  const ag = store.findAgencyByName(agency) || store.createAgency(agency, { persist: false });
-  const user = store.createUser({ agencyId: ag.id, username, displayName, role, passwordHash: await hashPassword(password) }, { persist: false });
+  const ag = (await store.findAgencyByName(agency)) || (await store.createAgency(agency, { persist: false }));
+  const user = await store.createUser({ agencyId: ag.id, username, displayName, role, passwordHash: await hashPassword(password) }, { persist: false });
   return { agency: ag, user, password };
 }
 

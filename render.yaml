@@ -1,12 +1,14 @@
-# Render.com Blueprint — eTour (Node/Express)
+# Render.com Blueprint — eTour (Node/Express + PostgreSQL)
 # Render Dashboard → New → Blueprint → bu repo. Gizli dəyərlər (sync: false) Render-də əl ilə daxil edilir,
-# repoda saxlanılmır.
+# repoda saxlanılmır. DATABASE_URL Render tərəfindən verilənlər bazasından avtomatik bağlanır (fromDatabase).
+# Əməliyyatlar (backup, bərpa, miqrasiya, data retention): docs/OPERATIONS.md
 services:
   - type: web
     name: etour
     runtime: node
     plan: free
     buildCommand: npm ci --omit=dev
+    # Miqrasiyalar server açılışında avtomatik tətbiq olunur (advisory lock ilə, bir neçə nüsxə üçün təhlükəsiz)
     startCommand: node server.js
     healthCheckPath: /api/config
     autoDeploy: true
@@ -18,6 +20,18 @@ services:
       # Render-də tətbiqin qarşısında bir proxy var — real IP üçün (rate limit) lazımdır
       - key: TRUST_PROXY
         value: "1"
+      # PostgreSQL: Render daxili bağlantı sətri (eyni regionda, daxili şəbəkə — TLS tələb olunmur).
+      # Xarici bağlantı sətri istifadə etsəniz DATABASE_SSL=require yazın.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: etour-db
+          property: connectionString
+      # Şəxsi məlumatların saxlanma müddəti (gün): leadlər və avia/avto müraciətləri
+      - key: DATA_RETENTION_DAYS
+        value: "180"
+      # IP hash-i üçün gizli açar — Render təsadüfi dəyər yaradır (repoda yoxdur)
+      - key: IP_HASH_SECRET
+        generateValue: true
       # İlk B2B admin hesabı. Dəyərləri Render paneldə yazın (min. 12 simvollu güclü parol).
       - key: B2B_ADMIN_USER
         sync: false
@@ -25,3 +39,15 @@ services:
         sync: false
       - key: B2B_ADMIN_AGENCY
         value: eTour
+
+databases:
+  # Pulsuz Postgres planının məhdudiyyətləri (yaşama müddəti, yaddaş həcmi, backup, bağlantı sayı) dəyişə bilər —
+  # Render sənədində yoxlayın (render.com/docs → Postgres → Free). Pulsuz planda avtomatik backup olmaya bilər:
+  # vacib məlumat üçün ödənişli plan və ya `npm run backup` ilə müntəzəm dump (docs/OPERATIONS.md).
+  - name: etour-db
+    plan: free
+    databaseName: etour
+    user: etour
+    # Boş siyahı: bazaya internetdən birbaşa bağlantı yoxdur, yalnız Render daxili şəbəkəsindən.
+    # Lokal kompüterdən backup/miqrasiya üçün öz IP-nizi müvəqqəti əlavə edin (Render panel → Database → Networking).
+    ipAllowList: []

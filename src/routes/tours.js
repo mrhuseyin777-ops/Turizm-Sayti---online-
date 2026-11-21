@@ -42,9 +42,9 @@ router.get('/api/hotels/:id/offers', rateLimit({ name: 'hotel-offers', windowMs:
 
 // Müraciət: type = 'offer' (kartdan) | 'callback' ("Sizə zəng edək") | 'selection' (paylaşılan linkdən)
 // Qorunma: IP limiti, honeypot sahəsi, ağ siyahı + uzunluq + telefon formatı (src/leads.js)
-router.post('/api/leads', rateLimit({ name: 'leads', windowMs: 10 * 60 * 1000, max: 20 }), honeypot, (req, res, next) => {
+router.post('/api/leads', rateLimit({ name: 'leads', windowMs: 10 * 60 * 1000, max: 20 }), honeypot, async (req, res, next) => {
   try {
-    const lead = createLead(req.body);
+    const lead = await createLead(req.body);
     res.status(201).json({ ok: true, id: lead.id });
   } catch (e) { fail(res, e, next); }
 });
@@ -65,10 +65,12 @@ router.post('/api/selections',
   });
 
 // Müştəri görünüşü (operator adları və net qiymət gizli). Link = 72 bitlik təsadüfi id (capability URL).
-router.get('/api/selections/:id', (req, res) => {
-  const sel = getSelectionRecord(req.params.id);
-  if (!sel) return res.status(404).json({ error: 'Seçim tapılmadı və ya müddəti bitib' });
-  res.json(publicSelection(sel));
+router.get('/api/selections/:id', async (req, res, next) => {
+  try {
+    const sel = await getSelectionRecord(req.params.id);
+    if (!sel) return res.status(404).json({ error: 'Seçim tapılmadı və ya müddəti bitib' });
+    res.json(publicSelection(sel));
+  } catch (e) { next(e); }
 });
 
 // B2B "Müraciətlər": src/routes/b2b.js (GET /api/b2b/leads — autentifikasiya ilə)

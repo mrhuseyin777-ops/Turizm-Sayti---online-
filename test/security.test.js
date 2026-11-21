@@ -18,7 +18,7 @@ const { startServer, createAccount, login, client, future } = require('./_helper
 const { hashPassword, verifyPassword, checkPolicy } = require('../src/auth/password');
 const sessions = require('../src/auth/sessions');
 const { getStore } = require('../src/auth');
-const { leads } = require('../src/leads');
+const storage = require('../src/storage');
 const { parseQueryString, maskPhone, maskEmail, maskIp } = require('../src/security/http');
 
 let S; // { base, close }
@@ -245,16 +245,16 @@ test('sessiya: logout CSRF tələb edir, sonra cookie etibarsızdır; vaxtı bit
   // Parol dəyişdi → əvvəlki sessiyalar etibarsız
   const s3 = await login(S.base, 'sess-user', PW, { 'X-Forwarded-For': ip() });
   assert.strictEqual((await client(S.base, s3).get('/api/b2b/leads')).status, 200);
-  getStore().updateUser(acc.user.id, { passwordChangedAt: new Date(Date.now() + 1000).toISOString() });
+  await getStore().updateUser(acc.user.id, { passwordChangedAt: new Date(Date.now() + 1000).toISOString() });
   assert.strictEqual((await client(S.base, s3).get('/api/b2b/leads')).status, 401);
-  getStore().updateUser(acc.user.id, { passwordChangedAt: new Date(0).toISOString() });
+  await getStore().updateUser(acc.user.id, { passwordChangedAt: new Date(0).toISOString() });
 
   // Bloklanmış istifadəçi
   const s4 = await login(S.base, 'sess-user', PW, { 'X-Forwarded-For': ip() });
-  getStore().updateUser(acc.user.id, { disabled: true });
+  await getStore().updateUser(acc.user.id, { disabled: true });
   assert.strictEqual((await client(S.base, s4).get('/api/b2b/leads')).status, 401);
   assert.strictEqual((await login(S.base, 'sess-user', PW, { 'X-Forwarded-For': ip() })).res.status, 401);
-  getStore().updateUser(acc.user.id, { disabled: false });
+  await getStore().updateUser(acc.user.id, { disabled: false });
 });
 
 // ---------------------------------------------------------------- CSRF / Origin
@@ -298,7 +298,7 @@ test('IDOR: agentlik yalnız öz leadlərini görür; ?agency= parametri nəzər
 
   const la = await (await client(S.base, a).get('/api/b2b/leads')).json();
   assert.ok(la.leads.some((l) => l.name === 'Gizli Müştəri'));
-  for (const p of ['/api/b2b/leads', '/api/b2b/leads?agency=Agentlik%20A', `/api/b2b/leads?agencyId=${getStore().findAgencyByName('Agentlik A').id}`]) {
+  for (const p of ['/api/b2b/leads', '/api/b2b/leads?agency=Agentlik%20A', `/api/b2b/leads?agencyId=${(await getStore().findAgencyByName('Agentlik A')).id}`]) {
     const lb = await (await client(S.base, b).get(p)).json();
     assert.ok(!lb.leads.some((l) => l.name === 'Gizli Müştəri'), `B agentliyi A-nın leadini görməməlidir (${p})`);
   }
@@ -344,13 +344,14 @@ test('XSS: payload-lar JSON kimi data qayıdır, frontend esc() onları zərərs
 
 // ---------------------------------------------------------------- Honeypot və loglar
 test('honeypot: bot sahəsi doldurulubsa 201, amma müraciət saxlanılmır', async () => {
-  const before = leads.length;
+  const leadCount = () => storage.get().leads.count();
+  const before = await leadCount();
   const r = await fetch(S.base + '/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip() }, body: JSON.stringify({ type: 'callback', name: 'Bot', phone: '+994501112233', website: 'http://spam.example' }) });
   assert.strictEqual(r.status, 201);
-  assert.strictEqual(leads.length, before);
+  assert.strictEqual(await leadCount(), before);
   const human = await fetch(S.base + '/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip() }, body: JSON.stringify({ type: 'callback', name: 'İnsan', phone: '+994501112233', website: '' }) });
   assert.strictEqual(human.status, 201);
-  assert.strictEqual(leads.length, before + 1);
+  assert.strictEqual(await leadCount(), before + 1);
   const cars = await fetch(S.base + '/api/cars/requests', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip() }, body: JSON.stringify({ name: 'Bot', phone: '+994501112233', website: 'x', kind: 'rental', query: {}, offerId: 'a|b' }) });
   assert.strictEqual(cars.status, 201);
 });
@@ -364,7 +365,7 @@ test('loglarda şəxsi məlumat maskalanır', () => {
 
 test('DoS: bir agentlik limitə çatanda yalnız ÖZ köhnə linkləri silinir', async () => {
   const { createSelection, LIMITS } = require('../src/leads');
-  const store = new Map();
+  const store = require('../src/storage/memory').createSelectionRepo();
   const resolveOffers = async (q, ids) => ({ pax: { adults: 1, children: 0 }, offers: ids.map((id) => ({ id, name: 'O', price: 100, checkIn: future(10), nights: 3 })) });
   const prev = LIMITS.selectionsPerAgency;
   LIMITS.selectionsPerAgency = 3;
@@ -372,8 +373,8 @@ test('DoS: bir agentlik limitə çatanda yalnız ÖZ köhnə linkləri silinir',
     const other = await createSelection({ query: {}, offerIds: ['a'] }, { account: { agencyId: 'ag_other', agencyName: 'Digər' }, store, resolveOffers });
     const mine = [];
     for (let i = 0; i < 6; i++) mine.push(await createSelection({ query: {}, offerIds: ['a'] }, { account: { agencyId: 'ag_spam', agencyName: 'Spam' }, store, resolveOffers }));
-    assert.ok(store.has(other.id), 'başqa agentliyin linki qalır');
-    assert.strictEqual([...store.values()].filter((s) => s.agencyId === 'ag_spam').length, 3);
-    assert.ok(store.has(mine[5].id) && !store.has(mine[0].id));
+    assert.ok(await store.get(other.id), 'başqa agentliyin linki qalır');
+    assert.strictEqual(await store.countForAgency('ag_spam'), 3);
+    assert.ok((await store.get(mine[5].id)) && !(await store.get(mine[0].id)));
   } finally { LIMITS.selectionsPerAgency = prev; }
 });

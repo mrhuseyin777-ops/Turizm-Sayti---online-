@@ -14,7 +14,8 @@ const { createRequest, RequestValidationError } = require('../flights/requests')
 const { getAlertStore, publicView, AlertValidationError } = require('../flights/alerts');
 const { flightProviders } = require('../flights/providers');
 const { rateLimit } = require('../security/rateLimit');
-const { honeypot, maskPhone, maskEmail, maskName, maskIp } = require('../security/http');
+const { honeypot, maskPhone, maskEmail, maskName } = require('../security/http');
+const { hashIp } = require('../security/ipHash');
 
 const router = express.Router();
 
@@ -44,9 +45,9 @@ router.get('/api/flights/calendar', heavyLimit, handle(monthCalendar));
 router.get('/api/flights/explore', heavyLimit, handle(explore));
 
 // Sui-istifadə qoruması: hər IP üçün 10 dəqiqədə ən çox 10 müraciət + honeypot
-router.post('/api/flights/requests', rateLimit({ name: 'flights-req', windowMs: 10 * 60 * 1000, max: 10, message: 'Çox sayda müraciət. Bir az sonra yenidən cəhd edin.' }), honeypot, (req, res, next) => {
+router.post('/api/flights/requests', rateLimit({ name: 'flights-req', windowMs: 10 * 60 * 1000, max: 10, message: 'Çox sayda müraciət. Bir az sonra yenidən cəhd edin.' }), honeypot, async (req, res, next) => {
   try {
-    const r = createRequest(req.body, { ip: maskIp(req.ip) });
+    const r = await createRequest(req.body, { ipHash: hashIp(req.ip, 'flight-request-ip') });
     console.info('[flights] yeni müraciət', { id: r.id, name: maskName(r.name), phone: maskPhone(r.phone), email: r.email ? maskEmail(r.email) : null });
     res.status(201).json({ ok: true, id: r.id });
   } catch (e) {
@@ -78,15 +79,15 @@ router.post('/api/flights/alerts', alertCreateLimit, honeypot, async (req, res, 
 
 router.get('/api/flights/alerts/:id', alertReadLimit, async (req, res, next) => {
   try {
-    const a = getAlertStore().find(req.params.id, tokenOf(req));
+    const a = await getAlertStore().find(req.params.id, tokenOf(req));
     if (!a) return res.status(404).json({ error: 'İzləmə tapılmadı və ya müddəti bitib' });
     res.json(await publicView(a, lang(req)));
   } catch (e) { next(e); }
 });
 
-router.delete('/api/flights/alerts/:id', alertReadLimit, (req, res, next) => {
+router.delete('/api/flights/alerts/:id', alertReadLimit, async (req, res, next) => {
   try {
-    if (!getAlertStore().remove(req.params.id, tokenOf(req))) return res.status(404).json({ error: 'İzləmə tapılmadı və ya müddəti bitib' });
+    if (!(await getAlertStore().remove(req.params.id, tokenOf(req)))) return res.status(404).json({ error: 'İzləmə tapılmadı və ya müddəti bitib' });
     res.json({ ok: true });
   } catch (e) { next(e); }
 });

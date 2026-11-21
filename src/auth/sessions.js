@@ -1,18 +1,20 @@
 // Server tərəfli sessiyalar. Sessiya id = 32 bayt crypto.randomBytes (256 bit), brauzerdə yalnız
 // HttpOnly + SameSite=Strict (+ production-da Secure, __Host- prefiksi) cookie-də saxlanılır.
-// Serverdə id-nin özü yox, SHA-256 hash-i açar kimi saxlanılır (yaddaş dump-ı sızsa belə id-lər görünmür).
-// Yaddaşdadır: server yenidən başlayanda bütün istifadəçilər yenidən daxil olur (təhlükəsiz default).
-// Bir neçə server nüsxəsi üçün Redis/DB sessiya store lazımdır — bax SECURITY.md.
+// Serverdə id-nin özü yox, SHA-256 hash-i açar kimi saxlanılır (DB/yaddaş dump-ı sızsa belə id-lər görünmür).
+// Saxlama: src/storage (DATABASE_URL varsa PostgreSQL `sessions` cədvəli — yenidən başlamada və bir neçə
+// nüsxə arasında qalır; yoxdursa proses yaddaşı). Müddəti bitənlər dövri təmizlənir (src/storage/cleanup.js).
 const crypto = require('crypto');
 const env = require('../env');
+const storage = require('../storage');
 
 const COOKIE = env.cookieSecure ? '__Host-etour_sid' : 'etour_sid';
 const IDLE_MS = env.sessionIdleMinutes * 60 * 1000;
 const MAX_MS = env.sessionMaxMinutes * 60 * 1000;
-const MAX_SESSIONS = 20000;
 const MAX_PER_USER = 10;
+// lastSeen hər sorğuda yox, ən çox dəqiqədə bir yazılır (DB yükü); hərəkətsizlik limiti dəqiqələrlədir
+const TOUCH_MS = 60 * 1000;
 
-const sessions = new Map(); // sha256(id) -> session
+const repo = () => storage.get().sessions;
 const hashId = (id) => crypto.createHash('sha256').update(id).digest('base64url');
 const SID_RE = /^[A-Za-z0-9_-]{43}$/;
 
@@ -37,15 +39,13 @@ function cookieString(value, maxAgeSec) {
   return attrs.join('; ');
 }
 
-function create(user, res) {
+async function create(user, res) {
   const id = crypto.randomBytes(32).toString('base64url');
   const now = Date.now();
   const s = { userId: user.id, agencyId: user.agencyId, csrf: crypto.randomBytes(32).toString('base64url'), createdAt: now, lastSeen: now };
   // Bir istifadəçinin həddən çox aktiv sessiyası varsa ən köhnəsi bağlanır
-  const mine = [...sessions.entries()].filter(([, x]) => x.userId === user.id).sort((a, b) => a[1].createdAt - b[1].createdAt);
-  while (mine.length >= MAX_PER_USER) sessions.delete(mine.shift()[0]);
-  sessions.set(hashId(id), s);
-  while (sessions.size > MAX_SESSIONS) sessions.delete(sessions.keys().next().value);
+  await repo().trimForUser(user.id, MAX_PER_USER - 1);
+  await repo().insert({ keyHash: hashId(id), ...s, expiresAt: now + MAX_MS });
   res.append('Set-Cookie', cookieString(id, Math.floor(MAX_MS / 1000)));
   return { id, session: s };
 }
@@ -55,30 +55,31 @@ function expired(s, now = Date.now()) {
 }
 
 // Cookie-dən sessiyanı tap (yoxdursa / vaxtı bitibsə null)
-function fromRequest(req) {
+async function fromRequest(req) {
   const id = parseCookies(req.headers.cookie)[COOKIE];
   if (!id || !SID_RE.test(id)) return null;
   const key = hashId(id);
-  const s = sessions.get(key);
+  const s = await repo().get(key);
   if (!s) return null;
-  if (expired(s)) { sessions.delete(key); return null; }
-  s.lastSeen = Date.now();
+  const now = Date.now();
+  if (expired(s, now)) { await repo().delete(key); return null; }
+  if (now - s.lastSeen >= TOUCH_MS) {
+    s.lastSeen = now;
+    await repo().touch(key, now);
+  }
   return { key, session: s };
 }
 
-function destroy(key, res) {
-  if (key) sessions.delete(key);
+async function destroy(key, res) {
+  if (key) await repo().delete(key);
   if (res) res.append('Set-Cookie', cookieString('', 0));
 }
 
-function destroyForUser(userId) {
-  for (const [k, s] of sessions) if (s.userId === userId) sessions.delete(k);
+async function destroyForUser(userId) {
+  await repo().deleteForUser(userId);
 }
 
-const timer = setInterval(() => {
-  const now = Date.now();
-  for (const [k, s] of sessions) if (expired(s, now)) sessions.delete(k);
-}, 60 * 1000);
-timer.unref();
-
-module.exports = { COOKIE, create, fromRequest, destroy, destroyForUser, parseCookies, sessions, IDLE_MS, MAX_MS };
+const api = { COOKIE, create, fromRequest, destroy, destroyForUser, parseCookies, hashId, IDLE_MS, MAX_MS, MAX_PER_USER };
+// Yalnız memory rejimində (testlər/diaqnostika): sha256(id) -> sessiya xəritəsi
+Object.defineProperty(api, 'sessions', { enumerable: false, get: () => repo().map });
+module.exports = api;

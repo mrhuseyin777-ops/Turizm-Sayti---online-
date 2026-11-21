@@ -26,19 +26,25 @@ router.post('/api/b2b/login', loginLimit, async (req, res, next) => {
   }
 });
 
-router.post('/api/b2b/logout', requireAuth, requireCsrf, (req, res) => {
-  sessions.destroy(req.auth.key, res);
-  res.json({ ok: true });
+router.post('/api/b2b/logout', requireAuth, requireCsrf, async (req, res, next) => {
+  try {
+    await sessions.destroy(req.auth.key, res);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
-router.get('/api/b2b/me', (req, res) => {
-  const a = resolve(req);
-  if (!a) return res.json({ authenticated: false });
-  res.json(publicMe(a.user, a.agency, a.session));
+router.get('/api/b2b/me', async (req, res, next) => {
+  try {
+    const a = await resolve(req);
+    if (!a) return res.json({ authenticated: false });
+    res.json(publicMe(a.user, a.agency, a.session));
+  } catch (e) { next(e); }
 });
 
-router.get('/api/b2b/leads', requireAuth, (req, res) => {
-  res.json({ leads: leadsForAgency(req.auth.agency.id) });
+router.get('/api/b2b/leads', requireAuth, async (req, res, next) => {
+  try {
+    res.json({ leads: await leadsForAgency(req.auth.agency.id) });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;

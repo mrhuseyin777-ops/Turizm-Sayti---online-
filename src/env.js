@@ -46,6 +46,22 @@ module.exports = {
   demoAccount: !isProd && raw.B2B_DEMO_USER && raw.B2B_DEMO_PASSWORD
     ? { agency: raw.B2B_DEMO_AGENCY || 'Demo Agentlik', username: raw.B2B_DEMO_USER, password: raw.B2B_DEMO_PASSWORD, displayName: raw.B2B_DEMO_NAME || 'Demo Menecer' }
     : null,
+  // PostgreSQL (bax docs/OPERATIONS.md). Boşdursa: fayl/yaddaş rejimi (dev/test; production-da xəbərdarlıq).
+  // `node --test` altında DATABASE_URL nəzərə alınmır (shell-də qalmış real baza URL-i testlərlə
+  // çirklənməsin); yalnız test/db.test.js öz müvəqqəti sxemi üçün ETOUR_TEST_DB=1 ilə açır.
+  databaseUrl: (raw.NODE_TEST_CONTEXT && raw.ETOUR_TEST_DB !== '1') ? '' : (raw.DATABASE_URL || ''),
+  // require — TLS + sertifikat yoxlaması; no-verify — TLS, sertifikat yoxlanmır (zəif, yalnız məcburi hallarda);
+  // disable / boş — TLS yox (məs. Render daxili şəbəkəsi). URL-də ?sslmode= varsa, o üstündür.
+  databaseSsl: ['require', 'no-verify', 'disable'].includes(raw.DATABASE_SSL) ? raw.DATABASE_SSL : 'disable',
+  databasePoolMax: int(raw.DATABASE_POOL_MAX, 5, 1, 50),
+  // Şəxsi məlumatların saxlanma müddəti (gün): müraciətlər/leadlər, avia/avto müraciətləri
+  dataRetentionDays: int(raw.DATA_RETENTION_DAYS, 180, 1, 3650),
+  // Dövri təmizləmə işi (retention, bitmiş sessiya/izləmə/seçim linkləri). Testlərdə default söndürülüb;
+  // DATA_CLEANUP=0 — söndür, DATA_CLEANUP=1 — test rejimində də işə sal.
+  cleanupEnabled: raw.DATA_CLEANUP === '1' || (raw.DATA_CLEANUP !== '0' && !(nodeEnv === 'test' || !!raw.NODE_TEST_CONTEXT)),
+  cleanupIntervalMinutes: int(raw.DATA_CLEANUP_INTERVAL_MINUTES, 60, 1, 24 * 60),
+  // İstəyə görə: IP hash-i üçün gizli açar (HMAC). Təyin olunmasa sadə SHA-256 (prefiksli) istifadə olunur.
+  ipHashSecret: raw.IP_HASH_SECRET || '',
   // Hostinq üçün ilk admin hesabı (production-da da işləyir). Parol YALNIZ hostinqin gizli env
   // dəyişənində saxlanılır (repoda yox). Terminalı olmayan hostinqlərdə (məs. Render pulsuz) B2B-yə
   // ilk girişi təmin edir; hesab yaddaşda yaradılır və hər açılışda yenidən yoxlanılır.

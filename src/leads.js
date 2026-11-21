@@ -1,14 +1,16 @@
-// Müraciətlər (leads) və B2B paylaşılan seçimlər — yaddaşda (DEMO).
-// Real versiyada: PostgreSQL + e-poçt/WhatsApp/Telegram bildirişi.
+// Müraciətlər (leads) və B2B paylaşılan seçimlər.
+// Saxlama: src/storage (DATABASE_URL varsa PostgreSQL, yoxdursa yaddaş). Leadlər DATA_RETENTION_DAYS,
+// seçim linkləri 30 gün sonra avtomatik silinir (src/storage/cleanup.js). TODO: e-poçt/WhatsApp bildirişi.
 const crypto = require('crypto');
 const { maskPhone, maskName } = require('./security/http');
 const { search } = require('./search');
+const storage = require('./storage');
 
 class InputError extends Error {}
 
 const LIMITS = {
-  maxLeads: 2000, // yaddaşda saxlanan maks. müraciət (köhnələr silinir)
-  maxSelections: 20000, // yaddaşda saxlanan maks. paylaşılan seçim (hamısı)
+  maxLeads: 2000, // yalnız memory rejimi: yaddaşda saxlanan maks. müraciət (src/storage/memory.js)
+  maxSelections: 20000, // yalnız memory rejimi: maks. paylaşılan seçim (hamısı)
   selectionsPerAgency: 500, // bir agentliyin maks. aktiv linki — bir hesab başqalarının linklərini sıxışdırıb silə bilməsin
   selectionItems: 10, // bir seçimdə maks. variant
   selectionTtlMs: 30 * 24 * 3600 * 1000, // seçim linki 30 gün yaşayır
@@ -19,14 +21,13 @@ const PHONE_RE = /^[+()\d\s-]{5,30}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // ---------------- Leads ----------------
-const leads = [];
-let leadSeq = 0;
 const NAME_RE = /^\p{L}[\p{L}\p{M} .'’-]{1,79}$/u;
 const CTRL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const text = (v, max) => str(v, max * 2).replace(CTRL_RE, '').slice(0, max);
 const validPhone = (p) => PHONE_RE.test(p) && (() => { const d = p.replace(/\D/g, '').length; return d >= 7 && d <= 15; })();
 
-function createLead(body, { selections: selStore = selections } = {}) {
+// selections / leads — repository (default: src/storage); testlərdə ayrıca nüsxə ötürülə bilər
+async function createLead(body, { selections: selStore, leads: leadStore } = {}) {
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const name = str(b.name, 80).replace(/\s+/g, ' ');
   const phone = str(b.phone, 30);
@@ -35,7 +36,6 @@ function createLead(body, { selections: selStore = selections } = {}) {
   if (!validPhone(phone)) throw new InputError('Telefon nömrəsi düzgün deyil');
   const type = ['offer', 'callback', 'selection'].includes(b.type) ? b.type : 'offer';
   const lead = {
-    id: ++leadSeq,
     type,
     name,
     phone,
@@ -50,7 +50,7 @@ function createLead(body, { selections: selStore = selections } = {}) {
   if (type === 'selection') {
     // Paylaşılan seçim linkindən gələn müraciət → agentliyə/menecerə bağlanır.
     // Agentlik və qiymət SERVERDƏ saxlanılan seçimdən götürülür (klientdən yox).
-    const sel = getSelectionRecord(str(b.selectionId, 40), selStore);
+    const sel = await getSelectionRecord(str(b.selectionId, 40), selStore);
     if (!sel) throw new InputError('Seçim tapılmadı və ya müddəti bitib');
     const idx = Number.isInteger(b.itemIndex) ? b.itemIndex : parseInt(b.itemIndex, 10);
     if (!Number.isInteger(idx) || idx < 0 || idx >= sel.items.length) throw new InputError('Variant düzgün deyil');
@@ -62,22 +62,20 @@ function createLead(body, { selections: selStore = selections } = {}) {
     lead.client = sel.client;
     lead.item = { name: it.name, destination: it.destination, checkIn: it.checkIn, nights: it.nights, board: it.board, clientPrice: it.clientPrice, currency: sel.currency, providerName: it.providerName, offerId: it.offerId };
   }
-  leads.push(lead);
-  while (leads.length > LIMITS.maxLeads) leads.shift();
+  const saved = await (leadStore || storage.get().leads).insert(lead);
   // Loga yalnız maskalanmış məlumat yazılır
-  console.info('[lead] yeni müraciət', { id: lead.id, type, name: maskName(name), phone: maskPhone(phone), agencyId: lead.agencyId || null });
-  return lead;
+  console.info('[lead] yeni müraciət', { id: saved.id, type, name: maskName(name), phone: maskPhone(phone), agencyId: saved.agencyId || null });
+  return saved;
 }
 
 // B2B "Müraciətlər": YALNIZ sessiyadakı agentliyin (agencyId) seçim linklərindən gələn leadlər.
 // agencyId sorğudan yox, autentifikasiya olunmuş sessiyadan gəlir (IDOR qorunması).
-function leadsForAgency(agencyId) {
+async function leadsForAgency(agencyId, { leads: leadStore } = {}) {
   if (typeof agencyId !== 'string' || !agencyId) return [];
-  return leads.filter((l) => l.type === 'selection' && l.agencyId === agencyId).slice(-200).reverse();
+  return (leadStore || storage.get().leads).listForAgency(agencyId, 200);
 }
 
 // ---------------- Paylaşılan seçimlər (B2B brendli link) ----------------
-const selections = new Map();
 
 // 12 simvollu base64url id = 72 bit kriptoqrafik təsadüf → təxmin edilə bilməz
 const newId = () => crypto.randomBytes(9).toString('base64url');
@@ -100,7 +98,8 @@ async function resolveOffersBySearch(query, offerIds) {
   return { pax: { adults: r.query.adults, children: r.query.children }, offers: offerIds.map((id) => byId.get(id) || null) };
 }
 
-async function createSelection(body, { account, store = selections, resolveOffers = resolveOffersBySearch } = {}) {
+async function createSelection(body, { account, store, resolveOffers = resolveOffersBySearch } = {}) {
+  const repo = store || storage.get().selections;
   if (!account || !account.agencyId || !account.agencyName) throw new InputError('Agentlik hesabı tələb olunur');
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const markup = Number(b.markup ?? 0);
@@ -160,18 +159,17 @@ async function createSelection(body, { account, store = selections, resolveOffer
     createdAt: Date.now(),
   };
   // Agentlik limiti dolubsa YALNIZ həmin agentliyin ən köhnə linki silinir
-  const own = [...store.values()].filter((x) => x.agencyId === sel.agencyId);
-  for (let i = 0; i <= own.length - LIMITS.selectionsPerAgency; i++) store.delete(own[i].id);
-  store.set(sel.id, sel);
-  while (store.size > LIMITS.maxSelections) store.delete(store.keys().next().value);
+  await repo.trimForAgency(sel.agencyId, LIMITS.selectionsPerAgency - 1);
+  await repo.insert(sel);
   return sel;
 }
 
-function getSelectionRecord(id, store = selections) {
-  if (!ID_RE.test(id || '')) return null;
-  const sel = store.get(id);
+async function getSelectionRecord(id, store) {
+  if (typeof id !== 'string' || !ID_RE.test(id)) return null;
+  const repo = store || storage.get().selections;
+  const sel = await repo.get(id);
   if (!sel) return null;
-  if (Date.now() - sel.createdAt > LIMITS.selectionTtlMs) { store.delete(id); return null; }
+  if (Date.now() - sel.createdAt > LIMITS.selectionTtlMs) { await repo.delete(id); return null; }
   return sel;
 }
 
@@ -192,4 +190,4 @@ function publicSelection(sel) {
   };
 }
 
-module.exports = { InputError, LIMITS, SEL_QUERY_KEYS, resolveOffersBySearch, createLead, leadsForAgency, createSelection, getSelectionRecord, publicSelection, leads, selections };
+module.exports = { InputError, LIMITS, SEL_QUERY_KEYS, resolveOffersBySearch, createLead, leadsForAgency, createSelection, getSelectionRecord, publicSelection };
