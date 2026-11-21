@@ -387,6 +387,7 @@ Object.assign(I18N.ru, {
       <p class="muted small">🔒 ${esc(t('car_no_docs'))}</p>
       <div class="form-err" id="leadErr" hidden></div>
       <div class="modal-actions"><button type="button" class="btn secondary sm" data-close>✕</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
+      ${consentHtml()}
     </form>`;
   }
 

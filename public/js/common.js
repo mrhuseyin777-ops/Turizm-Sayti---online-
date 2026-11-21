@@ -308,7 +308,7 @@ function callbackFormHtml(id) {
     <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}" aria-label="${esc(t('lead_name'))}">
     <input name="phone" required maxlength="30" inputmode="tel" placeholder="${esc(t('lead_phone'))}" aria-label="${esc(t('lead_phone'))}">
     <select name="preferredTime" aria-label="${esc(t('cb_time'))}">${['now', 'morning', 'afternoon', 'evening'].map((k) => `<option value="${k}">${esc(t('cb_' + k))}</option>`).join('')}</select>
-    ${HONEYPOT_HTML}<button class="btn sm primary">${esc(t('cb_send'))}</button></form>`;
+    ${HONEYPOT_HTML}<button class="btn sm primary">${esc(t('cb_send'))}</button>${consentHtml()}</form>`;
 }
 function bindCallbackForm(form, contextFn) {
   form.addEventListener('submit', async (e) => {
@@ -651,6 +651,28 @@ Object.assign(I18N.ru, {
   how_s9_t: 'Контакты', how_s9_d: 'Есть вопрос или предложение? Воспользуйтесь формой «Перезвоним вам» на главной странице — менеджер свяжется с вами. Для агентств: раздел B2B.',
   how_cta: 'Перейти к поиску', how_cb: 'Форма «Перезвоним вам»',
 });
+
+// ---- Hüquqi: footer linkləri, müraciət formalarında razılıq mətni (checkbox deyil — informasiya),
+// B2B girişində şərtlər qeydi. Uzun hüquqi mətnlər public/js/legal.js-dədir (privacy.html, terms.html).
+Object.assign(I18N.az, {
+  ft_nav: 'Hüquqi məlumat', ft_privacy: 'Məxfilik siyasəti', ft_terms: 'İstifadə şərtləri',
+  consent_pre: 'Göndərməklə ', consent_link: 'Məxfilik siyasəti', consent_post: ' ilə tanış olduğunuzu təsdiqləyirsiniz.',
+  b2b_terms_pre: 'Daxil olmaqla ', b2b_terms_link: 'İstifadə şərtlərini', b2b_terms_post: ' (B2B hesabları bölməsi) qəbul edirsiniz.',
+});
+Object.assign(I18N.en, {
+  ft_nav: 'Legal', ft_privacy: 'Privacy policy', ft_terms: 'Terms of use',
+  consent_pre: 'By sending, you confirm that you have read the ', consent_link: 'Privacy policy', consent_post: '.',
+  b2b_terms_pre: 'By signing in you accept the ', b2b_terms_link: 'Terms of use', b2b_terms_post: ' (B2B accounts section).',
+});
+Object.assign(I18N.ru, {
+  ft_nav: 'Правовая информация', ft_privacy: 'Политика конфиденциальности', ft_terms: 'Условия использования',
+  consent_pre: 'Отправляя, вы подтверждаете, что ознакомились с ', consent_link: 'Политикой конфиденциальности', consent_post: '.',
+  b2b_terms_pre: 'Входя в систему, вы принимаете ', b2b_terms_link: 'Условия использования', b2b_terms_post: ' (раздел «B2B-аккаунты»).',
+});
+// Razılıq mətni: hər müraciət formasında göndər düyməsinin yanında (link yeni tabda açılır)
+function consentHtml() {
+  return `<p class="consent">${esc(t('consent_pre'))}<a href="/privacy.html" target="_blank" rel="noopener noreferrer">${esc(t('consent_link'))}</a>${esc(t('consent_post'))}</p>`;
+}
 
 // Reytinq: "Möhtəşəm 9.2 · 1 240 rəy" + kiçik DEMO etiketi (tooltip). Söz açarı serverdən (ratingWord).
 const fmtInt = (n) => Number(n).toLocaleString('en-US').replace(/,/g, ' ');

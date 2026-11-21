@@ -642,6 +642,7 @@ Object.assign(I18N.ru, {
         <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}">${state.data.regulated ? esc(t('fl_reg_note')) : ''}</textarea><div class="err" data-err="note" hidden></div>${HONEYPOT_HTML}
         <div class="err" data-err="flightId" hidden></div>
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
+        ${consentHtml()}
       </form>`;
     $('#modal').classList.add('open');
     $('#reqForm input[name=name]').focus();
@@ -978,6 +979,7 @@ Object.assign(I18N.ru, {
         <p class="hint">${esc(t('fl_watch_local'))}</p>
         <div class="err" data-err="general" hidden></div>
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>${esc(t('fl_close'))}</button><button class="btn sm">${esc(t('fl_watch_save'))}</button></div>
+        ${consentHtml()}
       </form>`;
     $('#modal').classList.add('open');
     $('#watchForm').addEventListener('submit', async (ev) => {

@@ -82,8 +82,19 @@ Qalan hər şey (müqayisə, sıralama, B2B matrisi) avtomatik işləyir.
    - `B2B_ADMIN_USER` = admin istifadəçi adı (3–32 simvol: hərf, rəqəm, `. _ -`)
    - `B2B_ADMIN_PASSWORD` = güclü parol (min. 12 simvol) — yalnız Render-də saxlanılır, repoda yox
    - `B2B_ADMIN_AGENCY` = agentlik adı (məs. `eTour`)
+   - `PUBLIC_BASE_URL` = saytın ictimai ünvanı (məs. `https://etour.az`) — domen alınanda əlavə edin:
+     bu olmadan `/sitemap.xml` 404 qaytarır və `robots.txt`-də `Sitemap:` sətiri olmur (Host başlığına etibar edilmir)
 4. Deploy bitəndə sayt `https://<ad>.onrender.com` ünvanında açılır; B2B: `/b2b`.
 
 Qeyd: pulsuz planda disk müvəqqətidir — müraciətlər, seçim linkləri və `create-agency` ilə yaradılan
 hesablar yenidən başlamada itir (admin hesabı hər dəfə env-dən yenidən yaradılır). Daimi saxlama üçün
 verilənlər bazası lazımdır (bax SECURITY.md).
+
+## Hüquqi səhifələr və SEO
+
+- `public/privacy.html` (Məxfilik siyasəti) və `public/terms.html` (İstifadə şərtləri) — AZ/EN/RU mətnlər
+  `public/js/legal.js`-dədir. **LAYİHƏDİR**: dərc etməzdən əvvəl hüquqşünas yoxlamalı, kvadrat mötərizədəki
+  `[ … ]` placeholder-lər (hüquqi ad, ünvan, VÖEN, əlaqə e-poçtu, hostinq provayderi/ölkəsi, saxlama müddətləri,
+  tətbiq olunan hüquq və məhkəmə) doldurulmalıdır. Mətn dəyişəndə "Son yenilənmə" tarixini (`lg_updated`) yeniləyin.
+- Bütün müraciət formalarında "Göndərməklə Məxfilik siyasəti ilə tanış olduğunuzu təsdiqləyirsiniz" mətni (`consentHtml()`, common.js).
+- `GET /robots.txt` və `GET /sitemap.xml` — `src/routes/seo.js` (sitemap yalnız `PUBLIC_BASE_URL` ilə).
