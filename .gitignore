@@ -3,6 +3,9 @@ node_modules/
 .claude/worktrees/
 # Hesablar və digər işləmə vaxtı məlumatları (parol hash-ləri) — heç vaxt commit etməyin
 data/
+# Verilənlər bazası backup-ları (şəxsi məlumat var) — heç vaxt commit etməyin
+backups/
+*.dump
 *.tmp
 .env.*
 !.env.example

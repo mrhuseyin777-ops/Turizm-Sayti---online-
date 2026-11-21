@@ -1,8 +1,10 @@
 // "Bileti sifariş et" müraciətləri. Bilet hələ onlayn satılmır — müraciət menecerə gedir.
 // Yalnız əlaqə məlumatı və seçilmiş uçuş saxlanılır. Pasport / sənəd məlumatı QƏBUL EDİLMİR:
-// ağ siyahıda olmayan bütün sahələr atılır. Real versiyada DB + bildiriş (e-poçt/WhatsApp/CRM).
+// ağ siyahıda olmayan bütün sahələr atılır. Saxlama: src/storage (flightRequests — PostgreSQL və ya
+// yaddaş), DATA_RETENTION_DAYS gündən sonra avtomatik silinir. TODO: bildiriş (e-poçt/WhatsApp/CRM).
 
 const { getAirport } = require('./airports');
+const storage = require('../storage');
 
 class RequestValidationError extends Error {
   constructor(errors) { super(Object.values(errors)[0]); this.errors = errors; }
@@ -58,15 +60,10 @@ function validateRequest(body) {
   return { name, phone, email: email || null, note: note || '', flightId, offerId: offerId || null };
 }
 
-const requests = [];
-let seq = 0;
-function createRequest(body, meta = {}) {
+async function createRequest(body, meta = {}) {
   const data = validateRequest(body);
-  // ip: maskalanmış (son oktet gizli) — sui-istifadə araşdırması üçün kifayətdir, tam IP saxlanılmır
-  const r = { id: ++seq, ...data, createdAt: new Date().toISOString(), ip: meta.ip || null };
-  requests.push(r);
-  if (requests.length > 5000) requests.shift();
-  return r;
+  // ipHash: IP-nin yalnız hash-i (src/security/ipHash.js) — sui-istifadə araşdırması üçün, açıq IP saxlanılmır
+  return storage.get().flightRequests.insert({ ...data, createdAt: new Date().toISOString(), ipHash: meta.ipHash || null });
 }
 
-module.exports = { validateRequest, createRequest, validFlightId, RequestValidationError, requests, EMAIL_RE };
+module.exports = { validateRequest, createRequest, validFlightId, RequestValidationError, EMAIL_RE };

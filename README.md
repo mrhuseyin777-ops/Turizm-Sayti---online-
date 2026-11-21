@@ -19,6 +19,22 @@ npm test         # bütün testlər (təhlükəsizlik testləri daxil: test/secu
 npm audit        # asılılıqlarda məlum zəiflik yoxlaması
 ```
 
+### Verilənlər bazası (PostgreSQL)
+
+`DATABASE_URL` təyin olunanda bütün daimi məlumat (agentliklər, istifadəçilər, sessiyalar, müraciətlər, seçim linkləri,
+aviabilet izləmələri, avia/avto müraciətləri) PostgreSQL-də saxlanılır; miqrasiyalar server açılışında avtomatik
+tətbiq olunur. `DATABASE_URL` yoxdursa — dev/test üçün fayl/yaddaş rejimi (məlumat yenidən başlamada itir).
+
+```bash
+DATABASE_URL=postgres://... npm run migrate        # miqrasiyalar (açılışda da avtomatik); --status
+DATABASE_URL=postgres://... npm run backup         # pg_dump ilə sıxılmış backup → ./backups
+DATABASE_URL=postgres://... npm run restore -- backups/<fayl>.dump   # TƏHLÜKƏLİ: təsdiq tələb edir
+TEST_DATABASE_URL=postgres://.../etour_test npm test   # + real Postgres üzərində test/db.test.js
+```
+
+Backup strategiyası, bərpa, data retention (`DATA_RETENTION_DAYS`, default 180 gün) və sirlərin idarəsi:
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+
 Konfiqurasiya mühit dəyişənlərindən oxunur — siyahı və izahlar: [`.env.example`](.env.example)
 (`PORT`, `NODE_ENV`, `TRUST_PROXY`, `ALLOWED_ORIGINS`, `TURTAP_DATA_DIR`, sessiya müddətləri və s.).
 Repoda heç bir parol və ya sirr saxlanılmır.
@@ -39,7 +55,7 @@ npm run create-agency -- --list
 ```
 
 Avtomatlaşdırma üçün parol `TURTAP_PASSWORD` mühit dəyişəni ilə verilə bilər (komanda arqumenti kimi yox).
-Hesablar `data/accounts.json`-da saxlanılır (scrypt hash; `data/` git-ə düşmür).
+Hesablar `DATABASE_URL` varsa PostgreSQL-də, yoxdursa `data/accounts.json`-da saxlanılır (scrypt hash; `data/` git-ə düşmür).
 
 Yalnız lokal inkişaf üçün (production-da işləmir) yaddaşda demo hesab:
 
@@ -56,7 +72,12 @@ server.js                 Express server: təhlükəsizlik qatı, API (/api/sear
 src/env.js                Mühit konfiqurasiyası (env)
 src/security/             Başlıqlar/CSP, rate limit, Origin (CSRF), body/query yoxlaması
 src/auth/                 B2B hesablar (scrypt), sessiyalar, brute-force qorunması
+src/storage/              Saxlama qatı: vahid repository interfeysi — postgres.js (DATABASE_URL) və memory.js (fayl/yaddaş),
+                          cleanup.js (data retention)
+src/db/                   PostgreSQL bağlantı hovuzu və miqrasiya icraçısı (advisory lock)
+migrations/               Nömrələnmiş, idempotent SQL miqrasiyaları
 scripts/create-agency.js  Agentlik/istifadəçi yaratmaq (npm run create-agency)
+scripts/migrate.js, backup.js, restore.js   npm run migrate / backup / restore
 src/config.js             Brend adı, valyuta məzənnələri
 src/search.js             Axtarış: operatorları paralel sorğulayır, filtr, qruplaşdırma, sıralama
 src/providers/            Hər operator üçün adapter (indi demo; real API ilə əvəz olunacaq)
@@ -73,22 +94,45 @@ Qalan hər şey (müqayisə, sıralama, B2B matrisi) avtomatik işləyir.
 
 ## İnternetə yerləşdirmə (Render.com)
 
-1. render.com-da GitHub hesabı ilə qeydiyyatdan keçin → **New → Web Service** → bu repo.
-2. Ayarlar: Runtime **Node**, Build Command `npm ci --omit=dev`, Start Command `node server.js`, Plan **Free**.
-   (Alternativ: **New → Blueprint** — repodakı `render.yaml` avtomatik oxunur.)
-3. **Environment** bölməsində:
-   - `NODE_ENV` = `production`
-   - `TRUST_PROXY` = `1`
+Daimi saxlama üçün PostgreSQL lazımdır (pulsuz hostinqdə disk müvəqqətidir). Üç variant:
+
+### A) Blueprint (tövsiyə olunur)
+
+1. render.com-da GitHub hesabı ilə qeydiyyatdan keçin → **New → Blueprint** → bu repo.
+2. Render repodakı [`render.yaml`](render.yaml)-ı oxuyur və iki resurs yaradır: **etour** (Web Service) və
+   **etour-db** (PostgreSQL). `DATABASE_URL` web servisə avtomatik bağlanır (`fromDatabase`), `IP_HASH_SECRET`
+   təsadüfi yaradılır.
+3. Soruşulan gizli dəyərləri daxil edin:
    - `B2B_ADMIN_USER` = admin istifadəçi adı (3–32 simvol: hərf, rəqəm, `. _ -`)
    - `B2B_ADMIN_PASSWORD` = güclü parol (min. 12 simvol) — yalnız Render-də saxlanılır, repoda yox
-   - `B2B_ADMIN_AGENCY` = agentlik adı (məs. `eTour`)
+4. Deploy bitəndə sayt `https://<ad>.onrender.com` ünvanında açılır; B2B: `/b2b`. Açılış logunda
+   `[storage] PostgreSQL hazırdır` görünməlidir.
+
+Pulsuz Postgres planının məhdudiyyətləri (yaşama müddəti, həcm, backup) dəyişə bilər — Render sənədində yoxlayın.
+
+### B) Əl ilə: Web Service + Postgres
+
+1. **New → PostgreSQL** → ad (məs. `etour-db`), region (web servislə **eyni** region), plan. Yaradıldıqdan sonra
+   **Internal Database URL**-i kopyalayın.
+2. **New → Web Service** → bu repo. Runtime **Node**, Build Command `npm ci --omit=dev`, Start Command `node server.js`.
+3. **Environment** bölməsində:
+   - `NODE_ENV` = `production`, `TRUST_PROXY` = `1`
+   - `DATABASE_URL` = 1-ci addımdakı daxili URL (daxili şəbəkədə `DATABASE_SSL` lazım deyil)
+   - `IP_HASH_SECRET` = uzun təsadüfi dəyər
+   - `B2B_ADMIN_USER`, `B2B_ADMIN_PASSWORD`, `B2B_ADMIN_AGENCY` (məs. `eTour`)
    - `PUBLIC_BASE_URL` = saytın ictimai ünvanı (məs. `https://etour.az`) — domen alınanda əlavə edin:
      bu olmadan `/sitemap.xml` 404 qaytarır və `robots.txt`-də `Sitemap:` sətiri olmur (Host başlığına etibar edilmir)
-4. Deploy bitəndə sayt `https://<ad>.onrender.com` ünvanında açılır; B2B: `/b2b`.
+4. Deploy. Miqrasiyalar açılışda avtomatik tətbiq olunur.
 
-Qeyd: pulsuz planda disk müvəqqətidir — müraciətlər, seçim linkləri və `create-agency` ilə yaradılan
-hesablar yenidən başlamada itir (admin hesabı hər dəfə env-dən yenidən yaradılır). Daimi saxlama üçün
-verilənlər bazası lazımdır (bax SECURITY.md).
+### C) İstənilən Postgres provayderi
+
+Hər hansı PostgreSQL (Neon, Supabase, öz serveriniz və s.) işləyir: provayderin verdiyi bağlantı sətrini
+`DATABASE_URL`-ə yazın; internet üzərindən bağlantıda `DATABASE_SSL=require` (və ya URL-də `?sslmode=require`).
+Pulsuz planlarda bağlantı sayı az ola bilər — `DATABASE_POOL_MAX` (default 5) ilə tənzimləyin.
+
+Qeyd: `DATABASE_URL` olmadan da sayt işləyir, amma müraciətlər, seçim linkləri, sessiyalar və `create-agency` ilə
+yaradılan hesablar yenidən başlamada itir (admin hesabı hər dəfə env-dən yenidən yaradılır) — production-da logda
+xəbərdarlıq çıxır. Backup və bərpa: [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 ## Hüquqi səhifələr və SEO
 

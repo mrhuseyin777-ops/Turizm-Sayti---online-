@@ -293,16 +293,16 @@ test('qiymət izləmə: IP limiti, tarix keçəndə avtomatik silinir, bildiriş
     for (let i = 0; i < MAX_PER_IP; i++) made.push(await store.create({ ...route, depart: future(10 + i), mode: 'daily' }, { ip: '10.0.0.1' }));
     await assert.rejects(store.create({ ...route, mode: 'daily' }, { ip: '10.0.0.1' }), /ən çox/);
     await store.create({ ...route, mode: 'daily' }, { ip: '10.0.0.2' }); // başqa IP
-    assert.strictEqual(store.count(), MAX_PER_IP + 1);
+    assert.strictEqual(await store.count(), MAX_PER_IP + 1);
     // Faylda IP açıq saxlanılmır
     assert.ok(!fs.readFileSync(store.file, 'utf8').includes('10.0.0.1'));
     // 15 gün sonra: gediş tarixi keçmiş izləmələr silinir
-    const removed = store.purge(future(15));
+    const removed = await store.purge(future(15));
     assert.strictEqual(removed, 5);
-    assert.strictEqual(store.find(made[0].alert.id, made[0].token), null);
+    assert.strictEqual(await store.find(made[0].alert.id, made[0].token), null);
     // Yenidən yükləmə (fayldan) — atomik yazılmış vəziyyət
     store._reset();
-    assert.strictEqual(store.count(), MAX_PER_IP + 1 - 5);
+    assert.strictEqual(await store.count(), MAX_PER_IP + 1 - 5);
     const res = await store.runCheck();
     assert.ok(res.every((x) => x.sent === false));
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }

@@ -4,9 +4,10 @@ Bu sənəd eTour-ın təhdid modelini, kodda tətbiq olunan qorunmaları, produc
 görülməli işləri və zəiflik bildirmə qaydasını təsvir edir. Son audit: 2026-11 (OWASP Top 10 2021 /
 ASVS 4.0 əsasında).
 
-> Qısa xülasə: kod səviyyəsində əsas qorunmalar tətbiq olunub, amma **sayt hələ production üçün hazır
-> deyil** — real verilənlər bazası, HTTPS, sirlərin idarəsi, backup və monitorinq qurulmalıdır
-> (aşağıda "Production üçün qalan addımlar").
+> Qısa xülasə: kod səviyyəsində əsas qorunmalar tətbiq olunub, PostgreSQL dəstəyi (miqrasiyalar, data retention,
+> backup skriptləri) var, amma **sayt hələ tam production üçün hazır deyil** — HTTPS/WAF, sirlərin rotasiyası,
+> şifrələnmiş və sınanmış backup, monitorinq qurulmalıdır (aşağıda "Production üçün qalan addımlar",
+> əməliyyatlar: [`docs/OPERATIONS.md`](docs/OPERATIONS.md)).
 
 ## 1. Təhdid modeli
 
@@ -15,7 +16,7 @@ ASVS 4.0 əsasında).
 | Aktiv | Harada | Niyə vacibdir |
 |---|---|---|
 | Müştəri şəxsi məlumatları (ad, telefon, e-poçt, qeyd) | müraciətlər (leads, avia/avto sifariş müraciətləri) | şəxsi məlumat; sızma — hüquqi və reputasiya riski |
-| Agentlik hesabları (istifadəçi adı, parol hash-i) | `data/accounts.json` | hesab ələ keçirilsə — leadlər və müştəri bazası oğurlanır |
+| Agentlik hesabları (istifadəçi adı, parol hash-i) | PostgreSQL `users`/`agencies` (DB-siz dev rejimində `data/accounts.json`) | hesab ələ keçirilsə — leadlər və müştəri bazası oğurlanır |
 | Agentliyin leadləri və net qiymətləri, komissiyası | B2B API, seçim linkləri | kommersiya sirri, rəqabət |
 | Qiymətin düzgünlüyü | seçim linkləri, sifariş müraciətləri | qiymət manipulyasiyası — maliyyə itkisi |
 | Gələcəkdə: ödəniş məlumatı | — (hələ yoxdur) | PCI DSS — bax §4.7 |
@@ -27,11 +28,12 @@ ASVS 4.0 əsasında).
 - **Rəqib agentlik / başqa agentliyin istifadəçisi** — başqasının leadlərinə baxmaq (IDOR), qiymətləri saxtalaşdırmaq.
 - **Paylaşılan linki alan üçüncü şəxs** — link vasitəsilə daxili məlumata (operator adı, net qiymət) çıxış.
 - **Zərərli sayt (CSRF / clickjacking)** — daxil olmuş menecerin brauzeri ilə onun adından əməliyyat.
-- **Serverə/backup-a giriş əldə etmiş hücumçu** — hesab faylının oğurlanması.
+- **Serverə/DB-yə/backup-a giriş əldə etmiş hücumçu** — DB dump-ının, backup faylının və ya `DATABASE_URL`-in oğurlanması.
 
 ### Etibar sərhədləri
 
-Brauzer (etibarsız) → [Cloudflare/WAF — planlaşdırılır] → reverse proxy (TLS) → Node/Express → yaddaş + `data/` fayl.
+Brauzer (etibarsız) → [Cloudflare/WAF — planlaşdırılır] → reverse proxy (TLS) → Node/Express → PostgreSQL
+(`DATABASE_URL`; DB-siz dev/test rejimində yaddaş + `data/` fayl).
 Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localStorage`) etibar edilmir.
 
 ## 2. Tətbiq olunan qorunmalar
@@ -62,7 +64,10 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
   Siyasət: min. 12 simvol, yayılmış parollar və istifadəçi adını ehtiva edən parollar rədd edilir.
   Mövcud olmayan istifadəçidə də eyni hesablama aparılır (istifadəçi adlarının sayılmasının qarşısı), cavab eynidir.
 - **Sessiya**: 256 bitlik `crypto.randomBytes` id, yalnız `HttpOnly; SameSite=Strict; Path=/` cookie-də
-  (production-da `Secure` + `__Host-` prefiksi). Serverdə id-nin SHA-256 hash-i saxlanılır.
+  (production-da `Secure` + `__Host-` prefiksi). Serverdə id-nin özü yox, yalnız SHA-256 hash-i saxlanılır
+  (PostgreSQL `sessions.id_hash`; DB dump-ı sızsa belə sessiya oğurlana bilməz). Sessiyalar DB-də olduğu üçün yenidən
+  başlamada və bir neçə nüsxə arasında qalır; müddəti bitənlər dövri təmizlənir. CSRF tokeni DB-də açıq saxlanılır
+  (`/api/b2b/me` onu qaytarmalıdır) — cookie olmadan faydasızdır.
   Hərəkətsizlik müddəti 2 saat, mütləq müddət 12 saat (env ilə dəyişir). Girişdə yeni sessiya (fixation qorunması).
   Logout sessiyanı serverdə silir. Parol dəyişəndə, istifadəçi bloklananda və ya silinəndə köhnə sessiyalar etibarsız olur.
   İstifadəçi başına maks. 10 aktiv sessiya.
@@ -94,7 +99,10 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
 - Müraciətlər: ağ siyahı sahələr, uzunluq limitləri, ad (`\p{L}`), telefon (7–15 rəqəm), e-poçt formatı, idarəetmə simvolları
   təmizlənir. Avtomobil müraciətində icazəsiz sahə rədd edilir; sənəd (pasport, vəsiqə) məlumatı toplanmır.
 - **Honeypot**: formalarda gizli `website` sahəsi; doldurulubsa müraciət saxlanılmır (bot fərqi bilməsin deyə 201 qaytarılır).
-- SQL/NoSQL yoxdur (hələ DB yoxdur); obyekt tipli dəyərlər (`{"$ne":1}`) string yoxlamasından keçmir.
+- **SQL injection**: bütün sorğular parametrləşdirilmişdir (`pg`, `$1, $2 …`); SQL mətninə istifadəçi dəyəri birləşdirilmir,
+  dinamik sütun adları yalnız sabit ağ siyahıdan (`src/storage/postgres.js`). DB səviyyəsində `NOT NULL`/`CHECK`
+  (uzunluq, format, siyahı dəyərləri), xarici açarlar. `test/db.test.js` injection payload-larını real Postgres-də yoxlayır.
+  Obyekt tipli dəyərlər (`{"$ne":1}`) string yoxlamasından keçmir.
 - Açıq yönləndirmə yoxdur (server `redirect` istifadə etmir); frontend xarici linkləri yalnız `https://wa.me/` üçün qurur,
   `safeUrl()` yalnız http(s) URL-lərə icazə verir.
 
@@ -115,8 +123,9 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
   429 cavabında `Retry-After`. Sayğac yaddaşı məhduddur (ən köhnə açarlar silinir, hamısı sıfırlanmır).
 - `trust proxy` env ilə (`TRUST_PROXY`) — düzgün qurulmasa rate limit ya bütün istifadəçiləri bir IP sayar, ya da
   `X-Forwarded-For` saxtalaşdırılaraq keçilə bilər. `true` dəyəri tövsiyə olunmur.
-- Yaddaş strukturları məhduddur: qiymət keşi 150 açar, leadlər 2000, müraciətlər 1000/5000, seçimlər 20 000
-  (agentlik başına 500 — bir hesab başqalarının linklərini sıxışdırıb silə bilməz), sessiyalar 20 000.
+- Yaddaş strukturları məhduddur: qiymət keşi 150 açar; DB-siz rejimdə leadlər 2000, müraciətlər 1000/5000,
+  seçimlər 20 000, sessiyalar 20 000. Seçim linkləri agentlik başına 500 (hər iki rejimdə — bir hesab başqalarının
+  linklərini sıxışdırıb silə bilməz). DB rejimində həcm data retention ilə məhdudlaşır (§2.10).
 - Nəticə ölçüləri: axtarış `flat` siyahısı ≤ 1000, aviabilet qrupları ≤ 150.
 - Server vaxt limitləri: başlıqlar 20 san, sorğu 30 san, keep-alive 5 san (slowloris).
 - Regex-lər ReDoS üçün yoxlanıldı; yoxlamadan əvvəl uzunluq məhdudlaşdırılır.
@@ -126,13 +135,15 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
 - Mərkəzləşdirilmiş xəta handler: istifadəçiyə stack və daxili mesaj göstərilmir (`{"error":"Daxili xəta"}`),
   body-parser xətaları düzgün 400/413/415 koduna çevrilir. Naməlum yollar → 404 JSON.
 - Loglarda şəxsi məlumat maskalanır: telefon (`*******33`), ad (`N***`), e-poçt (`a***@domain`), IP (son oktet `x`).
-  Aviabilet müraciətlərində tam IP saxlanılmır. Parol və sessiya id-si heç vaxt loglanmır.
+  IP heç bir cədvəldə açıq saxlanılmır — yalnız məqsədə görə prefiksli hash (`src/security/ipHash.js`; `IP_HASH_SECRET`
+  təyin olunsa HMAC). Parol və sessiya id-si heç vaxt loglanmır.
 
 ### 2.8 Asılılıqlar və konfiqurasiya
 
-- Yeganə runtime asılılıq: `express` — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
+- Runtime asılılıqlar: `express`, `pg` — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
   `npm audit` — 0 zəiflik (audit tarixində). `engines.node >= 22.12`.
-- Konfiqurasiya env-dən (`.env.example`), repoda sirr yoxdur; `data/`, `.env*` `.gitignore`-dadır.
+- Konfiqurasiya env-dən (`.env.example`), repoda sirr yoxdur (`DATABASE_URL` yalnız hostinq panelində / Render
+  `fromDatabase`); `data/`, `backups/`, `*.dump`, `.env*` `.gitignore`-dadır.
 - Dev/test demo hesabı yalnız `NODE_ENV !== 'production'` olanda env ilə yaradılır və fayla yazılmır.
 
 ### 2.9 Testlər
@@ -142,11 +153,40 @@ rate limit, parol hash-i, yanlış parol/mövcud olmayan istifadəçi, brute-for
 cookie atributları, logout/vaxtı bitmiş/parolu dəyişmiş sessiya, CSRF token və Origin, IDOR (başqa agentliyin leadləri),
 XSS payload-larının escape olunması, honeypot, log maskalanması, agentlik limitləri. `npm test` ilə işləyir.
 
-## 3. Bilinən məhdudiyyətlər (hazırkı DEMO arxitekturası)
+`test/db.test.js` (yalnız `TEST_DATABASE_URL` verilsə; müvəqqəti sxemdə): miqrasiyaların idempotentliyi və paralel
+nüsxələrdə advisory lock, dəyişdirilmiş miqrasiyanın rədd edilməsi, hesab CRUD və DB məhdudiyyətləri, sessiya hash-i və
+müddət bitməsi, IDOR (agentlik A ↔ B), SQL injection payload-ları, qiymət izləmələri, data retention, HTTP inteqrasiyası.
 
-- Leadlər, müraciətlər, seçim linkləri və sessiyalar **yaddaşdadır** — server yenidən başlayanda itir;
-  ictimai lead spam-ı (çox IP-dən) köhnə leadləri sıxışdıra bilər. Production-dan əvvəl DB-yə köçürülməlidir.
-- Rate limit və brute-force sayğacları bir prosesə aiddir — bir neçə server nüsxəsində Redis kimi ortaq store lazımdır.
+### 2.10 Verilənlər bazası və şəxsi məlumatların saxlanma müddəti
+
+- `DATABASE_URL` → PostgreSQL (`src/storage/postgres.js`), yoxdursa fayl/yaddaş (dev/test). Production-da DB-siz açılış
+  logda açıq xəbərdarlıq verir.
+- Miqrasiyalar (`migrations/*.sql`) açılışda `pg_advisory_lock` altında tətbiq olunur; `schema_migrations` checksum saxlayır.
+- `DATABASE_SSL=require` — TLS + sertifikat yoxlaması; `no-verify` yalnız məcburi hallarda (MITM riski).
+- **Data retention** (`src/storage/cleanup.js`, saatda bir): leadlər, avia/avto müraciətləri `DATA_RETENTION_DAYS`
+  (default 180) gündən sonra, seçim linkləri 30 gündən sonra, gediş tarixi keçmiş izləmələr və bitmiş sessiyalar silinir.
+  Backup-larda silinmiş məlumat backup saxlanma müddəti qədər qalır — bax `docs/OPERATIONS.md`.
+
+## 3. Bilinən məhdudiyyətlər və qalan risklər
+
+- **DB-siz rejim**: `DATABASE_URL` təyin olunmasa leadlər, müraciətlər, seçim linkləri və sessiyalar yaddaşda, hesablar
+  və izləmələr `data/` faylındadır — yenidən başlamada (pulsuz hostinqdə disk müvəqqətidir) itir, bir neçə nüsxədə işləmir.
+  Production-da həmişə `DATABASE_URL` verin (açılış logundakı xəbərdarlığa baxın).
+- **Rate limit və brute-force sayğacları** hələ də proses yaddaşındadır: bir neçə nüsxədə limit hər nüsxə üçün ayrıca
+  sayılır (effektiv limit N dəfə böyükdür), yenidən başlamada sıfırlanır. Ortaq store (Redis / Postgres cədvəli) və ya
+  WAF səviyyəsində limit tövsiyə olunur.
+- **DB-də şəxsi məlumat açıq mətndədir** (ad, telefon, e-poçt, qeyd): at-rest şifrələmə hostinq provayderinin disk
+  şifrələməsinə bağlıdır (provayderin sənədində yoxlayın); tətbiq səviyyəsində sahə şifrələməsi yoxdur.
+  `DATABASE_URL`-ə və backup fayllarına çıxışı olan hər kəs bu məlumatları görür.
+- **Backup-lar** (`npm run backup`) şifrələnmir — fayl 0600 icazə ilə yazılır; şifrələnmiş yaddaşda saxlanılmalı
+  (bax `docs/OPERATIONS.md`). Retention ilə silinmiş məlumat köhnə backup-larda qalır.
+- **IP hash-i** `IP_HASH_SECRET` olmadan sadə SHA-256-dır — IPv4 məkanı kiçik olduğu üçün brute-force ilə geri açıla bilər.
+  Production-da `IP_HASH_SECRET` təyin edin.
+- **Bootstrap admin** (`B2B_ADMIN_*`): DB rejimində env-dəki parol DB-dəkindən fərqlidirsə hər açılışda env-ə görə
+  yenilənir — env parolu sızarsa hesab ələ keçirilə bilər; ilk girişdən sonra güclü, unikal parol saxlayın və env-i
+  hostinq panelində qoruyun.
+- DB istifadəçisi miqrasiya üçün sxem hüquqlarına malikdir (tətbiq və miqrasiya eyni istifadəçi ilə işləyir); ayrıca
+  minimum hüquqlu tətbiq istifadəçisi hələ qurulmayıb.
 - Hesab üzrə bloklama hücumçuya legitim hesabı 15 dəqiqəlik bloklamağa imkan verir (DoS); real versiyada CAPTCHA /
   e-poçt ilə kilid açma və 2FA tövsiyə olunur.
 - Admin paneli yoxdur: hesablar CLI ilə idarə olunur; agentlik daxilində rol fərqi hələ tətbiq olunmur (admin = manager).
@@ -160,12 +200,14 @@ XSS payload-larının escape olunması, honeypot, log maskalanması, agentlik li
 1. **HTTPS/TLS**: yalnız HTTPS (TLS 1.2+, tövsiyə 1.3), HTTP → HTTPS yönləndirmə reverse proxy-də; `NODE_ENV=production`
    (Secure cookie, HSTS); HSTS stabil olduqdan sonra `preload` haqqında qərar. Node prosesi yalnız `127.0.0.1`-də dinləsin
    (`HOST=127.0.0.1`), `TRUST_PROXY` proxy sxeminə uyğun qurulsun.
-2. **Verilənlər bazası**: PostgreSQL (parametrləşdirilmiş sorğular / ORM), ayrıca minimum hüquqlu DB istifadəçisi,
-   TLS bağlantı; disk/volume şifrələməsi (at-rest), həssas sahələr üçün (telefon, e-poçt) tətbiq səviyyəsində şifrələmə
-   nəzərdən keçirilsin. Sessiya və rate limit üçün Redis. Şəxsi məlumatlar üçün saxlama müddəti və avtomatik silmə.
+2. **Verilənlər bazası** (PostgreSQL dəstəyi, miqrasiyalar və retention artıq var): ayrıca minimum hüquqlu tətbiq
+   istifadəçisi (miqrasiya istifadəçisindən ayrı), xarici bağlantılarda TLS (`DATABASE_SSL=require`), DB-yə yalnız lazımi
+   IP-lərdən çıxış, disk şifrələməsi (provayderin sənədində yoxlayın), həssas sahələr üçün (telefon, e-poçt) tətbiq
+   səviyyəsində şifrələmə nəzərdən keçirilsin. Rate limit üçün ortaq store (Redis və ya DB).
 3. **Sirlərin idarəsi**: DB parolu, API açarları (operator inteqrasiyaları, SMS/e-poçt) yalnız hosting-in secret manager-i
    və ya env vasitəsilə; repoya və loglara düşməsin; rotasiya qaydası; operator API açarları hər mühit üçün ayrı.
-4. **Backup**: gündəlik şifrələnmiş backup (DB + hesablar), ayrı yerdə saxlanılsın, bərpa mütəmadi sınansın.
+4. **Backup**: provayderin avtomatik backup/PITR imkanı + `npm run backup` ilə gündəlik dump, şifrələnib ayrı yerdə
+   saxlanılsın, bərpa mütəmadi sınansın (`docs/OPERATIONS.md`).
 5. **Monitorinq və loglama**: strukturlaşdırılmış loglar (maskalanmış), mərkəzləşdirilmiş log saxlanması, xəbərdarlıqlar
    (5xx artımı, çoxlu 401/429, uğursuz giriş dalğası), uptime monitorinqi; audit log (kim, nə vaxt, hansı lead-ə baxdı).
 6. **WAF / Cloudflare**: DDoS qorunması, bot idarəetməsi, origin IP-ni gizlətmək (yalnız Cloudflare IP-lərindən qəbul),

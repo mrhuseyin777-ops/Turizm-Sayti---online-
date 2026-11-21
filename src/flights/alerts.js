@@ -1,7 +1,8 @@
 // "Qiyməti izlə" — marşrut üzrə qiymət izləmələri (aviabilet modulu).
 //
-// Saxlama: <TURTAP_DATA_DIR>/flight-alerts.json (default data/, .gitignore-dadır). Yazma atomikdir
-// (müvəqqəti fayl → fsync → rename), fayl 0600 — src/auth/store.js nümunəsi ilə eyni.
+// Saxlama: src/storage → flightAlerts repository-si. DATABASE_URL varsa PostgreSQL (flight_alerts cədvəli),
+// yoxdursa <TURTAP_DATA_DIR>/flight-alerts.json (default data/, .gitignore-dadır; atomik yazma, fayl 0600 —
+// src/storage/memory.js).
 //
 // Giriş modeli (hesab yoxdur): yaradılanda klientə {id, token} qaytarılır. Token yalnız bir dəfə
 // göstərilir, serverdə yalnız SHA-256 hash-i saxlanılır. Oxumaq/silmək üçün id + token lazımdır —
@@ -12,10 +13,11 @@
 //
 // E-POÇT GÖNDƏRMƏ XİDMƏTİ HƏLƏ YOXDUR: `notifier` interfeysdir (TODO). runCheck() qiymət dəyişməsini
 // hesablayır və bildiriş lazım olanda notifier.send()-i çağırır; indiki stub heç nə göndərmir.
-const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const env = require('../env');
+const storage = require('../storage');
+const { createFileAlertRepo } = require('../storage/memory');
+const { hashIp } = require('../security/ipHash');
 const { cheapestPrice, ValidationError, placeInfo } = require('./search');
 const { EMAIL_RE } = require('./requests');
 const { dayIndex } = require('./schedule');
@@ -42,49 +44,19 @@ const notifier = {
   async send(alert, info) { return { sent: false, reason: 'not-configured' }; },
 };
 
-function createAlertStore(dir = env.dataDir) {
-  const file = path.join(dir, 'flight-alerts.json');
-  let db = null;
-
-  function load() {
-    if (db) return db;
-    try {
-      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-      db = { version: 1, alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [] };
-    } catch (e) {
-      if (e.code !== 'ENOENT') throw new Error(`İzləmə faylı oxunmadı (${file}): ${e.message}`);
-      db = { version: 1, alerts: [] };
-    }
-    return db;
-  }
-
-  function save() {
-    const d = load();
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-    const fd = fs.openSync(tmp, 'wx', 0o600);
-    try {
-      fs.writeSync(fd, JSON.stringify({ version: 1, alerts: d.alerts }, null, 2));
-      fs.fsyncSync(fd);
-    } finally { fs.closeSync(fd); }
-    fs.renameSync(tmp, file);
-  }
+// dirOrOpts: qovluq (fayl repository — köhnə davranış) və ya { repo } (src/storage repository-si)
+function createAlertStore(dirOrOpts = env.dataDir) {
+  const repo = dirOrOpts && typeof dirOrOpts === 'object' && dirOrOpts.repo ? dirOrOpts.repo : createFileAlertRepo(typeof dirOrOpts === 'string' ? dirOrOpts : env.dataDir);
 
   // Uçuş (gediş) tarixi keçmiş izləmələri sil
-  function purge(today = todayIso()) {
-    const d = load();
-    const before = d.alerts.length;
-    d.alerts = d.alerts.filter((a) => dayIndex(a.route.depart) >= dayIndex(today));
-    if (d.alerts.length !== before) save();
-    return before - d.alerts.length;
-  }
+  const purge = (today = todayIso()) => repo.purgeDepartedBefore(today);
 
-  // id + token ilə tap. Sabit vaxtlı müqayisə; tapılmasa / token yanlışdırsa null.
-  function find(id, token) {
+  // id + token ilə tap. Sabit vaxtlı müqayisə; tapılmasa / token yanlışdırsa / tarixi keçibsə null.
+  async function find(id, token) {
     if (typeof id !== 'string' || typeof token !== 'string' || !ID_RE.test(id) || !TOKEN_RE.test(token)) return null;
-    purge();
-    const a = load().alerts.find((x) => x.id === id);
+    const a = await repo.get(id);
     if (!a) return null;
+    if (dayIndex(a.route.depart) < dayIndex(todayIso())) { await repo.delete(a.id); return null; }
     const got = Buffer.from(sha256(token), 'hex');
     const want = Buffer.from(a.tokenHash, 'hex');
     return got.length === want.length && crypto.timingSafeEqual(got, want) ? a : null;
@@ -119,13 +91,12 @@ function createAlertStore(dir = env.dataDir) {
     }
     if (Object.keys(errors).length) throw new AlertValidationError(errors);
 
-    purge();
-    const d = load();
-    const ipKey = ip ? sha256('flight-alert-ip:' + ip).slice(0, 24) : null;
-    if (ipKey && d.alerts.filter((a) => a.ipKey === ipKey).length >= MAX_PER_IP) {
+    await purge();
+    const ipKey = hashIp(ip, 'flight-alert-ip');
+    if (ipKey && (await repo.countByIpKey(ipKey)) >= MAX_PER_IP) {
       throw new AlertValidationError({ limit: `Bir ünvandan ən çox ${MAX_PER_IP} izləmə yaratmaq olar. Köhnələrini silin.` });
     }
-    if (d.alerts.length >= MAX_TOTAL) throw new AlertValidationError({ limit: 'İzləmə siyahısı doludur, bir az sonra yenidən cəhd edin' });
+    if ((await repo.count()) >= MAX_TOTAL) throw new AlertValidationError({ limit: 'İzləmə siyahısı doludur, bir az sonra yenidən cəhd edin' });
 
     const q = current.q;
     const route = { from: q.from, to: q.to, trip: q.trip, depart: q.depart, return: q.return, adults: q.adults, children: q.children, infants: q.infants, cabin: q.cabin, bagCount: q.bagCount, currency: q.currency };
@@ -144,42 +115,41 @@ function createAlertStore(dir = env.dataDir) {
       createdAt: now,
       ipKey,
     };
-    d.alerts.push(alert);
-    save();
+    await repo.insert(alert);
     return { alert, token };
   }
 
-  function remove(id, token) {
-    const a = find(id, token);
+  async function remove(id, token) {
+    const a = await find(id, token);
     if (!a) return false;
-    const d = load();
-    d.alerts = d.alerts.filter((x) => x.id !== a.id);
-    save();
+    await repo.delete(a.id);
     return true;
   }
 
   // Bütün izləmələrin cari qiymətini yoxla; bildiriş lazımdırsa notifier.send() (indi stub).
   // TODO: e-poçt xidməti qoşulanda gündəlik planlaşdırıcı ilə çağırılmalıdır.
   async function runCheck() {
-    purge();
-    const d = load();
+    await purge();
+    const alerts = await repo.list();
     const results = [];
-    for (const a of d.alerts) {
+    const patches = [];
+    for (const a of alerts) {
       let price = null;
       try { price = (await cheapestPrice({ ...a.route })).price; } catch { continue; }
       const change = a.lastPrice && price != null ? (price - a.lastPrice) / a.lastPrice : 0;
       const due = a.email && (a.mode === 'daily' || Math.abs(change) >= 0.1);
       let sent = { sent: false, reason: 'not-due' };
       if (due) sent = await notifier.send(a, { price, previous: a.lastPrice, change });
-      if (sent.sent) { a.lastPrice = price; a.lastNotifiedAt = new Date().toISOString(); }
-      a.lastCheckedAt = new Date().toISOString();
+      const patch = { lastCheckedAt: new Date().toISOString() };
+      if (sent.sent) { patch.lastPrice = price; patch.lastNotifiedAt = patch.lastCheckedAt; }
+      patches.push({ id: a.id, patch });
       results.push({ id: a.id, price, change, ...sent });
     }
-    if (d.alerts.length) save();
+    if (patches.length) await repo.updateMany(patches);
     return results;
   }
 
-  return { file, create, find, remove, purge, runCheck, count: () => load().alerts.length, _reset() { db = null; } };
+  return { file: repo.file, repo, create, find, remove, purge, runCheck, count: () => repo.count(), _reset() { if (repo._reset) repo._reset(); } };
 }
 
 // Klientə qaytarılan görünüş: tokenHash, e-poçt və ipKey GÖSTƏRİLMİR
@@ -202,11 +172,13 @@ async function publicView(a, lang = 'az') {
   };
 }
 
+// Default store: src/storage-dakı flightAlerts repository-si (PostgreSQL və ya JSON fayl).
+// Keçmiş tarixli izləmələrin dövri silinməsi: src/storage/cleanup.js.
 let defaultStore = null;
-const getAlertStore = () => (defaultStore ||= createAlertStore());
-
-// Saatda bir: keçmiş tarixli izləmələri sil (proses bağlanmasını gecikdirmir)
-const timer = setInterval(() => { try { if (defaultStore) defaultStore.purge(); } catch (e) { console.error('[flights] izləmə təmizlənməsi alınmadı', e.message); } }, 60 * 60 * 1000);
-timer.unref();
+const getAlertStore = () => {
+  const repo = storage.get().flightAlerts;
+  if (!defaultStore || defaultStore.repo !== repo) defaultStore = createAlertStore({ repo });
+  return defaultStore;
+};
 
 module.exports = { createAlertStore, getAlertStore, publicView, notifier, AlertValidationError, ID_RE, TOKEN_RE, MODES, MAX_PER_IP };

@@ -9,6 +9,8 @@ const { boardLabels } = require('./src/data/catalog');
 const { securityHeaders, parseQueryString, sanitizeBody, requireJson, checkOrigin, notFound, errorHandler } = require('./src/security/http');
 const { rateLimit } = require('./src/security/rateLimit');
 const { seedDemoAccount, seedBootstrapAdmin } = require('./src/auth');
+const storage = require('./src/storage');
+const { startCleanup } = require('./src/storage/cleanup');
 
 const app = express();
 app.disable('x-powered-by');
@@ -85,21 +87,40 @@ app.get('/b2b', (req, res) => res.sendFile(path.join(__dirname, 'public', 'b2b.h
 app.use(notFound);
 app.use(errorHandler);
 
-// Dev/test: env ilə demo B2B hesabı (production-da işləmir)
-const ready = Promise.all([
+// Saxlama qatı: PostgreSQL rejimində miqrasiyalar (advisory lock ilə), sonra hesabların seed-i.
+// Dev/test: env ilə demo B2B hesabı (production-da işləmir); hostinq: env-dən ilk admin.
+const ready = storage.init().then(() => Promise.all([
   seedDemoAccount().catch((e) => console.error('[auth] demo hesab yaradılmadı:', e.message)),
   seedBootstrapAdmin().catch((e) => console.error('[auth] admin hesabı yaradılmadı:', e.message)),
-]);
+]));
+ready.catch(() => {}); // xəta aşağıda (main) və ya ready-ni gözləyən testdə işlənir
 app.locals.ready = ready;
 
 if (require.main === module) {
   if (env.isProd && !env.trustProxy) console.warn('[config] TRUST_PROXY təyin olunmayıb: proxy arxasındasınızsa rate limit bütün istifadəçiləri bir IP kimi görəcək.');
-  const server = app.listen(env.port, env.host, () => console.log(`${config.brand.name} işləyir: http://localhost:${env.port} (${env.nodeEnv})`));
-  // Yavaş klient (slowloris) və asılı qalan bağlantılara qarşı vaxt limitləri
-  server.headersTimeout = 20 * 1000;
-  server.requestTimeout = 30 * 1000;
-  server.keepAliveTimeout = 5 * 1000;
-  server.maxRequestsPerSocket = 1000;
+  ready.then(() => {
+    const server = app.listen(env.port, env.host, () => console.log(`${config.brand.name} işləyir: http://localhost:${env.port} (${env.nodeEnv}, saxlama: ${storage.mode()})`));
+    // Yavaş klient (slowloris) və asılı qalan bağlantılara qarşı vaxt limitləri
+    server.headersTimeout = 20 * 1000;
+    server.requestTimeout = 30 * 1000;
+    server.keepAliveTimeout = 5 * 1000;
+    server.maxRequestsPerSocket = 1000;
+    // Data retention: köhnə müraciətlər, bitmiş sessiya/izləmə/seçim linkləri (src/storage/cleanup.js)
+    if (env.cleanupEnabled) startCleanup();
+    // Hostinq dayandırma siqnalı: yeni bağlantıları qəbul etmə, DB hovuzunu bağla
+    const shutdown = (sig) => {
+      console.info(`[server] ${sig}: dayandırılır`);
+      server.close(() => storage.close().catch(() => {}).finally(() => process.exit(0)));
+      server.closeIdleConnections();
+      setTimeout(() => process.exit(0), 10 * 1000).unref();
+    };
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
+  }, (e) => {
+    // DB-yə qoşulmaq / miqrasiya alınmadı — server açılmır (hostinq prosesi yenidən başladacaq)
+    console.error('[storage] başlanğıc alınmadı:', e.message);
+    process.exit(1);
+  });
 }
 
 module.exports = app;

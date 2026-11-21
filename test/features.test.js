@@ -9,6 +9,7 @@ const { createSelection, publicSelection, createLead, leadsForAgency, getSelecti
 const config = require('../src/config');
 const app = require('../server');
 const { startServer, createAccount, login, client } = require('./_helpers');
+const { createSelectionRepo } = require('../src/storage/memory');
 
 const future = (days) => { const d = new Date(); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const daysTo = (iso) => Math.round((Date.parse(iso + 'T00:00:00Z') - Date.parse(future(0) + 'T00:00:00Z')) / 864e5);
@@ -156,7 +157,7 @@ const stubResolver = (catalog) => async (query, ids) => ({ pax: { adults: 2, chi
 const account = (name = 'Test Agentlik', agencyId = 'ag_test') => ({ agencyId, agencyName: name, managerName: 'Aysel' });
 
 test('B2B seçim: id təsadüfi, operator/net gizli, qiymət serverdən, limitlər', async () => {
-  const store = new Map();
+  const store = createSelectionRepo();
   const catalog = { 'summer:x': stubOffer(), 'summer:y': stubOffer({ id: 'summer:y', price: 2000 }) };
   const opts = { account: account(), store, resolveOffers: stubResolver(catalog) };
   // Klientin göndərdiyi qiymət/ad/agentlik NƏZƏRƏ ALINMIR
@@ -177,32 +178,32 @@ test('B2B seçim: id təsadüfi, operator/net gizli, qiymət serverdən, limitl�
   await assert.rejects(() => createSelection({ query: {}, offerIds: ['yoxdur'] }, opts), /mövcud deyil/);
   await assert.rejects(() => createSelection({ offerIds: ['summer:x'] }, opts), /query/);
   await assert.rejects(() => createSelection({ query: {}, offerIds: [{ $gt: '' }] }, opts));
-  assert.strictEqual(getSelectionRecord('../../etc', store), null);
-  assert.strictEqual(getSelectionRecord('AAAAAAAAAAAA', store), null);
+  assert.strictEqual(await getSelectionRecord('../../etc', store), null);
+  assert.strictEqual(await getSelectionRecord('AAAAAAAAAAAA', store), null);
 });
 
 test('leads: callback və seçim leadi agentliyə (agencyId) bağlanır', async () => {
-  const store = new Map();
+  const store = createSelectionRepo();
   const sel = await createSelection({ client: 'Elvin', query: {}, offerIds: ['f:b'] }, {
     account: account('Lead Agentlik', 'ag_lead'), store,
     resolveOffers: stubResolver({ 'f:b': stubOffer({ id: 'f:b', name: 'Otel B', checkIn: future(20), nights: 3, providerName: 'Funsun Travel', price: 500 }) }),
   });
-  const lead = createLead({ type: 'selection', selectionId: sel.id, itemIndex: 0, name: 'Nigar', phone: '+994 50 111 22 33' }, { selections: store });
+  const lead = await createLead({ type: 'selection', selectionId: sel.id, itemIndex: 0, name: 'Nigar', phone: '+994 50 111 22 33' }, { selections: store });
   assert.strictEqual(lead.agency, 'Lead Agentlik');
   assert.strictEqual(lead.agencyId, 'ag_lead');
   assert.strictEqual(lead.item.clientPrice, 500);
-  assert.throws(() => createLead({ type: 'selection', selectionId: sel.id, itemIndex: 5, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
-  assert.throws(() => createLead({ type: 'selection', selectionId: 'nope', itemIndex: 0, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
-  assert.ok(leadsForAgency('ag_lead').some((l) => l.id === lead.id));
-  assert.deepStrictEqual(leadsForAgency('Lead Agentlik'), [], 'ad ilə yox, yalnız agencyId ilə');
-  assert.deepStrictEqual(leadsForAgency('ag_basqa'), []);
-  const cb = createLead({ type: 'callback', name: 'Kamran', phone: '0501234567', preferredTime: 'evening', context: 'Antalya' });
+  await assert.rejects(() => createLead({ type: 'selection', selectionId: sel.id, itemIndex: 5, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
+  await assert.rejects(() => createLead({ type: 'selection', selectionId: 'nope', itemIndex: 0, name: 'Nigar', phone: '+994501112233' }, { selections: store }));
+  assert.ok((await leadsForAgency('ag_lead')).some((l) => l.id === lead.id));
+  assert.deepStrictEqual(await leadsForAgency('Lead Agentlik'), [], 'ad ilə yox, yalnız agencyId ilə');
+  assert.deepStrictEqual(await leadsForAgency('ag_basqa'), []);
+  const cb = await createLead({ type: 'callback', name: 'Kamran', phone: '0501234567', preferredTime: 'evening', context: 'Antalya' });
   assert.strictEqual(cb.type, 'callback');
   assert.strictEqual(cb.preferredTime, 'evening');
-  assert.throws(() => createLead({ name: 'Xan', phone: '<script>' }));
-  assert.throws(() => createLead({ name: '', phone: '0501234567' }));
-  assert.throws(() => createLead({ name: '<img src=x>', phone: '0501234567' }), /Ad/);
-  assert.throws(() => createLead({ name: 'Kamran', phone: '12345' }), /Telefon/);
+  await assert.rejects(() => createLead({ name: 'Xan', phone: '<script>' }));
+  await assert.rejects(() => createLead({ name: '', phone: '0501234567' }));
+  await assert.rejects(() => createLead({ name: '<img src=x>', phone: '0501234567' }), /Ad/);
+  await assert.rejects(() => createLead({ name: 'Kamran', phone: '12345' }), /Telefon/);
 });
 
 test('HTTP: explore, config.trust, leads, selections axını (B2B giriş ilə)', async () => {

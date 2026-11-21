@@ -3,7 +3,10 @@
 // Şəxsiyyət sənədləri (sürücülük vəsiqəsi, pasport və s.) TOPLANMIR — icazəli sahələrdən
 // kənar istənilən sahə rədd edilir.
 
+// Saxlama: src/storage (carRequests — PostgreSQL və ya yaddaş), DATA_RETENTION_DAYS gündən sonra silinir.
+
 const { searchRentals, searchTransfers, InputError } = require('./search');
+const storage = require('../storage');
 
 const ALLOWED_KEYS = new Set(['name', 'phone', 'note', 'kind', 'query', 'offerId']);
 const QUERY_KEYS = {
@@ -50,9 +53,6 @@ function validateRequest(body) {
   return { errors, value: { name, phone, note, kind, offerId: body.offerId, query } };
 }
 
-const requests = [];
-let seq = 0;
-
 async function createRequest(body) {
   const { errors, value } = validateRequest(body);
   if (errors.length) throw new InputError(errors.join('; '));
@@ -79,13 +79,10 @@ async function createRequest(body) {
     };
   }
 
-  const rec = {
-    id: ++seq, kind: value.kind, name: value.name, phone: value.phone, note: value.note,
+  return storage.get().carRequests.insert({
+    kind: value.kind, name: value.name, phone: value.phone, note: value.note,
     offerId: value.offerId, summary, status: 'new', createdAt: new Date().toISOString(),
-  };
-  requests.push(rec);
-  if (requests.length > 1000) requests.shift(); // demo yaddaş limiti; real versiyada DB
-  return rec;
+  });
 }
 
-module.exports = { validateRequest, createRequest, requests };
+module.exports = { validateRequest, createRequest };
