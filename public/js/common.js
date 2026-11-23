@@ -1,6 +1,7 @@
 // Ortaq köməkçilər: dil (AZ/EN/RU), API, avtomatik tamamlama, formatlama
 const I18N = {
   az: {
+    hint_package: '✈ Bakıdan uçuş + otel + transfer — operatorların hazır tur paketləri', hint_hotel: '🏨 Yalnız yerləşmə — yola özünüz çıxırsınız (xaricdə və Azərbaycanda)', hint_tour: '🚌 Bələdçili qrup turları — sabit çıxış günləri, müddət tura görə', date_package: 'Uçuş tarixi -dan / -dək', date_hotel: 'Giriş tarixi -dan / -dək', date_tour: 'Turun başlama tarixi -dan / -dək', lm_title_package: 'Son dəqiqə turları', lm_title_hotel: 'Bu həftə üçün ən sərfəli otellər', lm_title_tour: 'Yaxın ekskursiya turları',
     op_link_short: 'saytda',
     rank_title: 'Operatorlar ucuzdan bahalıya', rank_cheapest: 'ən ucuz',
     op_link: '{op} saytında yoxla', op_link_hint: 'Operatorun öz axtarış səhifəsi eyni tarix və nəfərlə açılır. Qiymət orada fərqli ola bilər.',
@@ -20,6 +21,7 @@ const I18N = {
     feat3_t: 'Büdcəyə görə', feat3_d: 'Büdcəni yaz — uyğun otellər ucuzdan bahalıya düzülür.', feat4_t: 'Agentliklər üçün B2B', feat4_d: 'Menecerlər üçün müqayisə cədvəli, kommersiya təklifi və CSV.',
   },
   en: {
+    hint_package: '✈ Flight from Baku + hotel + transfer — ready-made operator packages', hint_hotel: '🏨 Accommodation only — you travel on your own (abroad and in Azerbaijan)', hint_tour: '🚌 Guided group tours — fixed departure days, duration per tour', date_package: 'Departure from / to', date_hotel: 'Check-in from / to', date_tour: 'Tour start from / to', lm_title_package: 'Last-minute deals', lm_title_hotel: 'Best hotel deals this week', lm_title_tour: 'Upcoming guided tours',
     op_link_short: 'on site',
     rank_title: 'Operators, cheapest first', rank_cheapest: 'cheapest',
     op_link: 'Check on {op}', op_link_hint: 'Opens the operator’s own search page with the same dates and guests. The price there may differ.',
@@ -39,6 +41,7 @@ const I18N = {
     feat3_t: 'Budget first', feat3_d: 'Enter a budget — matching hotels sorted cheapest first.', feat4_t: 'B2B for agencies', feat4_d: 'Comparison grid, client quotes and CSV export for managers.',
   },
   ru: {
+    hint_package: '✈ Перелёт из Баку + отель + трансфер — готовые туры операторов', hint_hotel: '🏨 Только проживание — добираетесь сами (за рубежом и в Азербайджане)', hint_tour: '🚌 Экскурсионные туры с гидом — фиксированные даты, длительность по туру', date_package: 'Вылет с / по', date_hotel: 'Заезд с / по', date_tour: 'Начало тура с / по', lm_title_package: 'Горящие туры', lm_title_hotel: 'Выгодные отели на этой неделе', lm_title_tour: 'Ближайшие экскурсионные туры',
     op_link_short: 'на сайте',
     rank_title: 'Операторы от дешёвых к дорогим', rank_cheapest: 'дешевле всех',
     op_link: 'Проверить на сайте {op}', op_link_hint: 'Откроется поиск оператора с теми же датами и туристами. Цена там может отличаться.',

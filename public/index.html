@@ -56,12 +56,13 @@
           <button type="button" data-region="domestic" data-i18n="reg_domestic"></button>
         </div>
       </div>
+      <div class="tab-hint" id="tabHint" aria-live="polite"></div>
       <div class="fields">
         <div class="field"><label for="dest" data-i18n="f_dest"></label><input id="dest" maxlength="80" data-i18n-ph="f_dest_ph"></div>
-        <div class="field wide"><label for="checkIn" data-i18n="f_date_range"></label>
+        <div class="field wide"><label for="checkIn" id="dateLabel"></label>
           <div class="pair"><input id="checkIn" type="date" required data-i18n-title="f_date_from"><input id="checkInTo" type="date" data-i18n-title="f_date_to"></div>
         </div>
-        <div class="field"><label for="nights" data-i18n="f_nights_range"></label>
+        <div class="field" id="nightsField"><label for="nights" data-i18n="f_nights_range"></label>
           <div class="pair"><select id="nights" data-i18n-title="f_nights_from"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select><select id="nightsTo" data-i18n-title="f_nights_to"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option selected>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option><option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option><option>21</option></select></div>
         </div>
         <div class="field"><label data-i18n="f_pax"></label>
@@ -81,15 +82,13 @@
         <button type="button" class="explore-link" id="exploreBtn" data-i18n="explore_btn"></button>
         <button type="button" class="explore-link" id="lastMinBtn" data-i18n="lastmin_btn"></button>
         <span class="muted" data-i18n="popular"></span>
-        <button type="button" data-q="antalya">Antalya</button><button type="button" data-q="dubai">Dubay</button>
-        <button type="button" data-q="sharm">Şarm-əl-Şeyx</button><button type="button" data-q="qabala">Qəbələ</button>
-        <button type="button" data-q="shahdag">Şahdağ</button><button type="button" data-q="tbilisi">Tbilisi</button>
+        <span class="popular-list" id="popularList"></span>
       </div>
     </form>
 
     <div id="intro">
       <section id="lastMinSection" hidden>
-        <div class="section-head"><div><h2 data-i18n="lastmin_title"></h2><div class="muted" id="lastMinSub"></div></div>
+        <div class="section-head"><div><h2 id="lastMinTitle"></h2><div class="muted" id="lastMinSub"></div></div>
           <button type="button" class="btn secondary sm" id="lastMinAll" data-i18n="lastmin_all"></button></div>
         <div class="dest-grid" id="lastMinGrid"></div>
       </section>

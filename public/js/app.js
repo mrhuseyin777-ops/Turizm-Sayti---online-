@@ -60,10 +60,30 @@
   $('#groupBy').addEventListener('change', () => { state.group = $('#groupBy').checked; if (state.last) render(state.last); });
 
   // Tablar və region
+  // Hər tabın öz görünüşü: izah, tarix etiketi, gecə sahəsi, region, populyar istiqamətlər, ana səhifə bölməsi
+  const POPULAR = {
+    package: [['antalya', 'Antalya'], ['dubai', 'Dubay'], ['sharm', 'Şarm-əl-Şeyx'], ['bodrum', 'Bodrum'], ['istanbul', 'İstanbul'], ['batumi', 'Batumi']],
+    hotel: [['antalya', 'Antalya'], ['istanbul', 'İstanbul'], ['dubai', 'Dubay'], ['qabala', 'Qəbələ'], ['shahdag', 'Şahdağ'], ['baku', 'Bakı']],
+    tour: [['tbilisi', 'Tbilisi'], ['istanbul', 'İstanbul'], ['dubai', 'Dubay'], ['sheki', 'Şəki'], ['shahdag', 'Şahdağ'], ['lankaran', 'Lənkəran']],
+  };
+  function applyTypeUi() {
+    const type = state.type;
+    $('#tabHint').textContent = t('hint_' + type);
+    $('#dateLabel').textContent = t('date_' + type);
+    $('#nightsField').hidden = type === 'tour'; // ekskursiya turlarının müddəti sabitdir
+    const dom = $('#regionSeg [data-region="domestic"]');
+    dom.hidden = type === 'package'; // daxili istiqamətlərdə aviabiletli paket yoxdur
+    if (type === 'package' && state.region === 'domestic') $('#regionSeg [data-region=""]').click();
+    $('#popularList').innerHTML = POPULAR[type].map(([id, name]) => `<button type="button" data-q="${esc(id)}">${esc(name)}</button>`).join('');
+    $('#lastMinBtn').hidden = type === 'tour';
+  }
   function setType(type) {
+    const changed = state.type !== type;
     document.querySelectorAll('#typeTabs .tab').forEach((x) => x.classList.toggle('active', x.dataset.type === type));
     state.type = type;
     renderOpFilter();
+    applyTypeUi();
+    if (changed) loadLastMinute();
   }
   $('#typeTabs').addEventListener('click', (e) => {
     const b = e.target.closest('[data-type]'); if (!b) return;
@@ -75,11 +95,11 @@
     document.querySelectorAll('#regionSeg button').forEach((x) => x.classList.toggle('active', x === b));
     state.region = b.dataset.region;
   });
-  document.querySelectorAll('.popular [data-q]').forEach((b) => b.addEventListener('click', () => {
+  $('#popularList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-q]'); if (!b) return;
     $('#dest').value = b.textContent; $('#dest').dataset.id = b.dataset.q;
-    if (['qabala', 'shahdag'].includes(b.dataset.q) && state.type === 'package') setType('hotel');
     run();
-  }));
+  });
   // "Hara gedə bilərəm?" — istiqaməti təmizlə və büdcə/tarixə görə bütün istiqamətlər
   $('#exploreBtn').addEventListener('click', () => { $('#dest').value = ''; delete $('#dest').dataset.id; run(); });
   // "Son dəqiqə" — yaxın 14 gün, istiqamətsiz
@@ -101,7 +121,7 @@
   $('#sort').addEventListener('change', () => run());
   $('#toggleFilters').addEventListener('click', () => $('#filters').classList.toggle('open'));
   $('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); run(); });
-  document.addEventListener('langchange', () => { renderStatic(); if (state.last) render(state.last); if (lastMinData) renderLastMinute(lastMinData); });
+  document.addEventListener('langchange', () => { renderStatic(); applyTypeUi(); if (state.last) render(state.last); if (lastMinData) renderLastMinute(lastMinData); });
 
   const checked = (name) => [...document.querySelectorAll(`#filters input[name="${name}"]:checked`)].map((i) => i.value).filter(Boolean).join(',');
 
@@ -321,18 +341,22 @@
   // Ana səhifədə "Son dəqiqə" bölməsi
   let lastMinData = null;
   function renderLastMinute(data) {
+    const type = data.query.type || 'package';
+    $('#lastMinTitle').textContent = t('lm_title_' + type);
     $('#lastMinSection').hidden = !data.destinations.length;
     $('#lastMinGrid').innerHTML = destCardsHtml(data.destinations, data.query.currency, 6);
   }
   async function loadLastMinute() {
     try {
-      lastMinData = await api('/api/explore', { type: 'package', lastMinute: '1', nights: 7, adults: 2, currency: state.currency, checkIn: defaultDate(7) });
+      const type = state.type;
+      const data = await api('/api/explore', { type, lastMinute: '1', nights: type === 'hotel' ? 3 : 7, adults: 2, currency: state.currency, checkIn: defaultDate(7) });
+      if (type !== state.type) return; // tab bu arada dəyişib
+      lastMinData = data;
       renderLastMinute(lastMinData);
     } catch { /* bölmə gizli qalır */ }
   }
   $('#lastMinGrid').addEventListener('click', (e) => {
     const c = e.target.closest('[data-dest]'); if (!c) return;
-    if (state.type !== 'package') setType('package');
     $('#lastMinuteOnly').checked = true;
     openDest(c);
   });
@@ -606,4 +630,5 @@
   } else {
     loadLastMinute();
   }
+  applyTypeUi();
 })();

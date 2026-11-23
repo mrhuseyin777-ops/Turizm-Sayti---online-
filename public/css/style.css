@@ -449,3 +449,7 @@ footer a { color: var(--primary); }
 .legal-sec li { margin-bottom: 6px; }
 .legal-top { text-align: right; margin: 0; font-size: 14px; }
 .legal-top a { color: var(--primary); }
+
+/* Tab izahı */
+.tab-hint { font-size: 13px; color: var(--muted); margin: -4px 0 12px 2px; }
+.popular-list { display: contents; }
