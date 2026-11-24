@@ -1,0 +1,147 @@
+/* B2B: "Ən ucuz təklif" paneli, 🏆 nişanı, "♥ Seçilmişlər" pəncərəsi və çap/PDF kommersiya təklifi (quote.html).
+   Rənglər style.css-in narıncı palitra tokenlərindən (--primary, --accent, --primary-soft, --good) + aşağıdakı
+   panel tokenləri; qaranlıq tema üçün eyni tokenlər yenidən təyin olunur. */
+:root {
+  --cheap-bg: linear-gradient(135deg, #fff7ed 0%, #ffedd5 60%, #fef3c7 100%);
+  --cheap-border: #fdba74;
+  --cheap-ink: #9a3412;
+  --cheap-big: #c2410c;
+  --cheap-chip: #ffffff;
+  --trend-up: #b91c1c;
+  --trend-up-bg: #fee2e2;
+  --trend-down: #15803d;
+  --trend-down-bg: #dcfce7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cheap-bg: linear-gradient(135deg, #2a1607 0%, #3a1d0a 60%, #33240b 100%);
+    --cheap-border: #c2410c; --cheap-ink: #fdba74; --cheap-big: #fb923c; --cheap-chip: #17223a;
+    --trend-up: #fca5a5; --trend-up-bg: #3b1414; --trend-down: #86efac; --trend-down-bg: #10331f;
+  }
+}
+:root[data-theme="dark"] {
+  --cheap-bg: linear-gradient(135deg, #2a1607 0%, #3a1d0a 60%, #33240b 100%);
+  --cheap-border: #c2410c; --cheap-ink: #fdba74; --cheap-big: #fb923c; --cheap-chip: #17223a;
+  --trend-up: #fca5a5; --trend-up-bg: #3b1414; --trend-down: #86efac; --trend-down-bg: #10331f;
+}
+
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+/* ---------------------------------------------------------------- Ən ucuz təklif paneli */
+.cheap-panel { margin: 14px 0 6px; display: grid; gap: 10px; min-width: 0; scroll-margin-top: 72px; }
+.cheap-main { background: var(--cheap-bg); border: 2px solid var(--cheap-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); min-width: 0; }
+.cheap-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cheap-head h2 { margin: 0; font-size: 20px; color: var(--cheap-ink); letter-spacing: -.2px; }
+.cheap-head small { color: var(--muted); }
+.cheap-trophy { font-size: 30px; line-height: 1; }
+.cheap-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
+.cheap-hotel { font-size: 22px; font-weight: 800; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.cheap-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cheap-fact { background: var(--cheap-chip); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: 13px; overflow-wrap: anywhere; }
+.cheap-price { text-align: right; min-width: 190px; }
+.cheap-net { color: var(--muted); font-size: 14px; }
+.cheap-big { font-size: 34px; font-weight: 800; color: var(--cheap-big); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cheap-diff { display: inline-block; margin-top: 6px; background: var(--good-soft); color: var(--good); font-weight: 800; border-radius: 8px; padding: 3px 10px; }
+.cheap-diff-sub { font-size: 12px; color: var(--muted); margin-top: 4px; max-width: 280px; margin-left: auto; overflow-wrap: anywhere; }
+.cheap-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 4px; align-items: center; }
+.cheap-actions a.btn { display: inline-flex; align-items: center; }
+.cheap-actions .btn.on, .fav-btn.on { color: #e11d48; }
+.cheap-mini { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; min-width: 0; }
+.cheap-row { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px; align-items: center; }
+.cheap-row-t { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+.cheap-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.cheap-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 10px; padding: 3px 4px 3px 10px; font-size: 13px; background: var(--surface-2); max-width: 100%; min-width: 0; }
+.cheap-chip.muted { padding-right: 10px; }
+.cheap-chip-l { font-weight: 700; white-space: nowrap; }
+.cheap-chip b { white-space: nowrap; }
+.cheap-chip-n { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+/* ---------------------------------------------------------------- Cədvəl: 🏆 və ♡ */
+.best-badge { display: inline-block; background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+table.grid td.top-cell { box-shadow: inset 0 0 0 2px var(--accent); }
+table.grid tr.top-row td { background: var(--warn-soft); }
+.op-wins { display: block; font-size: 11px; font-weight: 600; text-transform: none; color: var(--good); letter-spacing: 0; }
+.fav-btn { border: 0; background: transparent; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; color: var(--muted); border-radius: 6px; }
+.fav-btn:hover { background: var(--primary-soft); color: #e11d48; }
+.fav-btn:disabled { opacity: .5; cursor: wait; }
+
+/* ---------------------------------------------------------------- Seçilmişlər pəncərəsi */
+.modal.sl-modal { max-width: 860px; }
+.sl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sl-top h3 { margin: 0; }
+.sl-sub { margin: 6px 0 10px; font-size: 13px; }
+.sl-hint { background: var(--warn-soft); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.sl-empty { padding: 24px 0; text-align: center; }
+.sl-group { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-top: 12px; }
+.sl-group-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.sl-group-act { display: flex; gap: 6px; flex-wrap: wrap; }
+.sl-group-act a.btn, .sl-item-act a.btn, .sl-out-act a.btn, .sl-out .share-link a.btn { display: inline-flex; align-items: center; }
+.sl-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.sl-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 10px 0; border-top: 1px dashed var(--border); }
+.sl-item.gone .sl-item-main, .sl-item.gone .sl-item-price { opacity: .55; }
+.sl-item-main { min-width: 0; overflow-wrap: anywhere; }
+.sl-meta { font-size: 13px; }
+.sl-item-price { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.sl-item-price b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.sl-item-act { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.sl-del { margin-left: auto; }
+.trend { font-size: 12px; font-weight: 800; border-radius: 6px; padding: 1px 6px; }
+.trend.up { color: var(--trend-up); background: var(--trend-up-bg); }
+.trend.down { color: var(--trend-down); background: var(--trend-down-bg); }
+.sl-out:empty { display: none; }
+.sl-out { margin-top: 10px; display: grid; gap: 8px; }
+.sl-out textarea.quote { min-height: 180px; margin: 0; }
+.sl-out-act { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  .cheap-panel { scroll-margin-top: 116px; }
+  .cheap-body { grid-template-columns: 1fr; }
+  .cheap-price { text-align: left; min-width: 0; }
+  .cheap-diff-sub { margin-left: 0; }
+  .cheap-row { grid-template-columns: 1fr; gap: 4px; }
+  .cheap-hotel { font-size: 19px; }
+  .cheap-big { font-size: 30px; }
+  .cheap-actions .btn { flex: 1 1 auto; justify-content: center; }
+}
+
+/* ---------------------------------------------------------------- Kommersiya təklifi (quote.html) */
+.quote-toolbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+.quote-toolbar .container { display: flex; align-items: center; gap: 12px; min-height: 56px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+.quote-hint { flex: 1; font-size: 13px; }
+.quote-doc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin: 20px auto 40px; max-width: 860px; }
+.quote-head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-bottom: 3px solid var(--accent); padding-bottom: 14px; }
+.quote-agency { font-weight: 800; font-size: 20px; color: var(--primary); }
+.quote-head h1 { margin: 2px 0 0; font-size: 26px; letter-spacing: -.3px; }
+.quote-meta { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+.quote-meta div { display: flex; gap: 8px; }
+.quote-meta dt { color: var(--muted); min-width: 80px; }
+.quote-meta dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.quote-items { list-style: none; counter-reset: q; margin: 16px 0; padding: 0; }
+.quote-item { counter-increment: q; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); break-inside: avoid; }
+.quote-item h2 { font-size: 18px; margin: 0; overflow-wrap: anywhere; }
+.quote-item h2::before { content: counter(q) ". "; color: var(--accent); }
+.quote-item.gone { opacity: .55; }
+.quote-facts { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+.quote-item-price { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.quote-item-price b { font-size: 22px; color: var(--primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quote-terms { font-size: 13px; color: var(--muted); }
+.quote-terms h3 { font-size: 14px; color: var(--text); margin: 0 0 4px; }
+.quote-foot { margin-top: 18px; font-size: 13px; color: var(--muted); text-align: right; }
+@media (max-width: 560px) {
+  .quote-doc { padding: 16px; margin: 12px 0 24px; }
+  .quote-item { grid-template-columns: 1fr; }
+  .quote-item-price { text-align: left; align-items: flex-start; }
+}
+
+@media print {
+  @page { margin: 14mm; }
+  :root, :root:not([data-theme="light"]), :root[data-theme="dark"] {
+    --bg: #fff; --surface: #fff; --surface-2: #f5f5f5; --text: #000; --muted: #444; --border: #ccc;
+    --primary: #9a3412; --accent: #c2410c; color-scheme: light;
+  }
+  body { background: #fff; color: #000; font-size: 12pt; }
+  .no-print, .topbar, footer, .toast { display: none !important; }
+  .quote-doc { border: 0; padding: 0; margin: 0; max-width: none; border-radius: 0; }
+  .quote-item-price b { color: #000; }
+  a { color: #000; }
+}

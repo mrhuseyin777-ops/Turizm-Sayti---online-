@@ -1,7 +1,7 @@
 // "memory/file" implementasiyası (DATABASE_URL olmayanda — dev/test, geriyə uyğunluq).
 //  - accounts:      JSON fayl (src/auth/store.js, <TURTAP_DATA_DIR>/accounts.json)
 //  - flightAlerts:  JSON fayl (<TURTAP_DATA_DIR>/flight-alerts.json)
-//  - sessions, leads, selections, flightRequests, carRequests: yalnız proses yaddaşında
+//  - sessions, leads, selections, shortlists, flightRequests, carRequests: yalnız proses yaddaşında
 //    (yenidən başlamada itir, bir neçə server nüsxəsi arasında paylaşılmır).
 // Interfeys: src/storage/index.js. Bütün metodlar async-dir (PostgreSQL ilə eyni).
 const fs = require('fs');
@@ -106,6 +106,60 @@ function createSelectionRepo({ max = 20000 } = {}) {
   };
 }
 
+// ---------------------------------------------------------------- B2B seçilmişlər (shortlist)
+// Hər metod agencyId tələb edir — başqa agentliyin qeydi heç bir yolla qaytarılmır/dəyişdirilmir (IDOR).
+const SHORTLIST_PATCH = ['client', 'netPrice', 'prevNetPrice', 'available', 'checkedAt', 'snapshot'];
+function createShortlistRepo({ max = 50000 } = {}) {
+  const map = new Map();
+  const copy = (it) => (it ? structuredClone(it) : null);
+  const dupKey = (it) => `${it.agencyId}\u0000${it.client}\u0000${it.offerId}\u0000${it.paxKey}`;
+  const findDup = (it, exceptId) => [...map.values()].find((x) => x.id !== exceptId && dupKey(x) === dupKey(it)) || null;
+  return {
+    map, // yalnız testlər üçün
+    // Eyni agentlik + müştəri + təklif + sərnişin tərkibi artıq varsa — mövcud qeyd { existed: true } ilə qaytarılır
+    async insert(item) {
+      const dup = findDup(item);
+      if (dup) return { ...copy(dup), existed: true };
+      map.set(item.id, copy(item));
+      while (map.size > max) map.delete(map.keys().next().value);
+      return copy(item);
+    },
+    async listForAgency(agencyId, limit = 500) {
+      if (typeof agencyId !== 'string' || !agencyId) return [];
+      return [...map.values()].filter((x) => x.agencyId === agencyId).slice(-limit).reverse().map(copy);
+    },
+    async get(agencyId, id) {
+      const it = map.get(id);
+      return it && it.agencyId === agencyId ? copy(it) : null;
+    },
+    async update(agencyId, id, patch) {
+      const it = map.get(id);
+      if (!it || it.agencyId !== agencyId) return null;
+      const next = { ...it };
+      for (const k of SHORTLIST_PATCH) if (k in patch) next[k] = patch[k];
+      if (findDup(next, id)) { const e = new Error('duplicate'); e.code = 'DUPLICATE'; throw e; }
+      map.set(id, next);
+      return copy(next);
+    },
+    async delete(agencyId, id) {
+      const it = map.get(id);
+      if (!it || it.agencyId !== agencyId) return false;
+      return map.delete(id);
+    },
+    async countForAgency(agencyId) {
+      let n = 0;
+      for (const x of map.values()) if (x.agencyId === agencyId) n++;
+      return n;
+    },
+    async purgeBefore(date) {
+      const cut = ms(date);
+      let n = 0;
+      for (const [k, x] of map) if (Date.parse(x.createdAt) < cut) { map.delete(k); n++; }
+      return n;
+    },
+  };
+}
+
 // ---------------------------------------------------------------- Sadə müraciət siyahısı (avia/avto)
 function createRequestRepo({ max = 5000 } = {}) {
   const list = [];
@@ -205,10 +259,11 @@ function createRepos({ accounts = defaultAccounts, dataDir = env.dataDir } = {})
     sessions: createSessionRepo(),
     leads: createLeadRepo(),
     selections: createSelectionRepo(),
+    shortlists: createShortlistRepo(),
     flightAlerts: createFileAlertRepo(dataDir),
     flightRequests: createRequestRepo({ max: 5000 }),
     carRequests: createRequestRepo({ max: 1000 }),
   };
 }
 
-module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createRequestRepo, createFileAlertRepo };
+module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createShortlistRepo, createRequestRepo, createFileAlertRepo };
