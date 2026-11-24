@@ -50,4 +50,7 @@ module.exports = {
   ],
   // Operator qiymətlərinin yaddaş keşi (dəq). "Yenilə" düyməsi keşi keçir.
   priceCacheMinutes: 30,
+  // Müştəri dəstəyi ("💬 Kömək lazımdır?" paneli). PLACEHOLDER: real nömrələr hələ yoxdur.
+  // null olan seçim UI-da gizlənir (yalnız "Sizə zəng edək" forması qalır). Format: "+994XXXXXXXXX".
+  support: { phone: null, whatsapp: null },
 };

@@ -479,10 +479,117 @@ async function hotelOffers(id, rawIn) {
   };
 }
 
+// ---- Qiymət təqvimi (tur paketi / otel): seçilmiş istiqamət + gecə + nəfər üçün hər gediş günü ən ucuz qiymət.
+// Rejimlər: span (mərkəz tarix ± N gün, N ≤ 7) və ya mode=month (mərkəz tarixin ayı). Keçmiş günlər atılır.
+// Performans: pəncərə ≤ 15 günlük hissələrə bölünür (parseQuery limitləri), hər hissə provayder başına BİR sorğu
+// (queryProvider keşi) + təqvimin öz yaddaş keşi. Cavabda yalnız gün xülasəsi qaytarılır.
+const CAL_KEYS = ['type', 'destinationId', 'q', 'checkIn', 'span', 'mode', 'nights', 'adults', 'children', 'childAges', 'currency', 'noStopSale'];
+const CAL_CACHE_MAX = 100;
+const calCache = new Map();
+async function calendar(rawIn) {
+  const src = rawIn && typeof rawIn === 'object' ? rawIn : {};
+  const raw = {};
+  for (const k of CAL_KEYS) if (typeof src[k] === 'string') raw[k] = src[k];
+  const type = raw.type === undefined || raw.type === '' ? 'package' : raw.type;
+  if (!['package', 'hotel'].includes(type)) throw new QueryError('Təqvim yalnız tur paketi (package) və otel (hotel) üçündür');
+  if (raw.nights !== undefined && !/^\d{1,2}$/.test(raw.nights)) throw new QueryError('Gecə sayı (nights) düzgün deyil');
+  if (raw.span !== undefined && raw.span !== '' && !/^[1-7]$/.test(raw.span)) throw new QueryError('span 1–7 arası olmalıdır');
+  if (raw.mode !== undefined && raw.mode !== '' && !['span', 'month'].includes(raw.mode)) throw new QueryError('mode: span | month');
+  // İstiqamət: destinationId (ağ siyahı) və ya q mətni — dəqiq BİR istiqamət olmalıdır
+  let destId = null;
+  if (raw.destinationId) {
+    if (!/^[a-z0-9-]{1,30}$/.test(raw.destinationId) || !destinations.some((d) => d.id === raw.destinationId)) throw new QueryError('İstiqamət (destinationId) tapılmadı');
+    destId = raw.destinationId;
+  } else {
+    const ids = resolveDestinations(typeof raw.q === 'string' ? raw.q.slice(0, 80) : '');
+    if (ids.length !== 1) throw new QueryError('Təqvim üçün bir istiqamət seçin');
+    destId = ids[0];
+  }
+  const dest = destinations.find((d) => d.id === destId);
+  const effType = type === 'package' && dest.region === 'domestic' ? 'hotel' : type;
+  const center = parseDate(raw.checkIn, 'Tarix (checkIn)');
+  const today = todayUTC();
+  if ((center - today) / DAY > config.searchLimits.maxDaysAhead) throw new QueryError(`Gediş tarixi ən çox ${config.searchLimits.maxDaysAhead} gün sonra ola bilər`);
+  const mode = raw.mode === 'month' ? 'month' : 'span';
+  const span = raw.span ? Number(raw.span) : 7;
+  let from;
+  let to;
+  if (mode === 'month') {
+    from = new Date(Date.UTC(center.getUTCFullYear(), center.getUTCMonth(), 1));
+    to = new Date(Date.UTC(center.getUTCFullYear(), center.getUTCMonth() + 1, 0));
+  } else {
+    from = addDaysUTC(center, -span);
+    to = addDaysUTC(center, span);
+  }
+  if (from < today) from = today;
+  if (to < from) throw new QueryError('Təqvim pəncərəsi keçmişdədir');
+  const base = {
+    type: effType, destinationId: destId, nights: String(clampInt(raw.nights, 1, 21, 7)), adults: raw.adults, children: raw.children,
+    childAges: raw.childAges, currency: raw.currency, noStopSale: raw.noStopSale === '0' ? '' : '1',
+  };
+  const started = Date.now();
+  const probe = parseQuery({ ...base, checkIn: from.toISOString().slice(0, 10) });
+  const key = [effType, destId, from.toISOString().slice(0, 10), to.toISOString().slice(0, 10), probe.nights, probe.adults,
+    probe.childAges.map((a) => (a == null ? 'x' : a)).join('.'), probe.currency, base.noStopSale].join('|');
+  const hit = calCache.get(key);
+  const ttl = config.priceCacheMinutes * 60000;
+  let days;
+  if (hit && Date.now() - hit.at < ttl) {
+    days = hit.days;
+  } else {
+    const byDate = new Map();
+    const CHUNK = config.searchLimits.maxDateRangeDays; // ≤ 15 gün bir sorğuda
+    const chunks = [];
+    for (let s = from; s <= to; s = addDaysUTC(s, CHUNK + 1)) {
+      const e = addDaysUTC(s, CHUNK) > to ? to : addDaysUTC(s, CHUNK);
+      chunks.push(parseQuery({ ...base, checkIn: s.toISOString().slice(0, 10), checkInTo: e.toISOString().slice(0, 10), nightsTo: base.nights }));
+    }
+    const results = await Promise.all(chunks.map((q) => collectOffers(q)));
+    for (const { offers } of results) {
+      for (const o of offers) { // ucuzdan sıralanıb → gün üçün ilk rast gəlinən ən ucuzdur
+        const d = byDate.get(o.checkIn);
+        if (!d) byDate.set(o.checkIn, { price: o.price, providerName: o.providerName, hotel: o.name, offers: 1 });
+        else d.offers++;
+      }
+    }
+    days = [];
+    for (let d = from; d <= to; d = addDaysUTC(d, 1)) {
+      const iso = d.toISOString().slice(0, 10);
+      const x = byDate.get(iso);
+      days.push(x ? { date: iso, price: x.price, providerName: x.providerName, hotel: x.hotel, offers: x.offers } : { date: iso, price: null, offers: 0 });
+    }
+    // "Ən ucuz" günlər: ən aşağı qiymətdən ≤ 5% baha olanlar (ən azı 1, ən çox 3 gün)
+    const priced = days.filter((x) => x.price != null).sort((a, b) => a.price - b.price);
+    if (priced.length) {
+      const lim = priced[0].price * 1.05;
+      priced.filter((x, i) => i < 3 && x.price <= lim).forEach((x) => { x.cheapest = true; });
+      const max = priced[priced.length - 1].price;
+      const step = (max - priced[0].price) / 3;
+      for (const x of priced) x.level = step <= 0 ? 'low' : x.price <= priced[0].price + step ? 'low' : x.price <= priced[0].price + 2 * step ? 'mid' : 'high';
+    }
+    calCache.delete(key);
+    calCache.set(key, { at: Date.now(), days });
+    while (calCache.size > CAL_CACHE_MAX) calCache.delete(calCache.keys().next().value);
+  }
+  const prices = days.filter((x) => x.price != null).map((x) => x.price);
+  return {
+    query: {
+      type: effType, destinationId: destId, destination: slimDest[destId], mode, span: mode === 'span' ? span : null, center: center.toISOString().slice(0, 10),
+      from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10), nights: probe.nights, adults: probe.adults, childAges: probe.childAges, currency: probe.currency,
+    },
+    days,
+    min: prices.length ? Math.min(...prices) : null,
+    max: prices.length ? Math.max(...prices) : null,
+    cached: !!hit && Date.now() - hit.at < ttl,
+    tookMs: Date.now() - started,
+    note: 'DEMO',
+  };
+}
+
 function publicQuery(q) {
   const { refresh, ...rest } = q;
   const d = (x) => (x ? x.toISOString().slice(0, 10) : null);
   return { ...rest, checkIn: d(q.checkIn), checkInTo: d(q.checkInTo), dateFrom: d(q.dateFrom), dateTo: d(q.dateTo) };
 }
 
-module.exports = { QueryError, search, explore, suggest, resolveDestinations, parseQuery, activePredicates, ratingWord, hotelOffers, _cache: cache };
+module.exports = { QueryError, search, explore, suggest, resolveDestinations, parseQuery, activePredicates, ratingWord, hotelOffers, calendar, _cache: cache, _calCache: calCache };

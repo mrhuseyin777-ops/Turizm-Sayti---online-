@@ -2,7 +2,7 @@
 // B2B paylaşılan seçim linkləri. server.js bu faylı avtomatik qoşur.
 const express = require('express');
 const path = require('path');
-const { explore, hotelOffers, QueryError } = require('../search');
+const { explore, hotelOffers, calendar, QueryError } = require('../search');
 const { InputError, createLead, createSelection, getSelectionRecord, publicSelection } = require('../leads');
 const { requireAuth, requireCsrf } = require('../auth');
 const { rateLimit } = require('../security/rateLimit');
@@ -34,6 +34,17 @@ router.get('/api/hotels/:id/offers', rateLimit({ name: 'hotel-offers', windowMs:
     const r = await hotelOffers(req.params.id, req.query);
     if (!r) return res.status(404).json({ error: 'Otel tapılmadı' });
     res.json(r);
+  } catch (e) {
+    if (e instanceof QueryError) return res.status(400).json({ error: e.message });
+    next(e);
+  }
+});
+
+// Qiymət təqvimi: istiqamət + gecə + nəfər üçün ±N gün (span ≤ 7) və ya ay (mode=month) üzrə hər gün ən ucuz qiymət.
+// Validasiya src/search.js → calendar(); nəticə yaddaşda keşlənir (priceCacheMinutes). Ayrıca IP limiti.
+router.get('/api/tours/calendar', rateLimit({ name: 'tour-calendar', windowMs: 60 * 1000, max: 60 }), async (req, res, next) => {
+  try {
+    res.json(await calendar(req.query));
   } catch (e) {
     if (e instanceof QueryError) return res.status(400).json({ error: e.message });
     next(e);
