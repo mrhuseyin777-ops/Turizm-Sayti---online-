@@ -4,9 +4,11 @@
 // kənar istənilən sahə rədd edilir.
 
 // Saxlama: src/storage (carRequests — PostgreSQL və ya yaddaş), DATA_RETENTION_DAYS gündən sonra silinir.
+// Yeni müraciət → Telegram/e-poçt bildirişi (src/notify, asinxron).
 
 const { searchRentals, searchTransfers, InputError } = require('./search');
 const storage = require('../storage');
+const notify = require('../notify');
 
 const ALLOWED_KEYS = new Set(['name', 'phone', 'note', 'kind', 'query', 'offerId']);
 const QUERY_KEYS = {
@@ -80,10 +82,12 @@ async function createRequest(body) {
     };
   }
 
-  return storage.get().carRequests.insert({
+  const saved = await storage.get().carRequests.insert({
     kind: value.kind, name: value.name, phone: value.phone, note: value.note,
     offerId: value.offerId, summary, status: 'new', createdAt: new Date().toISOString(),
   });
+  notify.leadCreated('car', saved); // asinxron (admin chat-ına), cavabı gecikdirmir
+  return saved;
 }
 
 module.exports = { validateRequest, createRequest };

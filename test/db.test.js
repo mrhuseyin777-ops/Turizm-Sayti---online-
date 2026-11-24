@@ -390,3 +390,45 @@ test('/readyz: PostgreSQL rejimində SELECT 1 ilə 200; /healthz 200; cavabda da
     assert.deepStrictEqual(await r.json(), { status: 'ok' });
   }
 });
+
+// ---------------------------------------------------------------- 002: CRM + agentlik ayarları
+test('002: lead CRM (status, qeyd, kim/nə vaxt) — IDOR şərti DB-də; agentlik bildiriş ayarları; CHECK məhdudiyyətləri', async () => {
+  const { createSelection, createLead, updateLeadForAgency, leadCountsForAgency, leadsForAgency } = require('../src/leads');
+  const cols = (await sql(`SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = 'leads'`, [SCHEMA])).map((r) => r.column_name);
+  for (const c of ['status', 'manager_note', 'status_changed_at', 'status_changed_by', 'updated_at']) assert.ok(cols.includes(c), c);
+  assert.ok((await sql('SELECT to_regclass($1) AS t', [`${SCHEMA}.agency_settings`]))[0].t);
+  // Miqrasiya faylı idempotentdir: təkrar icra xətasız
+  await admin.query(fs.readFileSync(path.join(__dirname, '..', 'migrations', '002_lead_crm_notify.sql'), 'utf8'));
+
+  const A = await account('CRM A DB', 'crm-a-db');
+  const B = await account('CRM B DB', 'crm-b-db');
+  const sel = await createSelection({ markup: 0, query: {}, offerIds: ['summer:x'] }, { account: { agencyId: A.agency.id, agencyName: A.agency.name, managerName: 'M' }, resolveOffers: stubResolver });
+  const lead = await createLead({ type: 'selection', selectionId: sel.id, itemIndex: 0, name: 'CRM Müştəri', phone: '+994501112233' });
+  assert.strictEqual(lead.status, 'new');
+  assert.strictEqual(lead.managerNote, '');
+  assert.strictEqual(await updateLeadForAgency(B.agency.id, String(lead.id), { status: 'sold' }, { by: 'B' }), null, 'IDOR');
+  const u = await updateLeadForAgency(A.agency.id, String(lead.id), { status: 'sold', note: "'); DROP TABLE leads; --" }, { by: 'Menecer A' });
+  assert.strictEqual(u.status, 'sold');
+  assert.strictEqual(u.managerNote, "'); DROP TABLE leads; --");
+  assert.strictEqual(u.statusChangedBy, 'Menecer A');
+  const changedAt = u.statusChangedAt;
+  const u2 = await updateLeadForAgency(A.agency.id, String(lead.id), { note: 'yalnız qeyd' }, { by: 'Başqa' });
+  assert.strictEqual(u2.statusChangedAt, changedAt);
+  assert.strictEqual(u2.statusChangedBy, 'Menecer A');
+  assert.deepStrictEqual(await leadCountsForAgency(A.agency.id), { new: 0, in_progress: 0, sold: 1, cancelled: 0 });
+  assert.deepStrictEqual((await leadsForAgency(A.agency.id, { status: 'sold' })).map((l) => l.id), [lead.id]);
+  assert.deepStrictEqual(await leadsForAgency(A.agency.id, { status: 'new' }), []);
+  await assert.rejects(sql(`UPDATE ${SCHEMA}.leads SET status = 'x' WHERE id = $1`, [lead.id]));
+  await assert.rejects(sql(`UPDATE ${SCHEMA}.leads SET manager_note = $2 WHERE id = $1`, [lead.id, 'x'.repeat(1001)]));
+
+  const st = repos.agencySettings;
+  assert.strictEqual(await st.get(A.agency.id), null);
+  const s1 = await st.set(A.agency.id, { telegramChatId: '-1001234567890', notifyEmail: 'a@b.az', updatedBy: 'Admin' });
+  assert.strictEqual(s1.telegramChatId, '-1001234567890');
+  await st.set(A.agency.id, { telegramChatId: '@odiola_sales', notifyEmail: null, updatedBy: 'Admin 2' });
+  const s2 = await st.get(A.agency.id);
+  assert.deepStrictEqual({ c: s2.telegramChatId, e: s2.notifyEmail, b: s2.updatedBy }, { c: '@odiola_sales', e: null, b: 'Admin 2' });
+  assert.strictEqual(await st.get(B.agency.id), null);
+  await assert.rejects(st.set(B.agency.id, { telegramChatId: '1; DROP TABLE x' }), 'CHECK: chat_id formatı');
+  await assert.rejects(st.set('ag_yoxdur000000', { telegramChatId: '-100' }), 'FK: agentlik mövcud olmalıdır');
+});

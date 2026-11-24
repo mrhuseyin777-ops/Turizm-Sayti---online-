@@ -70,6 +70,15 @@ module.exports = {
   // İstəyə görə: Sentry (server xətaları). Boşdursa @sentry/node yüklənmir və heç bir şəbəkə sorğusu getmir.
   sentryDsn: (raw.SENTRY_DSN || '').trim(),
   sentryEnvironment: raw.SENTRY_ENVIRONMENT || nodeEnv,
+  // Bildirişlər (src/notify, docs/OPERATIONS.md → Telegram). Token/SMTP parolu YALNIZ hostinq panelində.
+  // Test rejimində (node --test / NODE_ENV=test) heç bir şəbəkə sorğusu getmir.
+  notify: {
+    telegramToken: (raw.TELEGRAM_BOT_TOKEN || '').trim(),
+    telegramAdminChatId: (raw.TELEGRAM_ADMIN_CHAT_ID || '').trim(),
+    smtpUrl: (raw.SMTP_URL || '').trim(),
+    emailFrom: (raw.NOTIFY_EMAIL_FROM || '').trim(),
+    adminEmail: (raw.NOTIFY_ADMIN_EMAIL || '').trim(),
+  },
   // Hostinq üçün ilk admin hesabı (production-da da işləyir). Parol YALNIZ hostinqin gizli env
   // dəyişənində saxlanılır (repoda yox). Terminalı olmayan hostinqlərdə (məs. Render pulsuz) B2B-yə
   // ilk girişi təmin edir; hesab yaddaşda yaradılır və hər açılışda yenidən yoxlanılır.

@@ -1,10 +1,12 @@
 // Müraciətlər (leads) və B2B paylaşılan seçimlər.
 // Saxlama: src/storage (DATABASE_URL varsa PostgreSQL, yoxdursa yaddaş). Leadlər DATA_RETENTION_DAYS,
-// seçim linkləri 30 gün sonra avtomatik silinir (src/storage/cleanup.js). TODO: e-poçt/WhatsApp bildirişi.
+// seçim linkləri 30 gün sonra avtomatik silinir (src/storage/cleanup.js). Yeni müraciət → Telegram/e-poçt
+// bildirişi (src/notify, asinxron). B2B CRM: status, menecer qeydi (updateLeadForAgency).
 const crypto = require('crypto');
 const { maskPhone, maskName } = require('./security/http');
 const { search } = require('./search');
 const storage = require('./storage');
+const notify = require('./notify');
 
 class InputError extends Error {}
 
@@ -66,14 +68,49 @@ async function createLead(body, { selections: selStore, leads: leadStore } = {})
   const saved = await (leadStore || storage.get().leads).insert(lead);
   // Loga yalnız maskalanmış məlumat yazılır
   console.info('[lead] yeni müraciət', { id: saved.id, type, name: maskName(name), phone: maskPhone(phone), agencyId: saved.agencyId || null });
+  notify.leadCreated(type, saved); // asinxron: cavabı gecikdirmir, uğursuzluq müraciətə təsir etmir
   return saved;
 }
 
+// ---------------- B2B CRM: status və menecer qeydi ----------------
+const LEAD_STATUSES = ['new', 'in_progress', 'sold', 'cancelled'];
+const MANAGER_NOTE_MAX = 1000;
+
 // B2B "Müraciətlər": YALNIZ sessiyadakı agentliyin (agencyId) seçim linklərindən gələn leadlər.
 // agencyId sorğudan yox, autentifikasiya olunmuş sessiyadan gəlir (IDOR qorunması).
-async function leadsForAgency(agencyId, { leads: leadStore } = {}) {
+async function leadsForAgency(agencyId, { leads: leadStore, status } = {}) {
   if (typeof agencyId !== 'string' || !agencyId) return [];
-  return (leadStore || storage.get().leads).listForAgency(agencyId, 200);
+  return (leadStore || storage.get().leads).listForAgency(agencyId, 200, { status: LEAD_STATUSES.includes(status) ? status : undefined });
+}
+
+async function leadCountsForAgency(agencyId, { leads: leadStore } = {}) {
+  if (typeof agencyId !== 'string' || !agencyId) return {};
+  const raw = await (leadStore || storage.get().leads).statusCountsForAgency(agencyId);
+  return Object.fromEntries(LEAD_STATUSES.map((st) => [st, raw[st] || 0]));
+}
+
+// PATCH /api/b2b/leads/:id — { status?, note? }. Yalnız ağ siyahıdakı sahələr; agentlik sessiyadan.
+// Başqa agentliyin (və ya mövcud olmayan) müraciəti → null (route 404 qaytarır, mövcudluq sızmır).
+async function updateLeadForAgency(agencyId, rawId, body, { by, leads: leadStore } = {}) {
+  const id = typeof rawId === 'string' && /^\d{1,15}$/.test(rawId) ? Number(rawId) : NaN;
+  if (!Number.isSafeInteger(id) || id <= 0) throw new InputError('Müraciət id-si düzgün deyil');
+  const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  const extra = Object.keys(b).filter((k) => k !== 'status' && k !== 'note');
+  if (extra.length) throw new InputError('İcazə verilməyən sahə(lər)');
+  const patch = {};
+  if (b.status !== undefined) {
+    if (!LEAD_STATUSES.includes(b.status)) throw new InputError('Status yanlışdır (new, in_progress, sold, cancelled)');
+    patch.status = b.status;
+  }
+  if (b.note !== undefined) {
+    if (typeof b.note !== 'string') throw new InputError('Qeyd mətn olmalıdır');
+    const note = b.note.replace(CTRL_RE, '').trim();
+    if (note.length > MANAGER_NOTE_MAX) throw new InputError(`Qeyd ən çox ${MANAGER_NOTE_MAX} simvol ola bilər`);
+    patch.managerNote = note;
+  }
+  if (!Object.keys(patch).length) throw new InputError('Dəyişiklik yoxdur (status və ya note)');
+  if (typeof agencyId !== 'string' || !agencyId) return null;
+  return (leadStore || storage.get().leads).updateForAgency(agencyId, id, { ...patch, by: str(by, 80) || null, now: new Date() });
 }
 
 // ---------------- Paylaşılan seçimlər (B2B brendli link) ----------------
@@ -191,4 +228,7 @@ function publicSelection(sel) {
   };
 }
 
-module.exports = { InputError, LIMITS, SEL_QUERY_KEYS, resolveOffersBySearch, createLead, leadsForAgency, createSelection, getSelectionRecord, publicSelection };
+module.exports = {
+  InputError, LIMITS, SEL_QUERY_KEYS, LEAD_STATUSES, MANAGER_NOTE_MAX, resolveOffersBySearch, createLead, leadsForAgency, leadCountsForAgency,
+  updateLeadForAgency, createSelection, getSelectionRecord, publicSelection,
+};

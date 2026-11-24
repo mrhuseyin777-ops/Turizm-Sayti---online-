@@ -121,7 +121,11 @@ function createRepos(pool) {
 
   // ---------------------------------------------------------------- Leadlər
   const leadRow = (r) => {
-    const l = { id: Number(r.id), type: r.type, name: r.name, phone: r.phone, note: r.note, offerId: r.offer_id, createdAt: iso(r.created_at) };
+    const l = {
+      id: Number(r.id), type: r.type, name: r.name, phone: r.phone, note: r.note, offerId: r.offer_id, createdAt: iso(r.created_at),
+      status: r.status || 'new', managerNote: r.manager_note || '', statusChangedAt: iso(r.status_changed_at),
+      statusChangedBy: r.status_changed_by ?? null, updatedAt: iso(r.updated_at || r.created_at),
+    };
     if (r.type === 'callback') { l.preferredTime = r.preferred_time; l.context = r.context; }
     if (r.type === 'selection') {
       Object.assign(l, { selectionId: r.selection_id, agencyId: r.agency_id, agency: r.agency_name, manager: r.manager, client: r.client, item: r.item });
@@ -139,14 +143,53 @@ function createRepos(pool) {
       ]);
       return leadRow(rows[0]);
     },
-    async listForAgency(agencyId, limit = 200) {
+    async listForAgency(agencyId, limit = 200, { status } = {}) {
       if (typeof agencyId !== 'string' || !agencyId) return [];
       const { rows } = await q(`SELECT * FROM leads WHERE type = 'selection' AND agency_id = $1
-        ORDER BY created_at DESC, id DESC LIMIT $2`, [agencyId, limit]);
+          AND ($3::text IS NULL OR status = $3)
+        ORDER BY created_at DESC, id DESC LIMIT $2`, [agencyId, limit, status || null]);
       return rows.map(leadRow);
+    },
+    async statusCountsForAgency(agencyId) {
+      if (typeof agencyId !== 'string' || !agencyId) return {};
+      const { rows } = await q(`SELECT status, count(*)::int AS n FROM leads WHERE type = 'selection' AND agency_id = $1
+        GROUP BY status`, [agencyId]);
+      return Object.fromEntries(rows.map((r) => [r.status, r.n]));
+    },
+    // IDOR: WHERE şərtində agency_id — başqa agentliyin müraciəti heç vaxt yenilənmir (tapılmasa null)
+    async updateForAgency(agencyId, id, { status, managerNote, by, now = new Date() }) {
+      if (typeof agencyId !== 'string' || !agencyId || !Number.isSafeInteger(id)) return null;
+      const { rows } = await q(`UPDATE leads SET
+          status_changed_at = CASE WHEN $3::text IS NOT NULL AND $3 <> status THEN $6::timestamptz ELSE status_changed_at END,
+          status_changed_by = CASE WHEN $3::text IS NOT NULL AND $3 <> status THEN $5 ELSE status_changed_by END,
+          status = COALESCE($3, status),
+          manager_note = COALESCE($4, manager_note),
+          updated_at = $6
+        WHERE id = $1 AND agency_id = $2 AND type = 'selection' RETURNING *`, [
+        id, agencyId, status ?? null, managerNote ?? null, by || null, new Date(now),
+      ]);
+      return rows[0] ? leadRow(rows[0]) : null;
     },
     async count() { return (await q('SELECT count(*)::int AS n FROM leads')).rows[0].n; },
     async purgeBefore(date) { return (await q('DELETE FROM leads WHERE created_at < $1', [new Date(date)])).rowCount; },
+  };
+
+  // ---------------------------------------------------------------- Agentlik ayarları (bildirişlər)
+  const settingsRow = (r) => (r ? { telegramChatId: r.telegram_chat_id, notifyEmail: r.notify_email, updatedAt: iso(r.updated_at), updatedBy: r.updated_by } : null);
+  const agencySettings = {
+    kind: 'postgres',
+    async get(agencyId) {
+      if (typeof agencyId !== 'string') return null;
+      return settingsRow((await q('SELECT * FROM agency_settings WHERE agency_id = $1', [agencyId])).rows[0]);
+    },
+    async set(agencyId, { telegramChatId = null, notifyEmail = null, updatedBy = null }) {
+      const { rows } = await q(`INSERT INTO agency_settings (agency_id, telegram_chat_id, notify_email, updated_at, updated_by)
+          VALUES ($1, $2, $3, now(), $4)
+        ON CONFLICT (agency_id) DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id, notify_email = EXCLUDED.notify_email,
+          updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by
+        RETURNING *`, [agencyId, telegramChatId, notifyEmail, updatedBy]);
+      return settingsRow(rows[0]);
+    },
   };
 
   // ---------------------------------------------------------------- Seçim linkləri
@@ -237,7 +280,7 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM car_requests WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
-  return { kind: 'postgres', pool, accounts, sessions, leads, selections, flightAlerts, flightRequests, carRequests };
+  return { kind: 'postgres', pool, accounts, sessions, leads, selections, flightAlerts, flightRequests, carRequests, agencySettings };
 }
 
 module.exports = { createRepos };

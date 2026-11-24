@@ -1,6 +1,7 @@
 // "memory/file" implementasiyası (DATABASE_URL olmayanda — dev/test, geriyə uyğunluq).
 //  - accounts:      JSON fayl (src/auth/store.js, <TURTAP_DATA_DIR>/accounts.json)
 //  - flightAlerts:  JSON fayl (<TURTAP_DATA_DIR>/flight-alerts.json)
+//  - agencySettings: JSON fayl (<TURTAP_DATA_DIR>/agency-settings.json) — bildiriş ayarları
 //  - sessions, leads, selections, flightRequests, carRequests: yalnız proses yaddaşında
 //    (yenidən başlamada itir, bir neçə server nüsxəsi arasında paylaşılmır).
 // Interfeys: src/storage/index.js. Bütün metodlar async-dir (PostgreSQL ilə eyni).
@@ -57,13 +58,35 @@ function createLeadRepo({ max = 2000 } = {}) {
   return {
     list, // yalnız testlər üçün
     async insert(lead) {
-      const rec = { ...lead, id: ++seq, createdAt: lead.createdAt || new Date().toISOString() };
+      const createdAt = lead.createdAt || new Date().toISOString();
+      const rec = {
+        ...lead, id: ++seq, createdAt,
+        status: 'new', managerNote: '', statusChangedAt: null, statusChangedBy: null, updatedAt: createdAt,
+      };
       list.push(rec);
       while (list.length > max) list.shift();
-      return rec;
+      return { ...rec };
     },
-    async listForAgency(agencyId, limit = 200) {
-      return list.filter((l) => l.type === 'selection' && l.agencyId === agencyId).slice(-limit).reverse();
+    async listForAgency(agencyId, limit = 200, { status } = {}) {
+      return list.filter((l) => l.type === 'selection' && l.agencyId === agencyId && (!status || l.status === status))
+        .slice(-limit).reverse().map((l) => ({ ...l }));
+    },
+    async statusCountsForAgency(agencyId) {
+      const out = {};
+      for (const l of list) if (l.type === 'selection' && l.agencyId === agencyId) out[l.status] = (out[l.status] || 0) + 1;
+      return out;
+    },
+    // IDOR: yalnız HƏMİN agentliyin seçim müraciəti yenilənir; tapılmasa null
+    async updateForAgency(agencyId, id, { status, managerNote, by, now = new Date() }) {
+      const l = list.find((x) => x.id === id && x.type === 'selection' && x.agencyId === agencyId);
+      if (!l || typeof agencyId !== 'string' || !agencyId) return null;
+      const at = new Date(now).toISOString();
+      if (status !== undefined && status !== l.status) {
+        l.status = status; l.statusChangedAt = at; l.statusChangedBy = by || null;
+      }
+      if (managerNote !== undefined) l.managerNote = managerNote;
+      l.updatedAt = at;
+      return { ...l };
     },
     async count() { return list.length; },
     async purgeBefore(date) {
@@ -125,6 +148,49 @@ function createRequestRepo({ max = 5000 } = {}) {
       for (let i = list.length - 1; i >= 0; i--) if (Date.parse(list[i].createdAt) < cut) list.splice(i, 1);
       return before - list.length;
     },
+  };
+}
+
+// ---------------------------------------------------------------- Agentlik ayarları (JSON fayl)
+// Bildiriş ayarları (Telegram chat_id, bildiriş e-poçtu). Yazma atomikdir, fayl 0600.
+function createFileSettingsRepo(dir = env.dataDir) {
+  const file = path.join(dir, 'agency-settings.json');
+  let db = null;
+  const load = () => {
+    if (db) return db;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      db = parsed && typeof parsed.agencies === 'object' && !Array.isArray(parsed.agencies) ? parsed : { version: 1, agencies: {} };
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw new Error(`Ayarlar faylı oxunmadı (${file}): ${e.message}`, { cause: e });
+      db = { version: 1, agencies: {} };
+    }
+    return db;
+  };
+  const save = () => {
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    const fd = fs.openSync(tmp, 'wx', 0o600);
+    try {
+      fs.writeSync(fd, JSON.stringify(load(), null, 2));
+      fs.fsyncSync(fd);
+    } finally { fs.closeSync(fd); }
+    fs.renameSync(tmp, file);
+  };
+  return {
+    kind: 'file',
+    file,
+    async get(agencyId) {
+      if (typeof agencyId !== 'string' || !Object.prototype.hasOwnProperty.call(load().agencies, agencyId)) return null;
+      return { ...load().agencies[agencyId] };
+    },
+    async set(agencyId, { telegramChatId = null, notifyEmail = null, updatedBy = null }) {
+      const rec = { telegramChatId, notifyEmail, updatedAt: new Date().toISOString(), updatedBy };
+      Object.defineProperty(load().agencies, agencyId, { value: rec, enumerable: true, writable: true, configurable: true });
+      save();
+      return { ...rec };
+    },
+    _reset() { db = null; },
   };
 }
 
@@ -206,9 +272,10 @@ function createRepos({ accounts = defaultAccounts, dataDir = env.dataDir } = {})
     leads: createLeadRepo(),
     selections: createSelectionRepo(),
     flightAlerts: createFileAlertRepo(dataDir),
+    agencySettings: createFileSettingsRepo(dataDir),
     flightRequests: createRequestRepo({ max: 5000 }),
     carRequests: createRequestRepo({ max: 1000 }),
   };
 }
 
-module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createRequestRepo, createFileAlertRepo };
+module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createRequestRepo, createFileAlertRepo, createFileSettingsRepo };

@@ -9,7 +9,11 @@
 //   sessions       insert({keyHash,userId,agencyId,csrf,createdAt,lastSeen,expiresAt}), get(keyHash),
 //                  touch(keyHash, lastSeen), delete(keyHash), deleteForUser(userId), trimForUser(userId, keep),
 //                  purgeExpired({now, idleMs}), count()
-//   leads          insert(lead) → {id,...}, listForAgency(agencyId, limit), count(), purgeBefore(date)
+//   leads          insert(lead) → {id,...}, listForAgency(agencyId, limit, {status}), statusCountsForAgency(agencyId),
+//                  updateForAgency(agencyId, id, {status, managerNote, by, now}) → lead | null (IDOR: agency_id şərti),
+//                  count(), purgeBefore(date)
+//   agencySettings get(agencyId) → {telegramChatId, notifyEmail, updatedAt, updatedBy} | null,
+//                  set(agencyId, {telegramChatId, notifyEmail, updatedBy})
 //   selections     insert(sel), get(id), delete(id), countForAgency(agencyId), trimForAgency(agencyId, keep),
 //                  purgeBefore(date)
 //   flightAlerts   insert(alert), get(id), delete(id), list(), updateMany([{id, patch}]), countByIpKey(ipKey),

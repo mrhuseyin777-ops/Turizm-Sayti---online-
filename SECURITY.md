@@ -164,9 +164,30 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
   `SELECT 1` ≤ 2 s; eyni anda gələn yoxlamalar bir sorğunu paylaşır). Cavab yalnız `{"status":"ok"|"unavailable"}` —
   versiya, DB adı, xəta mətni qaytarılmır.
 
+### 2.7.2 Bildirişlər və yeni xarici çıxışlar (`src/notify/`)
+
+- **Yeni xarici çıxışlar** (yalnız env təyin olunanda): `https://api.telegram.org` (Bot API `sendMessage`,
+  `TELEGRAM_BOT_TOKEN`) və `SMTP_URL`-dəki SMTP serveri (nodemailer). Env boşdursa bu hostlara heç bir sorğu getmir;
+  test rejimində (`node --test`) default notifier şəbəkəyə çıxmır (`test/notify.test.js` yoxlayır). Hostinqdə
+  egress allowlist varsa yalnız `api.telegram.org:443` və SMTP host:port açılmalıdır.
+- Token və SMTP parolu yalnız hostinq panelində (gizli env). Token loga/xəta mətninə yazılmır (Telegram cavabındakı
+  mətn də təmizlənir); `fetch` `redirect: 'error'`, vaxt limiti 5 s; SMTP vaxt limitləri 5 s.
+- Telegram mesajı `parse_mode=HTML`: bütün istifadəçi daxiletməsi `escapeHtml()` ilə (`& < > "`) escape olunur, yalnız
+  bizim `<b>`/`<a>` teqlərimiz qalır; mesaj ≤ 4096 simvol. E-poçt yalnız `text/plain`, mövzuda CR/LF silinir.
+- Göndərmə asinxron yaddaş növbəsindədir (3 təkrar, eksponensial backoff, maks. 500 iş): müraciət cavabı gecikmir,
+  uğursuzluq müraciətin saxlanmasına təsir etmir. Loglarda müştəri adı/telefonu yoxdur, chat_id/e-poçt maskalanır.
+- Alıcı: agentliyə bağlı müraciət → yalnız HƏMİN agentliyin ayarlarındakı chat_id/e-poçt (agentlik serverdə saxlanılan
+  seçimdən götürülür); ümumi müraciət → `TELEGRAM_ADMIN_CHAT_ID`/`NOTIFY_ADMIN_EMAIL`. Bildirişdə müştərinin telefonu
+  var — chat-a yalnız agentliyin etibarlı işçiləri daxil edilməlidir.
+- B2B ayarları (`PUT /api/b2b/settings`, `POST /api/b2b/settings/telegram-test`): auth + CSRF token + Origin + yalnız
+  `role=admin`; chat_id formatı (rəqəm və ya `@kanal`) və e-poçt ağ siyahı ilə yoxlanılır (DB-də də CHECK); test mesajı
+  istifadəçi üzrə 5/dəq.
+- Müraciət CRM (`PATCH /api/b2b/leads/:id`): auth + CSRF; yalnız `status`/`note` sahələri; yeniləmə sorğusunun özündə
+  `agency_id` şərti var (IDOR → 404, mövcudluq sızmır); qeyd ≤ 1000 simvol, idarəetmə simvolları silinir.
+
 ### 2.8 Asılılıqlar və konfiqurasiya
 
-- Runtime asılılıqlar: `express`, `pg`, `@sentry/node` (yalnız `SENTRY_DSN` olanda yüklənir) — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
+- Runtime asılılıqlar: `express`, `pg`, `@sentry/node` (yalnız `SENTRY_DSN` olanda yüklənir), `nodemailer` (yalnız `SMTP_URL` olanda yüklənir) — dəqiq versiyaya bağlıdır, `package-lock.json` commit olunur, `npm ci` istifadə edin.
   `npm audit` — 0 zəiflik (audit tarixində). `engines.node >= 22.12`.
 - Konfiqurasiya env-dən (`.env.example`), repoda sirr yoxdur (`DATABASE_URL` yalnız hostinq panelində / Render
   `fromDatabase`); `data/`, `backups/`, `*.dump`, `.env*` `.gitignore`-dadır.
@@ -187,7 +208,11 @@ CSP pozuntusu və 390px-də üfüqi scroll olmaması. Statik analiz: `npm run li
 
 `test/db.test.js` (yalnız `TEST_DATABASE_URL` verilsə; müvəqqəti sxemdə): miqrasiyaların idempotentliyi və paralel
 nüsxələrdə advisory lock, dəyişdirilmiş miqrasiyanın rədd edilməsi, hesab CRUD və DB məhdudiyyətləri, sessiya hash-i və
-müddət bitməsi, IDOR (agentlik A ↔ B), SQL injection payload-ları, qiymət izləmələri, data retention, HTTP inteqrasiyası.
+müddət bitməsi, IDOR (agentlik A ↔ B), SQL injection payload-ları, qiymət izləmələri, data retention, HTTP inteqrasiyası,
+002 (lead CRM IDOR şərti, agentlik ayarları CHECK/FK).
+
+`test/notify.test.js`: Telegram mesaj formatı və HTML escape, fetch stub ilə göndərmə, token yoxdursa/test rejimində
+şəbəkə sorğusu olmaması, retry/backoff, log-da PII olmaması, admin olmayan ayarları dəyişə bilməməsi, CSRF, CRM IDOR.
 
 ### 2.10 Verilənlər bazası və şəxsi məlumatların saxlanma müddəti
 
