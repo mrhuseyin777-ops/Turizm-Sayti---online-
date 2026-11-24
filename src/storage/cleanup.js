@@ -1,6 +1,7 @@
 // Şəxsi məlumatların saxlanma müddəti (data retention) və dövri təmizləmə.
 //  - leadlər, avia/avto müraciətləri: DATA_RETENTION_DAYS gündən köhnə (default 180) → silinir
 //  - B2B seçim linkləri: 30 gündən köhnə (LIMITS.selectionTtlMs) → silinir
+//  - B2B seçilmişlər (shortlist): 90 gündən köhnə (src/shortlists.js LIMITS.ttlDays) → silinir
 //  - qiymət izləmələri: gediş tarixi keçmiş → silinir
 //  - sessiyalar: mütləq və ya hərəkətsizlik müddəti bitmiş → silinir
 // İş setInterval ilə işləyir (unref — prosesin bağlanmasını gecikdirmir). Test rejimində default
@@ -23,6 +24,10 @@ async function runCleanup({ repos = storage.get(), now = Date.now(), retentionDa
   await step('flightRequests', () => repos.flightRequests.purgeBefore(cutoff));
   await step('carRequests', () => repos.carRequests.purgeBefore(cutoff));
   await step('selections', () => repos.selections.purgeBefore(new Date(now - LIMITS.selectionTtlMs)));
+  if (repos.shortlists) {
+    const { LIMITS: SL } = require('../shortlists');
+    await step('shortlists', () => repos.shortlists.purgeBefore(new Date(now - SL.ttlDays * DAY_MS)));
+  }
   await step('flightAlerts', () => repos.flightAlerts.purgeDepartedBefore(new Date(now).toISOString().slice(0, 10)));
   await step('sessions', () => repos.sessions.purgeExpired({ now, idleMs: IDLE_MS }));
   const total = Object.values(out).reduce((a, b) => a + (b || 0), 0);

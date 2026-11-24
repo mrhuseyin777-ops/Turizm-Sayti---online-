@@ -12,6 +12,9 @@
 //   leads          insert(lead) → {id,...}, listForAgency(agencyId, limit), count(), purgeBefore(date)
 //   selections     insert(sel), get(id), delete(id), countForAgency(agencyId), trimForAgency(agencyId, keep),
 //                  purgeBefore(date)
+//   shortlists     insert(item) → item | {...mövcud, existed:true}, listForAgency(agencyId, limit), get(agencyId, id),
+//                  update(agencyId, id, patch) → item|null (dublikatda code 'DUPLICATE'), delete(agencyId, id) → bool,
+//                  countForAgency(agencyId), purgeBefore(date) — hamısı agencyId ilə (IDOR qorunması)
 //   flightAlerts   insert(alert), get(id), delete(id), list(), updateMany([{id, patch}]), countByIpKey(ipKey),
 //                  count(), purgeDepartedBefore(todayIso)
 //   flightRequests insert(rec) → {id,...}, count(), purgeBefore(date)

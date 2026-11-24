@@ -5,6 +5,7 @@
   const state = { type: 'package', view: 'matrix', data: null, selected: new Set(), sortKey: 'price', sortDir: 1, facetFor: '' };
   const markup = () => Math.max(0, Number($('#markup').value) || 0);
   const withMarkup = (p) => Math.round(p * (1 + markup() / 100));
+  const CH = window.B2BCheapest;
 
   // Giriş: server tərəfli sessiya (httpOnly cookie). JS yalnız /api/b2b/me cavabını görür —
   // parol və sessiya id-si brauzer yaddaşında (localStorage) saxlanılmır.
@@ -17,6 +18,8 @@
     $('#loginView').hidden = !!me; $('#appView').hidden = !me; $('#logout').hidden = !me;
     $('#agencyName').textContent = me ? `${me.agency.name} · ${me.user.displayName}` : '';
     if (me) loadLeads();
+    // Seçilmişlər / ən ucuz panel (public/js/b2b-shortlist.js) sessiya dəyişikliyini buradan bilir
+    document.dispatchEvent(new CustomEvent('b2b:session', { detail: { me } }));
   }
   $('#loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -71,6 +74,24 @@
     }
   }
   $('#leadsReload').addEventListener('click', loadLeads);
+  // Ayrı modullar üçün körpü (public/js/b2b-shortlist.js): yalnız lazım olan oxu/əmr funksiyaları
+  window.B2BApp = {
+    get data() { return state.data; },
+    get lastParams() { return state.lastParams; },
+    get summary() { return state.summary; },
+    get me() { return me; },
+    markup, withMarkup, onAuthError, sessionInfo,
+    client: () => $('#client').value,
+    // Variantı "Müştəriyə təklif" / "Seçim linki" seçiminə əlavə et və istəyə görə həmin pəncərəni aç
+    select(id, open) {
+      if (!state.data || !state.data.offers.some((o) => o.id === id)) return false;
+      state.selected.add(id);
+      render();
+      if (open === 'quote') $('#quoteBtn').click();
+      else if (open === 'share') $('#shareBtn').click();
+      return true;
+    },
+  };
   me = await b2bMe();
   showApp();
 
@@ -109,7 +130,8 @@
   });
   ['#stars', '#board', '#earlyOnly', '#lastMinute', '#prepayNone', '#freeCancel'].forEach((s) => $(s).addEventListener('change', run));
   $('#markup').addEventListener('input', () => { store.set('b2bMarkup', markup()); render(); });
-  $('#b2bForm').addEventListener('submit', (e) => { e.preventDefault(); run(); });
+  // Yeni axtarış: sıralama həmişə ucuzdan bahalıya
+  $('#b2bForm').addEventListener('submit', (e) => { e.preventDefault(); state.sortKey = 'price'; state.sortDir = 1; run(); });
 
   async function run() {
     if (!$('#dest').value.trim()) return;
@@ -185,6 +207,9 @@
   function render() {
     const d = state.data; if (!d) return;
     const offers = d.offers || [];
+    // "Ən ucuz təklif" xülasəsi (public/js/b2b-cheapest.js) — panel b2b-shortlist.js-də çəkilir
+    state.summary = CH.cheapestSummary({ offers, groups: d.groups });
+    document.dispatchEvent(new CustomEvent('b2b:render', { detail: { summary: state.summary } }));
     renderKpis(offers);
     $('#selCount').textContent = state.selected.size;
     if (!offers.length) { $('#tableWrap').innerHTML = `<div class="empty">${emptyDiagnosisHtml(d, 'AZN')}</div>`; return; }
@@ -193,7 +218,9 @@
 
   function renderMatrix(d) {
     const ops = d.sources.filter((s) => s.count > 0);
-    const rows = d.groups.map((g) => {
+    const sum = state.summary;
+    // Default: otellər ən ucuz təklifinə görə ucuzdan bahalıya
+    const rows = CH.sortGroupsByPrice(d.groups).map((g) => {
       const byOp = Object.fromEntries(g.providers.map((o) => [o.providerId, o]));
       return `<tr>
         <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div></td>
@@ -201,16 +228,18 @@
           const o = byOp[s.id];
           if (!o) return '<td class="num muted">—</td>';
           const best = o.id === g.best.id;
+          const top = CH.isBestCell(sum, g.itemId, s.id);
           const sel = state.selected.has(o.id);
-          return `<td class="num" style="${best ? 'background:var(--good-soft);font-weight:700' : ''}">
-            <label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
+          return `<td class="num${top ? ' top-cell' : ''}" style="${best ? 'background:var(--good-soft);font-weight:700' : ''}">
+            ${top ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span><br>` : ''}<label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
+            <button type="button" class="fav-btn" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">♡</button>
             <br><small class="muted" title="${esc([roomText(o), priceTypeText(o), flightText(o), o.stopSale ? t('stop_sale') : ''].filter(Boolean).join(' · '))}">${fmtDate(o.checkIn).slice(0, 5)} ${esc(o.board || '')}${o.earlyBooking ? ' · ER' : o.priceType === 'SPO' ? ' · SPO' : ''}${o.stopSale ? ' · ⛔' : ''}</small>
             <br><small class="muted mx-room">${esc(o.room || '')}</small></td>`;
         }).join('')}
         <td class="num"><b style="color:var(--good)">${g.savings ? money(g.savings, 'AZN') : '—'}</b></td>
       </tr>`;
     }).join('');
-    $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th>Otel / tur</th>${ops.map((s) => `<th style="text-align:right"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(s.color)}"></span> ${esc(s.name)}</th>`).join('')}<th style="text-align:right">Fərq</th></tr></thead><tbody>${rows}</tbody></table>`;
+    $('#tableWrap').innerHTML = `<table class="grid"><thead><tr><th>Otel / tur</th>${ops.map((s) => `<th style="text-align:right"><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(s.color)}"></span> ${esc(s.name)}<br><small class="op-wins" title="${esc(t('ch_wins_t'))}">🏆 ${esc(t('ch_wins', { n: (sum && sum.wins[s.id]) || 0 }))}</small></th>`).join('')}<th style="text-align:right">Fərq</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   // "Bütün təkliflər" — operator saytındakı sütunlar + müqayisə (net / müştəri qiyməti, operator)
@@ -227,9 +256,10 @@
     const val = (o) => (k === 'dist' ? keyDist(o.location) ?? (state.sortDir > 0 ? Infinity : -Infinity) : o[k]);
     const list = [...offers].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * state.sortDir).slice(0, 400);
     const minPrice = Math.min(...offers.map((o) => o.price));
+    const top = state.summary && state.summary.best;
     $('#tableWrap').innerHTML = `<table class="grid op-table"><thead><tr><th></th>${cols().map(([key, label]) => `<th data-sort="${key}">${esc(label)}${state.sortKey === key ? (state.sortDir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('')}</tr></thead><tbody>
-      ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''} ${o.stopSale ? 'stop' : ''}">
-        <td><input type="checkbox" data-sel="${esc(o.id)}" ${state.selected.has(o.id) ? 'checked' : ''}></td>
+      ${list.map((o) => `<tr class="${state.selected.has(o.id) ? 'sel' : ''} ${o.price === minPrice ? 'cheapest' : ''} ${o.stopSale ? 'stop' : ''} ${top && top.id === o.id ? 'top-row' : ''}">
+        <td><input type="checkbox" data-sel="${esc(o.id)}" ${state.selected.has(o.id) ? 'checked' : ''}> <button type="button" class="fav-btn" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">♡</button>${top && top.id === o.id ? `<br><span class="best-badge">🏆 ${esc(t('ch_badge'))}</span>` : ''}</td>
         <td>${esc(fmtDate(o.checkIn))}${o.flight ? `<br><small class="muted">✈ ${esc(o.flight.out.time)} · ${esc(t('cls_' + o.flight.cls))}</small>` : ''}</td>
         <td class="wrap"><small>${esc(o.tourName || '')}</small></td>
         <td class="num">${esc(o.nights)}</td>

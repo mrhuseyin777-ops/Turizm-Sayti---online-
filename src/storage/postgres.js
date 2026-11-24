@@ -176,6 +176,66 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM selections WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
+  // ---------------------------------------------------------------- B2B seçilmişlər (shortlist)
+  // Bütün sorğular agency_id şərti ilə (IDOR): başqa agentliyin qeydi tapılmır, dəyişmir, silinmir.
+  const slRow = (r) => (r ? {
+    id: r.id, agencyId: r.agency_id, userId: r.user_id, client: r.client, offerId: r.offer_id, paxKey: r.pax_key,
+    query: r.query, snapshot: r.snapshot, netPrice: Number(r.net_price), prevNetPrice: num(r.prev_net_price),
+    available: r.available, checkedAt: iso(r.checked_at), createdAt: iso(r.created_at),
+  } : null);
+  const SL_COLUMNS = { client: 'client', netPrice: 'net_price', prevNetPrice: 'prev_net_price', available: 'available', checkedAt: 'checked_at', snapshot: 'snapshot' };
+  const shortlists = {
+    async insert(it) {
+      const { rows } = await q(`INSERT INTO shortlist_items (id, agency_id, user_id, client, offer_id, pax_key, query, snapshot,
+          net_price, prev_net_price, available, checked_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT (agency_id, client, offer_id, pax_key) DO NOTHING RETURNING *`, [
+        it.id, it.agencyId, it.userId || null, it.client || '', it.offerId, it.paxKey, JSON.stringify(it.query), JSON.stringify(it.snapshot),
+        it.netPrice, it.prevNetPrice ?? null, it.available !== false, new Date(it.checkedAt), new Date(it.createdAt),
+      ]);
+      if (rows[0]) return slRow(rows[0]);
+      const ex = (await q('SELECT * FROM shortlist_items WHERE agency_id = $1 AND client = $2 AND offer_id = $3 AND pax_key = $4',
+        [it.agencyId, it.client || '', it.offerId, it.paxKey])).rows[0];
+      return { ...slRow(ex), existed: true };
+    },
+    async listForAgency(agencyId, limit = 500) {
+      if (typeof agencyId !== 'string' || !agencyId) return [];
+      const { rows } = await q('SELECT * FROM shortlist_items WHERE agency_id = $1 ORDER BY created_at DESC, id LIMIT $2', [agencyId, limit]);
+      return rows.map(slRow);
+    },
+    async get(agencyId, id) {
+      if (typeof agencyId !== 'string' || typeof id !== 'string') return null;
+      return slRow((await q('SELECT * FROM shortlist_items WHERE agency_id = $1 AND id = $2', [agencyId, id])).rows[0]);
+    },
+    async update(agencyId, id, patch) {
+      if (typeof agencyId !== 'string' || typeof id !== 'string') return null;
+      const sets = [];
+      const vals = [agencyId, id];
+      for (const [k, col] of Object.entries(SL_COLUMNS)) {
+        if (!(k in patch)) continue;
+        let v = patch[k];
+        if (k === 'snapshot') v = JSON.stringify(v);
+        if (k === 'checkedAt') v = new Date(v);
+        vals.push(v);
+        sets.push(`${col} = $${vals.length}`);
+      }
+      if (!sets.length) return shortlists.get(agencyId, id);
+      try {
+        const { rows } = await q(`UPDATE shortlist_items SET ${sets.join(', ')} WHERE agency_id = $1 AND id = $2 RETURNING *`, vals);
+        return slRow(rows[0]);
+      } catch (e) {
+        if (e.code === UNIQUE_VIOLATION) { const err = new Error('duplicate', { cause: e }); err.code = 'DUPLICATE'; throw err; }
+        throw e;
+      }
+    },
+    async delete(agencyId, id) {
+      if (typeof agencyId !== 'string' || typeof id !== 'string') return false;
+      return (await q('DELETE FROM shortlist_items WHERE agency_id = $1 AND id = $2', [agencyId, id])).rowCount > 0;
+    },
+    async countForAgency(agencyId) { return (await q('SELECT count(*)::int AS n FROM shortlist_items WHERE agency_id = $1', [agencyId])).rows[0].n; },
+    async purgeBefore(date) { return (await q('DELETE FROM shortlist_items WHERE created_at < $1', [new Date(date)])).rowCount; },
+  };
+
   // ---------------------------------------------------------------- Qiymət izləmələri
   const alertRow = (r) => (r ? {
     id: r.id, tokenHash: r.token_hash, route: r.route, mode: r.mode, email: r.email,
@@ -237,7 +297,7 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM car_requests WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
-  return { kind: 'postgres', pool, accounts, sessions, leads, selections, flightAlerts, flightRequests, carRequests };
+  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests };
 }
 
 module.exports = { createRepos };

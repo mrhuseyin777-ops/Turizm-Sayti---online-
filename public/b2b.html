@@ -13,6 +13,7 @@
   <meta property="og:title" content="Odiola B2B — agentlik paneli">
   <meta property="og:description" content="Odiola B2B: tur agentlikləri üçün operator qiymətlərinin müqayisəsi və müştəriyə hazır seçim linkləri.">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/b2b-shortlist.css">
 </head>
 <body>
   <header class="topbar">
@@ -82,6 +83,7 @@
       <button type="button" class="btn secondary sm" id="csvBtn">CSV / Excel</button>
       <button type="button" class="btn secondary sm" id="shareBtn" data-i18n="b2b_share"></button>
       <button type="button" class="btn sm" id="quoteBtn">Müştəriyə təklif (<span id="selCount">0</span>)</button>
+      <button type="button" class="btn secondary sm sl-open" id="slBtn"><span data-i18n="sl_btn">♥ Seçilmişlər</span> (<span id="slCount">0</span>)</button>
     </div>
     <div class="b2b-bar b2b-filters" id="advFilters">
       <div id="districtMs"></div>
@@ -94,6 +96,7 @@
       <span id="rateLine"></span>
     </div>
 
+    <section class="cheap-panel" id="cheapestPanel" hidden aria-live="polite"></section>
     <div class="kpis" id="kpis" hidden></div>
     <div style="display:grid;grid-template-columns:1fr 240px;gap:16px" id="mainGrid">
       <div class="table-wrap" id="tableWrap"><div class="empty muted">Sorğunu daxil edin — bütün operatorlar eyni anda yoxlanılacaq.</div></div>
@@ -110,10 +113,14 @@
     <div class="demo-note">DEMO: qiymətlər nümunədir. Real inteqrasiyadan sonra operatorların canlı qiymətləri və rezervasiya linkləri göstəriləcək.</div>
   </div>
 
+  <div class="modal-bg" id="slModal"><div class="modal sl-modal" id="slBody" role="dialog" aria-modal="true" aria-labelledby="slTitle"></div></div>
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody" style="max-width:640px"></div></div>
   <footer><div class="container">© Odiola B2B<nav class="foot-links" aria-label="Hüquqi məlumat"><a href="/privacy.html" data-i18n="ft_privacy">Məxfilik siyasəti</a><span aria-hidden="true"> · </span><a href="/terms.html" data-i18n="ft_terms">İstifadə şərtləri</a><span aria-hidden="true"> · </span><a href="/how.html" data-i18n="how_link">Necə işləyirik</a></nav></div></footer>
   <script src="/js/errors.js"></script>
   <script src="/js/common.js"></script>
+  <script src="/js/b2b-cheapest.js"></script>
+  <script src="/js/b2b-i18n.js"></script>
   <script src="/js/b2b.js"></script>
+  <script src="/js/b2b-shortlist.js"></script>
 </body>
 </html>
