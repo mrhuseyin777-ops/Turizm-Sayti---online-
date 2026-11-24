@@ -44,34 +44,20 @@
     // Ortaq kompüterdə növbəti istifadəçi müştəri adlarını görməsin
     try { localStorage.removeItem('b2bHistory'); } catch { /* */ }
     renderHistory();
-    $('#leads').innerHTML = ''; $('#tableWrap').innerHTML = '';
+    B2BLeads.reset(); $('#tableWrap').innerHTML = '';
     showApp();
   });
   // Sessiya bitibsə (401) — giriş ekranına qayıt
   const onAuthError = (err) => {
-    if (err && err.status === 401) { me = null; setCsrf(null); showApp(); toast('Sessiyanın müddəti bitib. Yenidən daxil olun.'); return true; }
+    if (err && err.status === 401) { me = null; setCsrf(null); B2BLeads.reset(); showApp(); toast('Sessiyanın müddəti bitib. Yenidən daxil olun.'); return true; }
     return false;
   };
 
-  // "Müraciətlər": paylaşılan seçim linklərindən gələn leadlər — yalnız öz agentliyiniz
-  // (server agentliyi sessiyadan götürür).
+  // "Müraciətlər" (CRM: status, qeyd, tez əlaqə) və "Ayarlar" (bildirişlər): public/js/b2b-leads.js.
+  // Server agentliyi sessiyadan götürür — yalnız öz agentliyinizin müraciətləri.
   async function loadLeads() {
     if (!me) return;
-    try {
-      const r = await fetch('/api/b2b/leads', { credentials: 'same-origin', cache: 'no-store' });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) { const er = new Error(data.error || 'Xəta'); er.status = r.status; throw er; }
-      const { leads } = data;
-      $('#leadCount').textContent = leads.length;
-      $('#leads').innerHTML = leads.length ? leads.map((l) => `<div class="lead">
-        <b>${esc(l.name)}</b> · <a href="tel:${esc(String(l.phone).replace(/[^+\d]/g, ''))}">${esc(l.phone)}</a><br>
-        <small>${esc(l.item.name)} · ${esc(fmtDate(l.item.checkIn))} · ${esc(money(l.item.clientPrice, l.item.currency))}</small><br>
-        <small class="muted">${esc(l.item.providerName || '')}${l.client ? ' · ' + esc(l.client) : ''} · ${esc(new Date(l.createdAt).toLocaleString())}</small>
-        ${l.note ? `<br><small>${esc(l.note)}</small>` : ''}</div>`).join('') : `<p class="muted">${esc(t('b2b_leads_empty'))}</p>`;
-    } catch (err) {
-      if (onAuthError(err)) return;
-      $('#leads').innerHTML = `<p class="muted">${esc(err.message)}</p>`;
-    }
+    await B2BLeads.load({ me, onAuthError });
   }
   $('#leadsReload').addEventListener('click', loadLeads);
   // Ayrı modullar üçün körpü (public/js/b2b-shortlist.js): yalnız lazım olan oxu/əmr funksiyaları

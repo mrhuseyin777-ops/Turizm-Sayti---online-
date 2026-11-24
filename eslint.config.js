@@ -71,6 +71,11 @@ module.exports = [
     languageOptions: { globals: commonGlobals },
   },
   {
+    // b2b.js "Müraciətlər"/"Ayarlar" bölməsini public/js/b2b-leads.js-dən (əvvəl yüklənir) çağırır
+    files: ['public/js/b2b.js'],
+    languageOptions: { globals: { B2BLeads: 'readonly' } },
+  },
+  {
     // hotel-art.js həm brauzerdə, həm Node testlərində yüklənir (typeof module yoxlaması ilə export)
     files: ['public/js/hotel-art.js'],
     languageOptions: { globals: { module: 'readonly' } },

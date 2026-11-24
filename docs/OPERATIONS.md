@@ -52,7 +52,7 @@ Rate limit və brute-force sayğacları hər iki rejimdə qəsdən yaddaşdadır
 
 | Məlumat | Silinmə qaydası |
 |---|---|
-| Leadlər (müraciətlər, geri zəng, seçim linkindən gələn) | `DATA_RETENTION_DAYS` gündən köhnə |
+| Leadlər (müraciətlər, geri zəng, seçim linkindən gələn; CRM statusu və menecer qeydi daxil) | `DATA_RETENTION_DAYS` gündən köhnə (yaranma tarixinə görə) |
 | Aviabilet sifariş müraciətləri, avtomobil müraciətləri | `DATA_RETENTION_DAYS` gündən köhnə |
 | B2B seçim linkləri | 30 gündən köhnə (ona bağlı lead qalır, `selection_id` boşalır) |
 | Qiymət izləmələri | gediş tarixi keçmiş |
@@ -181,3 +181,42 @@ query, IP, istifadəçi göndərilmir. Sentry layihəsində "Data Scrubber" və 
 Səhifələrdəki JS xətaları `client error` (səviyyə `warn`) kimi server loguna düşür: `kind`, `message`, `file`
 (`/js/*.js` və ya `external`), `line`, `col`, `page` (query-siz). Çoxlu eyni xəta = son deploy-da regressiya ola bilər.
 
+## 9. Müraciət bildirişləri (Telegram, e-poçt) və CRM
+
+Yeni müraciət (B2B seçim linki, «Sizə zəng edək», tur/otel, aviabilet, avtomobil) yarananda bildiriş göndərilir:
+agentliyə bağlı müraciət → agentliyin Telegram chat-ı / e-poçtu (B2B → **Ayarlar**), ümumi müraciət →
+`TELEGRAM_ADMIN_CHAT_ID` / `NOTIFY_ADMIN_EMAIL`. Göndərmə arxa planda gedir (3 təkrar, 5 s vaxt limiti); alınmasa
+logda `[notify] bildiriş göndərilmədi` (səviyyə `error`) görünür, müraciət isə saxlanılıb (B2B paneldə görünür).
+
+### Telegram-ı qoşmaq (addım-addım)
+
+1. **Bot yaradın**: Telegram-da [@BotFather](https://t.me/BotFather) → `/newbot` → ad və `..._bot` ilə bitən istifadəçi adı.
+   BotFather tokeni verir (`123456789:AA...`). Tokeni heç kimə göndərməyin, repoya yazmayın.
+2. **Tokeni hostinqdə yazın**: Render → Service → Environment → `TELEGRAM_BOT_TOKEN=<token>` (Secret). Ümumi müraciətlər
+   üçün `TELEGRAM_ADMIN_CHAT_ID` da yazın (aşağıdakı 4-cü addımla tapılır). İstəyə görə `PUBLIC_BASE_URL=https://domen`
+   — bildirişdə «B2B paneldə aç» linki olur. Saxlayın → servis yenidən başlayır.
+3. **Botu qrupa əlavə edin**: agentliyin Telegram qrupu → Add members → botun istifadəçi adı. Qrupa istənilən mesaj yazın
+   (bot yalnız qoşulduğu söhbətlərə yaza bilər; şəxsi söhbət üçün bota `/start` yazın).
+4. **chat_id-ni tapın** (biri kifayətdir):
+   - brauzerdə `https://api.telegram.org/bot<TOKEN>/getUpdates` açın → `"chat":{"id":-100...}` (qrup id-si adətən
+     `-100` ilə başlayır). Boşdursa qrupa yenə mesaj yazıb yeniləyin; BotFather-də `/setprivacy` → Disable da kömək edir;
+   - və ya [@userinfobot](https://t.me/userinfobot) / @RawDataBot-u qrupa əlavə edib id-ni götürün (sonra çıxarın).
+5. **B2B → Ayarlar** (agentlik admini): chat_id-ni yazın → **Test mesajı göndər** → qrupa «Odiola test mesajı» gəlməlidir
+   → **Yadda saxla**. Kanal üçün `@kanal_adi` da olar (bot kanalda admin olmalıdır).
+
+Xəta olarsa: «Telegram qoşulmayıb» → serverdə token yoxdur/yanlışdır; «chat_id-ni yoxlayın» → bot qrupda deyil və ya
+id səhvdir; «Serverdəki TELEGRAM_BOT_TOKEN qəbul edilmədi» → tokeni BotFather-də yoxlayın (`/token`).
+
+### E-poçt (ixtiyari)
+
+`SMTP_URL=smtps://istifadəçi:parol@smtp.provayder.az:465` (və ya `smtp://...:587` STARTTLS) və
+`NOTIFY_EMAIL_FROM="Odiola <noreply@domen>"` (gizli dəyər kimi). Agentlik e-poçtu B2B → Ayarlar-da yazılır.
+Göndərən domen üçün SPF/DKIM qurun, əks halda məktublar spam-a düşə bilər.
+
+### CRM (B2B → Müraciətlər)
+
+Status: **yeni → işdə → satıldı / ləğv**, menecer qeydi (≤ 1000 simvol, müştəri görmür), statusu kim və nə vaxt
+dəyişib, son yeniləmə. Siyahıda status filtri, yeni müraciət sayı, tel: və WhatsApp linkləri. Bildirişdəki link
+(`/b2b#lead-<id>`) girişdən sonra müraciəti birbaşa açır. Saxlama müddəti dəyişmir (§3).
+Miqrasiya: `migrations/002_lead_crm_notify.sql` (idempotent; açılışda avtomatik tətbiq olunur). DB-siz rejimdə
+agentlik ayarları `<TURTAP_DATA_DIR>/agency-settings.json`-da saxlanılır.

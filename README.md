@@ -63,6 +63,13 @@ Yalnız lokal inkişaf üçün (production-da işləmir) yaddaşda demo hesab:
 B2B_DEMO_USER=demo B2B_DEMO_PASSWORD='öz-lokal-parolunuz-12+' npm start
 ```
 
+### Müraciət bildirişləri (Telegram) və CRM
+
+Yeni müraciətlər Telegram-a (və istəyə görə e-poçta) gəlir; B2B → Müraciətlər-də status (yeni / işdə / satıldı / ləğv)
+və menecer qeydi saxlanılır. Qısaca: @BotFather ilə bot yaradın → tokeni hostinqdə `TELEGRAM_BOT_TOKEN` kimi yazın →
+botu agentlik qrupuna əlavə edin → chat_id-ni tapın (`getUpdates` və ya @userinfobot) → B2B → **Ayarlar** →
+«Test mesajı göndər» → «Yadda saxla». Ətraflı: [`docs/OPERATIONS.md` §9](docs/OPERATIONS.md).
+
 Təhlükəsizlik modeli, tətbiq olunan qorunmalar və production üçün qalan addımlar: [`SECURITY.md`](SECURITY.md).
 
 ## Keyfiyyət və CI

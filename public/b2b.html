@@ -14,6 +14,7 @@
   <meta property="og:description" content="Odiola B2B: tur agentlikləri üçün operator qiymətlərinin müqayisəsi və müştəriyə hazır seçim linkləri.">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/b2b-shortlist.css">
+  <link rel="stylesheet" href="/css/b2b-crm.css">
 </head>
 <body>
   <header class="topbar">
@@ -26,6 +27,7 @@
         <a href="/b2b" class="active">B2B</a>
         <a href="/how.html" class="hide-sm" data-i18n="nav_how">Necə işləyirik</a>
         <span id="agencyName" class="muted hide-sm"></span>
+        <a href="#" id="settingsLink" hidden data-i18n="crm_settings">Ayarlar</a>
         <a href="#" id="logout" hidden>Çıxış</a>
       </nav>
     </div>
@@ -45,6 +47,37 @@
   </div>
 
   <div class="container" id="appView" hidden style="padding-bottom:60px">
+    <section class="panel crm-settings" id="settingsPanel" hidden aria-labelledby="settingsTitle">
+      <div class="crm-head"><h2 id="settingsTitle" data-i18n="crm_settings_title">Bildiriş ayarları</h2>
+        <button type="button" class="btn secondary sm" id="settingsClose" data-i18n="crm_close">Bağla</button></div>
+      <p class="muted" data-i18n="crm_settings_sub">Yeni müraciət gələndə agentliyinizin Telegram qrupuna və/və ya e-poçtuna bildiriş göndərilir.</p>
+      <p id="settingsChannels"></p>
+      <form id="settingsForm" autocomplete="off" novalidate>
+        <div class="crm-grid">
+          <div>
+            <label for="setTgChat" data-i18n="crm_tg_chat">Telegram chat_id</label>
+            <div class="crm-inline">
+              <input id="setTgChat" name="telegramChatId" maxlength="40" inputmode="text" spellcheck="false" placeholder="-1001234567890">
+              <button type="button" class="btn secondary sm" id="setTgTest" data-i18n="crm_tg_test">Test mesajı göndər</button>
+            </div>
+            <ol>
+              <li data-i18n="crm_tg_step1">Telegram-da @BotFather → /newbot ilə bot yaradın; tokeni hostinq administratoruna verin (TELEGRAM_BOT_TOKEN).</li>
+              <li data-i18n="crm_tg_step2">Botu agentliyinizin qrupuna əlavə edin və qrupa istənilən mesaj yazın.</li>
+              <li data-i18n="crm_tg_step3">chat_id-ni tapın: @userinfobot (və ya api.telegram.org/bot&lt;token&gt;/getUpdates). Qrup id-si adətən -100 ilə başlayır.</li>
+              <li data-i18n="crm_tg_step4">chat_id-ni bura yazın, «Test mesajı göndər» düyməsini sınayın və yadda saxlayın.</li>
+            </ol>
+          </div>
+          <div>
+            <label for="setEmail" data-i18n="crm_email">Bildiriş e-poçtu (istəyə görə)</label>
+            <input id="setEmail" name="notifyEmail" type="email" maxlength="120" autocomplete="email" placeholder="sales@agentlik.az">
+            <p class="muted" data-i18n="crm_email_hint">E-poçt bildirişi yalnız serverdə SMTP qoşulubsa göndərilir.</p>
+            <p class="muted" id="settingsMeta"></p>
+          </div>
+        </div>
+        <div class="crm-err" id="settingsErr" role="alert"></div>
+        <div class="crm-actions"><button class="btn primary" id="settingsSave" data-i18n="crm_save">Yadda saxla</button></div>
+      </form>
+    </section>
     <form class="panel" id="b2bForm" style="margin-top:16px" autocomplete="off">
       <div class="tabs" id="typeTabs">
         <button type="button" class="tab active" data-type="package">Tur paketi</button>
@@ -103,8 +136,9 @@
       <aside>
         <div class="panel side-list"><b>Son sorğular</b><div id="history"></div></div>
         <div class="panel side-list lead-list" style="margin-top:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b><span data-i18n="b2b_leads"></span> <span class="badge" id="leadCount">0</span></b>
+          <div class="crm-head"><b><span data-i18n="b2b_leads"></span> <span class="badge new-count zero" id="leadCount" data-i18n-title="crm_new_count">0</span></b>
             <button type="button" class="btn secondary sm" id="leadsReload" data-i18n="b2b_reload"></button></div>
+          <select id="leadFilter" class="crm-filter" aria-label="Status"></select>
           <div id="leads"></div>
           <small class="muted" data-i18n="b2b_leads_demo"></small>
         </div>
@@ -114,12 +148,14 @@
   </div>
 
   <div class="modal-bg" id="slModal"><div class="modal sl-modal" id="slBody" role="dialog" aria-modal="true" aria-labelledby="slTitle"></div></div>
+  <div class="modal-bg" id="leadModal"><div class="modal crm-modal" id="leadModalBody" role="dialog" aria-modal="true" aria-labelledby="leadModalTitle"></div></div>
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody" style="max-width:640px"></div></div>
   <footer><div class="container">© Odiola B2B<nav class="foot-links" aria-label="Hüquqi məlumat"><a href="/privacy.html" data-i18n="ft_privacy">Məxfilik siyasəti</a><span aria-hidden="true"> · </span><a href="/terms.html" data-i18n="ft_terms">İstifadə şərtləri</a><span aria-hidden="true"> · </span><a href="/how.html" data-i18n="how_link">Necə işləyirik</a></nav></div></footer>
   <script src="/js/errors.js"></script>
   <script src="/js/common.js"></script>
   <script src="/js/b2b-cheapest.js"></script>
   <script src="/js/b2b-i18n.js"></script>
+  <script src="/js/b2b-leads.js"></script>
   <script src="/js/b2b.js"></script>
   <script src="/js/b2b-shortlist.js"></script>
 </body>

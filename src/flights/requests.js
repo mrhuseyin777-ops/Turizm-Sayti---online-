@@ -1,10 +1,11 @@
 // "Bileti sifariş et" müraciətləri. Bilet hələ onlayn satılmır — müraciət menecerə gedir.
 // Yalnız əlaqə məlumatı və seçilmiş uçuş saxlanılır. Pasport / sənəd məlumatı QƏBUL EDİLMİR:
 // ağ siyahıda olmayan bütün sahələr atılır. Saxlama: src/storage (flightRequests — PostgreSQL və ya
-// yaddaş), DATA_RETENTION_DAYS gündən sonra avtomatik silinir. TODO: bildiriş (e-poçt/WhatsApp/CRM).
+// yaddaş), DATA_RETENTION_DAYS gündən sonra avtomatik silinir. Yeni müraciət → Telegram/e-poçt bildirişi (src/notify).
 
 const { getAirport } = require('./airports');
 const storage = require('../storage');
+const notify = require('../notify');
 
 class RequestValidationError extends Error {
   constructor(errors) { super(Object.values(errors)[0]); this.errors = errors; }
@@ -63,7 +64,9 @@ function validateRequest(body) {
 async function createRequest(body, meta = {}) {
   const data = validateRequest(body);
   // ipHash: IP-nin yalnız hash-i (src/security/ipHash.js) — sui-istifadə araşdırması üçün, açıq IP saxlanılmır
-  return storage.get().flightRequests.insert({ ...data, createdAt: new Date().toISOString(), ipHash: meta.ipHash || null });
+  const saved = await storage.get().flightRequests.insert({ ...data, createdAt: new Date().toISOString(), ipHash: meta.ipHash || null });
+  notify.leadCreated('flight', saved); // asinxron (admin chat-ına), cavabı gecikdirmir
+  return saved;
 }
 
 module.exports = { validateRequest, createRequest, validFlightId, RequestValidationError, EMAIL_RE };
