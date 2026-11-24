@@ -208,16 +208,23 @@
     // Default: otellər ən ucuz təklifinə görə ucuzdan bahalıya
     const rows = CH.sortGroupsByPrice(d.groups).map((g) => {
       const byOp = Object.fromEntries(g.providers.map((o) => [o.providerId, o]));
+      // Eyni otel üçün operatorların sırası: ucuzdan bahalıya (1 = ən ucuz)
+      const ranked = [...g.providers].sort((a, b) => a.price - b.price);
+      const rankOf = Object.fromEntries(ranked.map((o, i) => [o.providerId, i + 1]));
+      const minP = ranked.length ? ranked[0].price : 0;
+      const order = ranked.map((o, i) => `<span class="rk-step${i === 0 ? ' first' : ''}"><b>${i + 1}.</b> ${esc(o.providerName)}${i ? ` <span class="muted">+${money(withMarkup(o.price) - withMarkup(minP), 'AZN')}</span>` : ''}</span>`).join('<span class="rk-arrow" aria-hidden="true">›</span>');
       return `<tr>
-        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div></td>
+        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div>
+          ${ranked.length > 1 ? `<div class="rk-order" title="${esc(t('rk_order_t'))}">${order}</div>` : ''}</td>
         ${ops.map((s) => {
           const o = byOp[s.id];
           if (!o) return '<td class="num muted">—</td>';
           const best = o.id === g.best.id;
           const top = CH.isBestCell(sum, g.itemId, s.id);
           const sel = state.selected.has(o.id);
+          const rk = rankOf[s.id];
           return `<td class="num${top ? ' top-cell' : ''}" style="${best ? 'background:var(--good-soft);font-weight:700' : ''}">
-            ${top ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span><br>` : ''}<label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
+            ${top ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span><br>` : ''}<span class="rk-chip${rk === 1 ? ' first' : ''}" title="${esc(t('rk_chip_t', { n: rk }))}">${rk}</span> <label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
             <button type="button" class="fav-btn" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">♡</button>
             <br><small class="muted" title="${esc([roomText(o), priceTypeText(o), flightText(o), o.stopSale ? t('stop_sale') : ''].filter(Boolean).join(' · '))}">${fmtDate(o.checkIn).slice(0, 5)} ${esc(o.board || '')}${o.earlyBooking ? ' · ER' : o.priceType === 'SPO' ? ' · SPO' : ''}${o.stopSale ? ' · ⛔' : ''}</small>
             <br><small class="muted mx-room">${esc(o.room || '')}</small></td>`;

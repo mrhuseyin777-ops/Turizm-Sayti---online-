@@ -596,3 +596,11 @@ body.has-cmp .help-panel { bottom: 144px; }
   body.has-cmp .help-fab { bottom: 128px; }
   body.has-cmp .help-panel { bottom: 180px; }
 }
+
+/* B2B matris: eyni otel üçün operator sırası */
+.rk-order { margin-top: 6px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 2px 4px; align-items: center; }
+.rk-step { white-space: nowrap; }
+.rk-step.first { color: var(--good); font-weight: 700; }
+.rk-arrow { color: var(--muted); }
+.rk-chip { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
+.rk-chip.first { background: var(--good); color: #fff; }
