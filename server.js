@@ -11,6 +11,7 @@ const config = require('./src/config');
 const { search, suggest, QueryError } = require('./src/search');
 const { providers } = require('./src/providers');
 const { boardLabels } = require('./src/data/catalog');
+const { publicSupport } = require('./src/support');
 const { securityHeaders, parseQueryString, sanitizeBody, requireJson, checkOrigin, notFound, errorHandler } = require('./src/security/http');
 const { rateLimit } = require('./src/security/rateLimit');
 const { seedDemoAccount, seedBootstrapAdmin } = require('./src/auth');
@@ -63,6 +64,8 @@ app.get('/api/config', (req, res) => {
     lastMinuteDays: config.lastMinuteDays,
     // Operator məzənnəsi (USD/AZN, tarix) — DEMO; tarix/gecə aralığı limitləri (UI validasiyası üçün)
     operatorRate: config.operatorRate,
+    // Dəstək əlaqəsi (telefon / WhatsApp): yalnız düzgün formatlı nömrələr, əks halda null → UI-da gizli
+    support: publicSupport(config.support),
     searchLimits: { maxDateRangeDays: config.searchLimits.maxDateRangeDays, maxNightsSpan: config.searchLimits.maxNightsSpan, maxCombos: config.searchLimits.maxCombos },
   });
 });

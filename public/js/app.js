@@ -46,6 +46,11 @@
   }
   renderStatic();
 
+  // ♥ Seçilmişlər, müqayisə, son baxılanlar, əlaqə paneli (public/js/extras.js)
+  const X = window.Odx;
+  X.mountUi(cfg, { openHotel: (id, opener) => openHotel(id, opener) });
+  $('#shareBtn').addEventListener('click', () => X.share({ title: t('share_title_res'), url: location.href }));
+
   // Görünüş: Kartlar / Cədvəl + Qruplaşdır
   function syncView() {
     document.querySelectorAll('#viewSeg [data-view]').forEach((x) => x.classList.toggle('active', x.dataset.view === state.view));
@@ -210,15 +215,17 @@
     $('#resSub').textContent = data.stats ? t('results', { n: data.stats.hotels, o: data.stats.count }) + ` · ${money(data.stats.min, cur)} – ${money(data.stats.max, cur)}` : '';
     renderSources(data);
     updateFacets(data);
+    loadCalendar(q);
 
     if (!data.groups.length) { $('#results').innerHTML = emptyState(data, cur); bindEmpty(); return; }
     if (state.view === 'table') return renderTable(data);
 
     const pax = q.adults + q.children;
+    const favIds = new Set(X.favs.list().map((x) => x.id));
     $('#results').innerHTML = data.groups.slice(0, 60).map((g, i) => {
       const b = g.best;
       return `<article class="card">
-        <div class="img" data-gslot="${i}" style="background:${gradFor(g.itemId)}"><span class="rank">#${i + 1}</span><span class="img-cap">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}, ${esc(g.destination.country)}</span></div>
+        <div class="img" data-gslot="${i}" style="background:${gradFor(g.itemId)}"><span class="rank">#${i + 1}</span>${g.itemType === 'hotel' ? X.heartHtml(g.itemId, favIds.has(g.itemId), 'fav-card') : ''}<span class="img-cap">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}, ${esc(g.destination.country)}</span></div>
         <div class="body">
           <h3>${g.itemType === 'hotel' ? `<button type="button" class="hd-link" data-hotel="${i}" title="${esc(t('hd_open'))}">${esc(g.name)}</button>` : esc(g.name)} <span class="stars">${starStr(g.stars)}</span></h3>
           <div class="muted" style="font-size:14px">${fmtDate(b.checkIn)} · ${esc(t('nights_n', { n: b.nights }))}${b.boardLabel ? ' · ' + esc(b.boardLabel) : ''}${g.includesFlight ? ' · ✈ ' + esc(t('flight_incl')) : ''}</div>
@@ -253,7 +260,8 @@
             ${planHtml(b.plan, cur)}
           </div>
           <button class="btn sm" data-book="${i}">${esc(t('book'))}</button>
-          ${g.itemType === 'hotel' ? `<button type="button" class="btn secondary sm" data-hotel="${i}">${esc(t('hd_more'))}</button>` : ''}
+          ${g.itemType === 'hotel' ? `<button type="button" class="btn secondary sm" data-hotel="${i}">${esc(t('hd_more'))}</button>
+          <label class="chk cmp-chk"><input type="checkbox" data-cmp-id="${esc(g.itemId)}" data-cmp="${i}" ${X.compare.has(g.itemId) ? 'checked' : ''}> <span>${esc(t('cmp_add'))}</span></label>` : ''}
           ${opLinkHtml(b)}
           <a style="font-size:13px" href="/cars.html?loc=${encodeURIComponent(g.destination.id)}&amp;from=${esc(b.checkIn)}&amp;to=${new Date(Date.parse(b.checkIn) + Math.max(1, b.nights) * 864e5).toISOString().slice(0, 10)}">🚗 Maşın əlavə et</a>
         </div>
@@ -326,6 +334,7 @@
     $('#resTitle').textContent = t('explore_title', { date: q.dateFrom === q.dateTo ? fmtDate(q.dateFrom) : `${fmtDate(q.dateFrom)} – ${fmtDate(q.dateTo)}`, flex: q.flex, n: q.nightsFrom === q.nightsTo ? q.nightsFrom : `${q.nightsFrom}–${q.nightsTo}` });
     $('#resSub').textContent = t('explore_sub', { n: data.destinations.length, budget: q.maxPrice != null ? t('budget_upto', { b: money(q.maxPrice, cur) }) : t('budget_none') });
     renderSources(data);
+    $('#calWrap').hidden = true;
     if (!data.destinations.length) { $('#results').innerHTML = emptyState(data, cur); bindEmpty(); return; }
     $('#results').innerHTML = `<p class="muted" style="margin-top:0">${esc(t('explore_hint'))}</p><div class="dest-grid">${destCardsHtml(data.destinations, cur)}</div>`;
   }
@@ -409,6 +418,13 @@
   }
 
   $('#results').addEventListener('click', (e) => {
+    const fv = e.target.closest('[data-fav-id]');
+    if (fv && state.last && state.last.groups) {
+      e.stopPropagation();
+      const g = state.last.groups.find((x) => x.itemId === fv.dataset.favId);
+      if (g) toast(t(X.favs.toggle(favMeta(g.itemId, g.name, g.stars, g.destination, g.district, g.best.price)) ? 'fav_added' : 'fav_removed'));
+      return;
+    }
     const dc = e.target.closest('.dest-card');
     if (dc) { openDest(dc); return; }
     // Boş nəticə düymələri
@@ -442,6 +458,72 @@
     const g = state.last.groups[+btn.dataset.book];
     openLead(g, g.best);
   });
+  // "Müqayisə et" checkbox → müqayisə siyahısı (maks. 3; artıq doludursa checkbox geri açılır)
+  $('#results').addEventListener('change', (e) => {
+    const c = e.target.closest('[data-cmp-id]'); if (!c || !state.last || !state.last.groups) return;
+    const g = state.last.groups[+c.dataset.cmp];
+    if (!g || g.itemId !== c.dataset.cmpId) return;
+    const has = X.compare.has(g.itemId);
+    if (c.checked !== has) X.compare.toggle(X.snapFromGroup(g, state.last.query.currency));
+    c.checked = X.compare.has(g.itemId);
+  });
+  // Seçilmişlər üçün qısa meta: otel id + ad + istiqamət + son qiymət + axtarış parametrləri (şəxsi məlumat yox)
+  function favMeta(id, name, stars, destination, district, price) {
+    const hq = hotelQuery();
+    return X.metaFrom({ id, name, stars, destination, district, price, cur: hq.currency, params: { type: hq.type, checkIn: hq.checkIn, checkInTo: hq.checkInTo, nights: hq.nights, nightsTo: hq.nightsTo, adults: hq.adults, childAges: hq.childAges } });
+  }
+
+  // ---- Qiymət təqvimi: seçilmiş istiqamət + gecə + nəfər üçün ±7 gün / ay üzrə hər gün ən ucuz qiymət (GET /api/tours/calendar)
+  const cal = { key: '', seq: 0, mode: store.get('calMode', 'span') === 'month' ? 'month' : 'span', data: null, sel: null };
+  function calTarget(q) {
+    if (state.mode !== 'search' || !q || q.type === 'tour') return '';
+    return $('#dest').dataset.id || (q.destinationIds && q.destinationIds.length === 1 ? q.destinationIds[0] : '');
+  }
+  function paintCalendar() {
+    const wrap = $('#calWrap');
+    wrap.innerHTML = X.calendarHtml(cal.data, cal.sel);
+    wrap.hidden = false;
+    const strip = wrap.querySelector('.cal-strip');
+    const sel = strip && (strip.querySelector('.sel') || strip.querySelector('.cheapest'));
+    if (sel) strip.scrollLeft = Math.max(0, sel.offsetLeft - strip.offsetLeft - (strip.clientWidth - sel.offsetWidth) / 2);
+  }
+  async function loadCalendar(q) {
+    const wrap = $('#calWrap');
+    const destId = calTarget(q);
+    if (!destId) { wrap.hidden = true; cal.key = ''; return; }
+    const req = {
+      type: q.type, destinationId: destId, checkIn: q.dateFrom, nights: String(q.nightsFrom), adults: String(q.adults), children: String(q.children || 0),
+      childAges: (q.childAges || []).filter((a) => a != null).join(','), currency: q.currency, noStopSale: q.noStopSale ? '1' : '0', mode: cal.mode,
+    };
+    cal.sel = { from: q.dateFrom, to: q.dateTo };
+    const key = JSON.stringify(req);
+    if (key === cal.key && cal.data) { paintCalendar(); return; }
+    const seq = ++cal.seq;
+    if (wrap.hidden || !cal.data) { wrap.innerHTML = `<p class="muted cal-loading">${esc(t('cal_loading'))}</p>`; wrap.hidden = false; }
+    try {
+      const data = await api('/api/tours/calendar', req);
+      if (seq !== cal.seq) return;
+      cal.key = key; cal.data = data;
+      paintCalendar();
+    } catch {
+      if (seq === cal.seq) { wrap.hidden = true; cal.key = ''; }
+    }
+  }
+  $('#calWrap').addEventListener('click', (e) => {
+    const m = e.target.closest('[data-cal-mode]');
+    if (m) {
+      if (m.dataset.calMode === cal.mode) return;
+      cal.mode = m.dataset.calMode; store.set('calMode', cal.mode);
+      if (state.last && state.last.query) loadCalendar(state.last.query);
+      return;
+    }
+    const d = e.target.closest('[data-cal-date]');
+    if (!d || d.disabled || !cal.data) return;
+    $('#checkIn').value = d.dataset.calDate; $('#checkInTo').value = d.dataset.calDate;
+    $('#nights').value = String(cal.data.query.nights); $('#nightsTo').value = String(cal.data.query.nights);
+    run({ noScroll: true });
+  });
+
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' || e.target.closest('[data-close]')) $('#modal').classList.remove('open'); });
 
   // ---- Otel detal pəncərəsi: qalereya, təsvir (şablon, DEMO), olanaqlar, məsafələr, reytinq, qaydalar və
@@ -535,7 +617,8 @@
       <div class="hd-head">
         <div><h3 id="hdTitle">${esc(h.name)} <span class="stars">${starStr(h.stars)}</span></h3>
           <div class="muted hd-sub">${esc(h.destination.name)}${h.district ? ' · ' + esc(h.district) : ''}, ${esc(h.destination.country)}</div></div>
-        <button type="button" class="hd-x" data-hd-close aria-label="${esc(t('hd_close'))}">✕</button>
+        <div class="hd-head-acts">${X.heartHtml(h.id, X.favs.has(h.id), 'fav-hd')}<button type="button" class="btn secondary sm" data-hd-share>↗ ${esc(t('share'))}</button>
+        <button type="button" class="hd-x" data-hd-close aria-label="${esc(t('hd_close'))}">✕</button></div>
       </div>
       <div class="hd-top">
         <div class="hd-gallery" style="background:${gradFor(h.id)}"></div>
@@ -544,6 +627,7 @@
           <p class="hd-desc">${esc(hotelDescription(h, rows))}</p>
           <small class="muted">${esc(t('hd_desc_note'))} ${esc(t('hd_illus'))}</small>
           ${h.tags && h.tags.length ? `<h4>${esc(t('hd_amen'))}</h4><div class="badges">${h.tags.map((x) => `<span class="badge">${esc(x)}</span>`).join('')}</div>` : ''}
+          ${X.reviewSummaryHtml(h)}
           ${dists.length ? `<h4>${esc(t('hd_dist'))} <span class="demo-tag" title="${esc(t('loc_demo_t'))}">demo</span></h4><ul class="hd-dists">${dists.map(([i, v]) => `<li><span aria-hidden="true">${i}</span> ${esc(v)}</li>`).join('')}</ul>` : ''}
         </div>
       </div>
@@ -565,11 +649,22 @@
         [t('hd_children'), childText], [t('hd_pets'), r.pets ? t('pets_' + r.pets) : '']])}
       <p class="demo-note">${esc(t('hd_rules_note'))}</p>
       <div class="hd-foot"><button type="button" class="btn secondary sm" data-hd-copy>${esc(t('hd_copy'))}</button><button type="button" class="btn secondary sm" data-hd-close>${esc(t('hd_close'))}</button></div>`;
+    // Son baxılanlar + seçilmişdə son görülən qiymət
+    const meta = favMeta(h.id, h.name, h.stars, h.destination, h.district, min || null);
+    X.recent.add(meta);
+    X.favs.touch(meta);
     const gEl = hdBody.querySelector('.hd-gallery');
     if (window.mountGallery) window.mountGallery(gEl, { id: h.id, destinationId: h.destinationId, region: h.destination.region, stars: h.stars, tags: h.tags, name: h.name, images: h.images }, { eager: true });
   }
   hdModal.addEventListener('click', async (e) => {
     if (e.target === hdModal || e.target.closest('[data-hd-close]')) { closeHotel(); return; }
+    const fv = e.target.closest('[data-fav-id]');
+    if (fv && hd.data) {
+      const h = hd.data.hotel;
+      toast(t(X.favs.toggle(favMeta(h.id, h.name, h.stars, h.destination, h.district, hd.data.rows.length ? hd.data.rows[0].price : null)) ? 'fav_added' : 'fav_removed'));
+      return;
+    }
+    if (e.target.closest('[data-hd-share]') && hd.data) { X.share({ title: t('share_title_hotel', { h: hd.data.hotel.name }), url: location.href }); return; }
     if (e.target.closest('[data-hd-copy]')) {
       try { await navigator.clipboard.writeText(location.href); toast(t('hd_copied')); } catch { toast(location.href); }
       return;
