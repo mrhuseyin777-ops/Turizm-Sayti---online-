@@ -15,10 +15,22 @@ function resolveDestinations(text) {
 
 function suggest(text) {
   const t = norm(typeof text === 'string' ? text.slice(0, 60) : '');
-  return destinations
+  const dests = destinations
     .filter((d) => !t || [d.name, d.country, ...d.aliases].some((a) => norm(a).startsWith(t) || norm(a).includes(t)))
     .slice(0, 8)
-    .map((d) => ({ id: d.id, name: d.name, country: d.country, region: d.region }));
+    .map((d) => ({ kind: 'dest', id: d.id, name: d.name, country: d.country, region: d.region }));
+  // Otel adı ilə axtarış (B2B ssenarisi: "Rixos Park-ın qiymətini ver"): ən azı 2 simvol
+  if (t.length < 2) return dests;
+  const words = t.split(/\s+/).filter(Boolean);
+  const hotelHits = hotels
+    .filter((h) => { const n = norm(h.name); return words.every((w) => n.includes(w)); })
+    .sort((a, b) => (norm(a.name).startsWith(t) ? 0 : 1) - (norm(b.name).startsWith(t) ? 0 : 1) || b.stars - a.stars)
+    .slice(0, 6)
+    .map((h) => {
+      const d = destinations.find((x) => x.id === h.destinationId);
+      return { kind: 'hotel', id: h.id, name: h.name, stars: h.stars, destinationId: d.id, country: `${d.name}, ${d.country}`, region: d.region };
+    });
+  return [...dests.slice(0, hotelHits.length ? 4 : 8), ...hotelHits];
 }
 
 // Reytinq sözü açarı (config.ratingWords): 9.2 → 'superb'. 7-dən aşağı və ya reytinqsiz → null.

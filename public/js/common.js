@@ -1,6 +1,7 @@
 // Ortaq köməkçilər: dil (AZ/EN/RU), API, avtomatik tamamlama, formatlama
 const I18N = {
   az: {
+    hc_kicker: 'Otel üzrə müqayisə — bütün operatorlar', hc_pax: 'nəfər: {p}', hc_checked: '{n} operator · {r} variant yoxlanıldı', hc_time: '{ms} ms-də', hc_net: 'Net', hc_client: 'Müştəriyə', hc_profit: 'Qazancınız', hc_open: 'Operatorda aç', hc_open_short: 'Aç', hc_save: 'Ən ucuz {op}: {w} ilə müqayisədə {n} ucuz', hc_all: 'Bütün otaq və qidalanma variantları ({n}) — ucuzdan bahalıya', hc_none: 'Bu tarix və nəfər üçün satışda olan təklif tapılmadı. Tarixi və ya gecə sayını dəyişin.',
     rk_order_t: 'Bu otel üçün operatorlar ucuzdan bahalıya', rk_chip_t: 'Bu oteldə {n}-ci ən ucuz',
     hint_package: '✈ Bakıdan uçuş + otel + transfer — operatorların hazır tur paketləri', hint_hotel: '🏨 Yalnız yerləşmə — yola özünüz çıxırsınız (xaricdə və Azərbaycanda)', hint_tour: '🚌 Bələdçili qrup turları — sabit çıxış günləri, müddət tura görə', date_package: 'Uçuş tarixi -dan / -dək', date_hotel: 'Giriş tarixi -dan / -dək', date_tour: 'Turun başlama tarixi -dan / -dək', lm_title_package: 'Son dəqiqə turları', lm_title_hotel: 'Bu həftə üçün ən sərfəli otellər', lm_title_tour: 'Yaxın ekskursiya turları',
     op_link_short: 'saytda',
@@ -22,6 +23,7 @@ const I18N = {
     feat3_t: 'Büdcəyə görə', feat3_d: 'Büdcəni yaz — uyğun otellər ucuzdan bahalıya düzülür.', feat4_t: 'Agentliklər üçün B2B', feat4_d: 'Menecerlər üçün müqayisə cədvəli, kommersiya təklifi və CSV.',
   },
   en: {
+    hc_kicker: 'Hotel comparison — all operators', hc_pax: 'guests: {p}', hc_checked: '{n} operators · {r} options checked', hc_time: 'in {ms} ms', hc_net: 'Net', hc_client: 'Client', hc_profit: 'Your profit', hc_open: 'Open at operator', hc_open_short: 'Open', hc_save: 'Cheapest is {op}: {n} cheaper than {w}', hc_all: 'All room and board options ({n}) — cheapest first', hc_none: 'No bookable offers for these dates and guests. Try other dates or nights.',
     rk_order_t: 'Operators for this hotel, cheapest first', rk_chip_t: '#{n} cheapest for this hotel',
     hint_package: '✈ Flight from Baku + hotel + transfer — ready-made operator packages', hint_hotel: '🏨 Accommodation only — you travel on your own (abroad and in Azerbaijan)', hint_tour: '🚌 Guided group tours — fixed departure days, duration per tour', date_package: 'Departure from / to', date_hotel: 'Check-in from / to', date_tour: 'Tour start from / to', lm_title_package: 'Last-minute deals', lm_title_hotel: 'Best hotel deals this week', lm_title_tour: 'Upcoming guided tours',
     op_link_short: 'on site',
@@ -43,6 +45,7 @@ const I18N = {
     feat3_t: 'Budget first', feat3_d: 'Enter a budget — matching hotels sorted cheapest first.', feat4_t: 'B2B for agencies', feat4_d: 'Comparison grid, client quotes and CSV export for managers.',
   },
   ru: {
+    hc_kicker: 'Сравнение отеля — все операторы', hc_pax: 'туристы: {p}', hc_checked: '{n} операторов · {r} вариантов проверено', hc_time: 'за {ms} мс', hc_net: 'Нетто', hc_client: 'Клиенту', hc_profit: 'Ваша прибыль', hc_open: 'Открыть у оператора', hc_open_short: 'Открыть', hc_save: 'Дешевле всего {op}: на {n} дешевле, чем {w}', hc_all: 'Все варианты номеров и питания ({n}) — от дешёвых', hc_none: 'Нет доступных предложений на эти даты. Измените даты или ночи.',
     rk_order_t: 'Операторы для этого отеля от дешёвых к дорогим', rk_chip_t: '{n}-е место по цене в этом отеле',
     hint_package: '✈ Перелёт из Баку + отель + трансфер — готовые туры операторов', hint_hotel: '🏨 Только проживание — добираетесь сами (за рубежом и в Азербайджане)', hint_tour: '🚌 Экскурсионные туры с гидом — фиксированные даты, длительность по туру', date_package: 'Вылет с / по', date_hotel: 'Заезд с / по', date_tour: 'Начало тура с / по', lm_title_package: 'Горящие туры', lm_title_hotel: 'Выгодные отели на этой неделе', lm_title_tour: 'Ближайшие экскурсионные туры',
     op_link_short: 'на сайте',
@@ -110,12 +113,19 @@ function autocomplete(input, onPick) {
   const list = document.createElement('div'); list.className = 'ac-list'; list.hidden = true; wrap.appendChild(list);
   let items = []; let hl = -1; let timer;
   const render = () => {
-    list.innerHTML = items.map((d, i) => `<div data-i="${i}" class="${i === hl ? 'hl' : ''}"><span>${esc(d.name)}</span><small>${esc(d.country)}</small></div>`).join('');
+    list.innerHTML = items.map((d, i) => `<div data-i="${i}" class="${i === hl ? 'hl' : ''}${d.kind === 'hotel' ? ' ac-hotel' : ''}"><span>${d.kind === 'hotel' ? '🏨 ' : ''}${esc(d.name)}${d.kind === 'hotel' && d.stars ? ` <span class="stars">${'★'.repeat(Math.min(5, Number(d.stars) || 0))}</span>` : ''}</span><small>${esc(d.country)}</small></div>`).join('');
     list.hidden = !items.length;
   };
-  const pick = (d) => { input.value = d.name; input.dataset.id = d.id; list.hidden = true; onPick && onPick(d); };
+  const pick = (d) => {
+    input.value = d.name;
+    // Otel seçilibsə: istiqamət = otelin istiqaməti, dataset.hotel = otel id (axtarış həmin otelə daralır)
+    if (d.kind === 'hotel') { input.dataset.id = d.destinationId; input.dataset.hotel = d.id; } else { input.dataset.id = d.id; delete input.dataset.hotel; }
+    list.hidden = true;
+    onPick && onPick(d);
+    input.dispatchEvent(new CustomEvent('ac:pick', { detail: d }));
+  };
   input.addEventListener('input', () => {
-    delete input.dataset.id;
+    delete input.dataset.id; delete input.dataset.hotel;
     clearTimeout(timer);
     timer = setTimeout(async () => { items = await api('/api/suggest', { q: input.value }); hl = -1; if (document.activeElement === input) render(); }, 120);
   });

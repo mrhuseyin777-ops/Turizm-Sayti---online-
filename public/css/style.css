@@ -604,3 +604,34 @@ body.has-cmp .help-panel { bottom: 144px; }
 .rk-arrow { color: var(--muted); }
 .rk-chip { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; background: var(--surface-2); color: var(--muted); vertical-align: middle; }
 .rk-chip.first { background: var(--good); color: #fff; }
+
+/* Avtomatik tamamlama: otel sətri */
+.ac-list .ac-hotel span { font-weight: 600; }
+/* B2B: otel üzrə müqayisə paneli */
+.hotel-cmp { background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 18px; margin: 12px 0; box-shadow: var(--shadow); }
+.hc-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 12px; }
+.hc-head h2 { margin: 2px 0 4px; font-size: 22px; }
+.hc-kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--primary); font-weight: 700; }
+.hc-stat { text-align: right; font-size: 14px; font-weight: 600; }
+.hc-ops { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.hc-op { display: grid; grid-template-columns: 36px minmax(0, 1.4fr) minmax(0, 2fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--border); }
+.hc-op:first-child { border-top: 0; }
+.hc-op.best { background: var(--good-soft); }
+.hc-rank { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--surface-2); color: var(--muted); }
+.hc-op.best .hc-rank { background: var(--good); color: #fff; }
+.hc-opname { display: flex; flex-direction: column; min-width: 0; }
+.hc-opname .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.hc-opname small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; text-align: right; font-variant-numeric: tabular-nums; }
+.hc-nums small { display: block; font-size: 11px; }
+.hc-nums b.good, td.good { color: var(--good); }
+.hc-diff { align-self: center; }
+.hc-save { margin-top: 10px; font-weight: 700; color: var(--good); }
+.hc-all { margin-top: 12px; }
+.hc-all summary { cursor: pointer; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .hc-op { grid-template-columns: 32px minmax(0, 1fr); }
+  .hc-nums, .hc-act { grid-column: 1 / -1; }
+  .hc-nums { text-align: left; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hc-stat { text-align: left; }
+}

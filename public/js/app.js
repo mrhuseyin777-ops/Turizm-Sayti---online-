@@ -21,6 +21,11 @@
   const range = bindRangeInputs({ from: $('#checkIn'), to: $('#checkInTo'), nFrom: $('#nights'), nTo: $('#nightsTo') }, cfg.searchLimits);
   $('#dateQuick').addEventListener('click', (e) => { const b = e.target.closest('[data-span]'); if (b) range.quick(b.dataset.span); });
   autocomplete($('#dest'));
+  // Otel adı seçiləndə: həmin istiqamətdə axtarış və otelin detal pəncərəsi (bütün operatorlar ucuzdan bahalıya)
+  $('#dest').addEventListener('ac:pick', (e) => {
+    const d = e.detail || {};
+    if (d.kind === 'hotel' && /^[a-z0-9-]{1,40}$/.test(d.id || '')) run({ noScroll: true }).then(() => openHotel(d.id, null));
+  });
 
   // Uşaq yaşları
   const syncChildAges = () => renderChildAges($('#childAges'), $('#children').value, readChildAges($('#childAges')));

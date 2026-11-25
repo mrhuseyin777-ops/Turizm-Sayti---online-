@@ -134,7 +134,7 @@
       childAges: readChildAges($('#childAges')).join(','),
       maxPrice: $('#maxPrice').value, stars: $('#stars').value, boards: $('#board').value, earlyOnly: $('#earlyOnly').checked ? '1' : '', flat: '1',
       lastMinute: $('#lastMinute').checked ? '1' : '', prepay: $('#prepayNone').checked ? 'none' : '', freeCancel: $('#freeCancel').checked ? '1' : '',
-      districts: msValue(districtMs).join(','), hotels: msValue(hotelMs).join(','), attrs: checkedAttrs,
+      districts: msValue(districtMs).join(','), hotels: [$('#dest').dataset.hotel, ...msValue(hotelMs)].filter(Boolean).join(','), attrs: checkedAttrs,
       seatsOnly: $('#seatsOnly').checked ? '1' : '', noStopSale: $('#noStopSale').checked ? '1' : '', instantOnly: $('#instantOnly').checked ? '1' : '',
     };
     try {
