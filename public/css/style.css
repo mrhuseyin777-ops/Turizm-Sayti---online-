@@ -635,3 +635,35 @@ body.has-cmp .help-panel { bottom: 144px; }
   .hc-nums { text-align: left; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hc-stat { text-align: left; }
 }
+/* "Qiymətə nə daxildir" (public/js/includes.js) — kart sətri və detal bloku */
+.inc-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; font-size: 14px; }
+.inc-line .inc-yes { color: var(--good); font-weight: 700; }
+.inc-line .inc-no { color: var(--muted); font-weight: 700; }
+.inc-line .inc-sep { color: var(--muted); margin: 0 2px; }
+.inc-i { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px; border-radius: 6px; background: var(--good-soft); line-height: 1.5; }
+.inc-i small { font-size: 10px; font-weight: 700; color: var(--good); }
+.inc-i.no { background: var(--surface-2); filter: grayscale(1); opacity: .75; }
+.inc-line .inc-demo { font-size: 10px; text-transform: uppercase; letter-spacing: .3px; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; margin-left: 2px; }
+.inc-block { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 12px 0; background: var(--surface); }
+.inc-block h4 { margin: 0 0 8px; }
+.inc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+.inc-h { display: block; font-size: 13px; margin-bottom: 4px; }
+.inc-h.ok { color: var(--good); }
+.inc-h.no { color: var(--muted); }
+.inc-list { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.inc-list li { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+.inc-list li small { color: var(--muted); }
+.inc-list .inc-mark { font-weight: 700; width: 14px; flex: none; }
+.inc-list li.ok .inc-mark { color: var(--good); }
+.inc-list li.no .inc-mark { color: #dc2626; }
+.inc-note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) { .inc-cols { grid-template-columns: 1fr; } }
+
+/* Müraciət forması: tərəfdaş agentlik seçimi və uğur mesajı (status linki) */
+.modal select.partner-select { width: 100%; height: 42px; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; margin-bottom: 4px; background: var(--surface); color: var(--text); }
+.partner-label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.partner-hint { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.lead-ok { text-align: center; padding: 8px 0; }
+.lead-ok .big { font-size: 40px; line-height: 1; }
+.lead-ok .status-link { display: inline-block; margin: 10px 0 4px; }
+.lead-ok code { display: block; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; margin-top: 6px; }

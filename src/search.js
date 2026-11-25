@@ -2,6 +2,7 @@ const config = require('./config');
 const { destinations, hotels, tours, boardLabels, HOTEL_ATTRS, hotelById, keyDistance, hotelRules } = require('./data/catalog');
 const { providers } = require('./providers');
 const { parseChildAges, paymentPlan, QueryError } = require('./pricing');
+const { inclusions } = require('./includes');
 
 const norm = (s) => String(s || '').toLocaleLowerCase('az').normalize('NFKD').replace(/[̀-ͯ]/g, '').trim();
 
@@ -211,8 +212,11 @@ async function collectOffers(q) {
       const days = daysUntil(o.checkIn);
       // Kataloqdan reytinq/rəy sayı/məkan (real adapter bu sahələri verməsə də nişan və filtrlər işləsin)
       const h = o.itemType === 'hotel' ? hotelById.get(o.itemId) : null;
+      const dest = slimDest[o.destinationId];
       return {
         ...o,
+        // "Qiymətə nə daxildir" (DEMO, deterministik): src/includes.js
+        ...inclusions(o, dest && dest.region),
         reviewCount: o.reviewCount ?? (h ? h.reviewCount : null),
         location: o.location || (h ? h.location : null),
         ratingWord: ratingWord(o.rating),

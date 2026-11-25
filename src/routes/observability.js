@@ -26,7 +26,8 @@ function pathOnly(v, { scriptsOnly = false } = {}) {
   let p;
   try { p = new URL(s, 'http://x.invalid').pathname; } catch { return ''; }
   if (scriptsOnly) return /^\/js\/[A-Za-z0-9._-]{1,64}\.js$/.test(p) ? p : 'external';
-  return /^\/[A-Za-z0-9._/-]{0,120}$/.test(p) ? p.replace(/\/s\/[^/]+/, '/s/:id') : '';
+  // Capability URL-lər (seçim linki, status tokeni, vidjet id-si) loglara düşmür
+  return /^\/[A-Za-z0-9._/-]{0,120}$/.test(p) ? p.replace(/\/s\/[^/]+/, '/s/:id').replace(/\/r\/[^/]+/, '/r/:token').replace(/\/w\/[^/]+/, '/w/:id') : '';
 }
 
 const clientErrorLimit = rateLimit({ name: 'client-errors', windowMs: 60 * 1000, max: 10 });

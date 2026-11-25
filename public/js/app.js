@@ -1,4 +1,23 @@
 // B2C axtarış səhifəsi
+// Müraciət forması: tərəfdaş agentlik seçimi (marketplace) və status linki (/r/<token>)
+Object.assign(I18N.az, {
+  lead_partner: 'Kim sizinlə əlaqə saxlasın?', lead_partner_none: 'Odiola meneceri (ümumi müraciət)',
+  lead_partner_hint: 'İstəsəniz tərəfdaş agentlik seçin — müraciət birbaşa həmin agentliyə göndəriləcək.',
+  lead_ok_title: 'Müraciətiniz qəbul edildi', lead_ok_agency: 'Müraciətiniz «{agency}» agentliyinə göndərildi. Tezliklə əlaqə saxlanılacaq.',
+  lead_track: 'Statusu izləyin', lead_track_hint: 'Bu linki yadda saxlayın — müraciətin vəziyyətini istənilən vaxt yoxlaya bilərsiniz.', lead_close: 'Bağla',
+});
+Object.assign(I18N.en, {
+  lead_partner: 'Who should contact you?', lead_partner_none: 'Odiola manager (general request)',
+  lead_partner_hint: 'Optionally choose a partner agency — your request will go directly to them.',
+  lead_ok_title: 'Request received', lead_ok_agency: 'Your request was sent to “{agency}”. They will contact you shortly.',
+  lead_track: 'Track the status', lead_track_hint: 'Keep this link — you can check the status of your request at any time.', lead_close: 'Close',
+});
+Object.assign(I18N.ru, {
+  lead_partner: 'Кто с вами свяжется?', lead_partner_none: 'Менеджер Odiola (общая заявка)',
+  lead_partner_hint: 'При желании выберите агентство-партнёра — заявка уйдёт напрямую ему.',
+  lead_ok_title: 'Заявка принята', lead_ok_agency: 'Заявка отправлена в «{agency}». С вами скоро свяжутся.',
+  lead_track: 'Следить за статусом', lead_track_hint: 'Сохраните эту ссылку — статус заявки можно проверить в любое время.', lead_close: 'Закрыть',
+});
 (async function () {
   const $ = (s) => document.querySelector(s);
   const cfg = await api('/api/config');
@@ -235,6 +254,7 @@
           <h3>${g.itemType === 'hotel' ? `<button type="button" class="hd-link" data-hotel="${i}" title="${esc(t('hd_open'))}">${esc(g.name)}</button>` : esc(g.name)} <span class="stars">${starStr(g.stars)}</span></h3>
           <div class="muted" style="font-size:14px">${fmtDate(b.checkIn)} · ${esc(t('nights_n', { n: b.nights }))}${b.boardLabel ? ' · ' + esc(b.boardLabel) : ''}${g.includesFlight ? ' · ✈ ' + esc(t('flight_incl')) : ''}</div>
           <div class="offer-meta">${b.room || b.accommodation ? `<span>🛏 ${esc(roomText(b))}</span>` : ''}${b.flight ? `<span>${esc(flightText(b))}</span>` : ''}${b.tourName ? `<span class="muted">${esc(b.tourName)}</span>` : ''}</div>
+          ${window.Inclusions ? window.Inclusions.line(b.includes, b.excludes, LANG) : ''}
           <div class="badges">
             ${ratingHtml(g)}
             ${locationBadge(g.location)}
@@ -397,17 +417,43 @@
     run({ noScroll: true });
   }
 
-  function openLead(g, offer) {
+  // Tərəfdaş agentliklər (marketplace): yalnız "Marketplace-də görün" seçən agentliklər; ictimai id + ad + şəhər.
+  // Siyahı boşdursa seçim gizlənir. Bir dəfə yüklənir.
+  let partnersP = null;
+  const loadPartners = () => (partnersP || (partnersP = api('/api/partners').then((d) => (Array.isArray(d.partners) ? d.partners : [])).catch(() => [])));
+
+  function partnerSelectHtml(list) {
+    if (!list.length) return '';
+    return `<label class="partner-label" for="leadPartner">${esc(t('lead_partner'))}</label>
+      <select id="leadPartner" name="partner" class="partner-select"><option value="">${esc(t('lead_partner_none'))}</option>
+        ${list.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}${p.city ? ' · ' + esc(p.city) : ''}</option>`).join('')}</select>
+      <small class="partner-hint">${esc(t('lead_partner_hint'))}</small>`;
+  }
+
+  function leadOkHtml(statusUrl, agency) {
+    const url = /^\/r\/[A-Za-z0-9_-]{32}$/.test(statusUrl || '') ? statusUrl : '';
+    return `<div class="lead-ok" role="status"><div class="big" aria-hidden="true">✅</div>
+      <h3>${esc(t('lead_ok_title'))}</h3>
+      <p>${esc(agency ? t('lead_ok_agency', { agency }) : t('lead_ok'))}</p>
+      ${url ? `<a class="btn status-link" id="leadStatusLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(t('lead_track'))} →</a>
+      <p class="muted" style="font-size:13px;margin:4px 0 0">${esc(t('lead_track_hint'))}</p>` : ''}
+      <div style="margin-top:12px"><button type="button" class="btn secondary sm" data-close>${esc(t('lead_close'))}</button></div></div>`;
+  }
+
+  async function openLead(g, offer) {
     const cur = offer.currency || state.last.query.currency;
+    const partners = await loadPartners();
     $('#modalBody').innerHTML = `
       <h3>${esc(t('lead_title'))}: ${esc(g.name)}</h3>
       <table>${g.providers.map((o) => `<tr><td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td><td>${fmtDate(o.checkIn)}</td><td>${esc(o.board || '')}</td><td style="text-align:right"><b>${money(o.price, cur)}</b></td></tr>`).join('')}</table>
       ${offer.room || offer.accommodation ? `<p class="muted" style="margin:0 0 6px;font-size:13px">🛏 ${esc(roomText(offer))}${offer.flight ? ' · ' + esc(flightText(offer)) : ''} · ${esc(priceTypeText(offer))}</p>` : ''}
       <div class="badges">${termBadges(offer)}</div>
+      ${window.Inclusions ? window.Inclusions.block(offer.includes, offer.excludes, LANG) : ''}
       <form id="leadForm">
         <input name="name" required maxlength="80" placeholder="${esc(t('lead_name'))}">
         <input name="phone" required maxlength="30" placeholder="${esc(t('lead_phone'))}" inputmode="tel">
         <textarea name="note" rows="2" maxlength="500" placeholder="${esc(t('lead_note'))}"></textarea>${HONEYPOT_HTML}
+        ${partnerSelectHtml(partners)}
         <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary sm" data-close>✕</button><button class="btn sm">${esc(t('lead_send'))}</button></div>
         ${consentHtml()}
       </form>`;
@@ -415,10 +461,22 @@
     $('#leadForm').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const fd = Object.fromEntries(new FormData(ev.target));
+      const btn = ev.target.querySelector('button:not([type])');
+      if (btn) btn.disabled = true;
+      const body = { ...fd, type: 'offer', offerId: offer.id };
+      if (!body.partner) delete body.partner;
+      else {
+        // Agentlik qiyməti serverdə yenidən yoxlayır: yalnız axtarış növü və sərnişin tərkibi göndərilir
+        const q = (state.last && state.last.query) || {};
+        body.query = { type: offer.flight ? 'package' : (offer.itemType === 'tour' ? 'tour' : 'hotel'), adults: String(q.adults || 2), childAges: (q.childAges || []).filter((a) => a != null).join(',') };
+      }
       try {
-        await postJson('/api/leads', { ...fd, type: 'offer', offerId: offer.id });
-        $('#modal').classList.remove('open'); toast(t('lead_ok'));
-      } catch (err) { toast(err.message); }
+        const r = await postJson('/api/leads', body);
+        const p = partners.find((x) => x.id === body.partner);
+        $('#modalBody').innerHTML = leadOkHtml(r.statusUrl, p ? p.name : '');
+        const a = $('#leadStatusLink');
+        if (a) a.focus();
+      } catch (err) { toast(err.message); if (btn) btn.disabled = false; }
     });
   }
 
@@ -636,6 +694,7 @@
           ${dists.length ? `<h4>${esc(t('hd_dist'))} <span class="demo-tag" title="${esc(t('loc_demo_t'))}">demo</span></h4><ul class="hd-dists">${dists.map(([i, v]) => `<li><span aria-hidden="true">${i}</span> ${esc(v)}</li>`).join('')}</ul>` : ''}
         </div>
       </div>
+      ${rows.length && window.Inclusions ? window.Inclusions.block(rows[0].includes, rows[0].excludes, LANG, { vary: true }) : ''}
       <h4 class="hd-rooms-title">${esc(t('hd_rooms'))}</h4>
       ${data.stats ? `<p class="muted hd-count">${esc(t('hd_rows', { r: data.stats.rows, o: data.stats.offers }))}</p>` : ''}
       ${rows.length ? `<div class="hd-table-wrap"><table class="hd-table"><thead><tr>

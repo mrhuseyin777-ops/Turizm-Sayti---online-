@@ -11,10 +11,12 @@ const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&am
 // eslint-disable-next-line no-control-regex -- qəsdən: idarəetmə simvollarını təmizləmək üçün
 const clean = (s, max = FIELD_MAX) => String(s ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
 const fmtDate = (iso) => (/^\d{4}-\d{2}-\d{2}/.test(String(iso || '')) ? String(iso).slice(0, 10).split('-').reverse().join('.') : '');
-const money = (n, cur) => (Number.isFinite(Number(n)) ? `${Math.round(Number(n)).toLocaleString('en-US').replace(/,/g, ' ')} ${cur || 'AZN'}` : '');
+const money = (n, cur) => (n != null && n !== '' && Number.isFinite(Number(n)) ? `${Math.round(Number(n)).toLocaleString('en-US').replace(/,/g, ' ')} ${cur || 'AZN'}` : '');
 
 const KIND_TITLE = {
   selection: 'B2B seçim linki',
+  widget: 'Sayt vidjeti',
+  marketplace: 'Odiola marketplace (B2C)',
   callback: '«Sizə zəng edək»',
   offer: 'Tur/otel müraciəti',
   flight: 'Aviabilet müraciəti',
@@ -94,7 +96,9 @@ function leadFields(kind, r) {
 
 // { html, text, subject } — html: Telegram (parse_mode=HTML), text: e-poçt
 function buildLeadMessage(kind, rec, { baseUrl = publicBaseUrl() } = {}) {
-  const title = `Yeni müraciət: ${KIND_TITLE[kind] || 'müraciət'}`;
+  // Agentliyə bağlı müraciətin mənbəyi (vidjet / marketplace) başlıqda göstərilir; sahələr seçim linki ilə eynidir
+  const src = kind === 'selection' && rec && ['widget', 'marketplace'].includes(rec.source) ? rec.source : kind;
+  const title = `Yeni müraciət: ${KIND_TITLE[src] || 'müraciət'}`;
   const fields = leadFields(kind, rec || {});
   const link = baseUrl && kind === 'selection' && rec && rec.id != null ? `${baseUrl}/b2b#lead-${encodeURIComponent(String(rec.id))}` : '';
   const id = rec && rec.id != null ? ` #${clean(rec.id, 20)}` : '';

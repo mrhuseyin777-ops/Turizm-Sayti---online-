@@ -1,0 +1,27 @@
+/* B2B → Ayarlar: "Vidjet" və "Marketplace" kartları (public/js/b2b-widget.js), müraciət mənbəyi nişanı */
+.wgc-grid { display: grid; grid-template-columns: 1.4fr 1fr; align-items: start; gap: 16px; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; }
+.wgc { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface); min-width: 0; }
+.wgc h3 { margin: 0 0 4px; font-size: 17px; }
+.wgc label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+.wgc input:not([type="checkbox"]), .wgc textarea { width: 100%; height: 40px; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; background: var(--surface); color: var(--text); font: inherit; }
+.wgc textarea.wgc-code { height: auto; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; resize: vertical; }
+.wgc .crm-inline { display: flex; gap: 8px; align-items: center; }
+.wgc .crm-inline input { flex: 1; min-width: 0; }
+.wgc .crm-actions { margin-top: 8px; }
+.wgc-check { display: flex !important; gap: 8px; align-items: center; font-weight: 600; }
+.crm-settings .wgc input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex: none; }
+.wgc-domains { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; font-size: 13px; }
+.wgc-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow-wrap: anywhere; }
+.wgc-chip button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 12px; padding: 0 6px; }
+.wgc-hint { font-size: 12px; margin: 6px 0 0; }
+.wgc-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 10px; overflow: hidden; }
+.wgc-preview iframe { display: block; width: 100%; height: 560px; border: 0; }
+.crm-chips { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.src { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; white-space: nowrap; background: var(--surface-2); color: var(--muted); }
+.src-widget { background: #ede9fe; color: #5b21b6; }
+.src-marketplace { background: #dbeafe; color: #1e40af; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .src-widget { background: #2e1f57; color: #c4b5fd; } :root:not([data-theme="light"]) .src-marketplace { background: #172554; color: #93c5fd; } }
+@media (max-width: 860px) {
+  .wgc-grid { grid-template-columns: 1fr; }
+  .wgc .crm-inline { flex-direction: column; align-items: stretch; }
+}

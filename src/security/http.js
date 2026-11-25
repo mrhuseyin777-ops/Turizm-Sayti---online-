@@ -32,6 +32,15 @@ const CSP = [
 ];
 const cspValue = (env.isProd ? [...CSP, 'upgrade-insecure-requests'] : CSP).join('; ');
 
+// YALNIZ agentlik vidjeti (/w/<publicId>, src/routes/widget.js) üçün: frame-ancestors 'self' + agentliyin
+// icazəli domenləri (src/widget.js → frameAncestors() yoxlanılmış dəyər verir). Qalan direktivlər eynidir.
+function cspForFrame(ancestors) {
+  const fa = String(ancestors || "'self'");
+  if (/[;,\r\n]/.test(fa)) throw new Error('frame-ancestors dəyəri yanlışdır');
+  const list = CSP.map((d) => (d.startsWith('frame-ancestors ') ? `frame-ancestors ${fa}` : d));
+  return (env.isProd ? [...list, 'upgrade-insecure-requests'] : list).join('; ');
+}
+
 const PERMISSIONS = [
   'accelerometer=()', 'autoplay=()', 'camera=()', 'display-capture=()', 'geolocation=()', 'gyroscope=()',
   'magnetometer=()', 'microphone=()', 'midi=()', 'payment=()', 'usb=()', 'serial=()',
@@ -54,7 +63,9 @@ function securityHeaders(req, res, next) {
   // HSTS yalnız production-da və HTTPS üzərindən (dev-də localhost-u "bağlamamaq" üçün)
   if (env.isProd && req.secure) res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   // Paylaşılan seçim linki (/s/<id>) və B2B paneli: URL heç bir xarici sayta Referer ilə getməsin
-  if (req.path.startsWith('/s/') || req.path === '/s.html' || req.path.startsWith('/b2b')) res.set('Referrer-Policy', 'no-referrer');
+  // Müştərinin status linki (/r/<token>) də capability URL-dir
+  if (req.path.startsWith('/s/') || req.path === '/s.html' || req.path.startsWith('/b2b') || req.path.startsWith('/r/') || req.path.startsWith('/api/r/')
+    || req.path === '/r.html') res.set('Referrer-Policy', 'no-referrer');
   // API cavabları keşlənmir (sessiya/şəxsi məlumat proxy və brauzer keşinə düşməsin)
   if (req.path.startsWith('/api/')) res.set('Cache-Control', 'no-store');
   next();
@@ -182,5 +193,5 @@ function errorHandler(err, req, res, next) {
 
 module.exports = {
   securityHeaders, parseQueryString, sanitizeBody, requireJson, checkOrigin, originAllowed, honeypot,
-  notFound, errorHandler, maskPhone, maskEmail, maskName, maskIp, checkBody, CSP: cspValue, HONEYPOT_FIELD,
+  notFound, errorHandler, maskPhone, maskEmail, maskName, maskIp, checkBody, CSP: cspValue, cspForFrame, HONEYPOT_FIELD,
 };

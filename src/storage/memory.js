@@ -4,6 +4,7 @@
 //  - agencySettings: JSON fayl (<TURTAP_DATA_DIR>/agency-settings.json) — bildiriş ayarları
 //  - agencyBrand:   JSON fayl (agency-brand.json) + loqo faylları (<TURTAP_DATA_DIR>/logos/<publicId>.img)
 //  - agencyMarkup:  JSON fayl (agency-markup.json) — komissiya qaydaları
+//  - widgets:       JSON fayl (<TURTAP_DATA_DIR>/agency-widget.json) — vidjet və marketplace ayarları
 //  - sessions, leads, selections, shortlists, flightRequests, carRequests: yalnız proses yaddaşında
 //    (yenidən başlamada itir, bir neçə server nüsxəsi arasında paylaşılmır).
 // Interfeys: src/storage/index.js. Bütün metodlar async-dir (PostgreSQL ilə eyni).
@@ -57,6 +58,8 @@ function createSessionRepo({ maxSessions = 20000 } = {}) {
 function createLeadRepo({ max = 2000 } = {}) {
   const list = [];
   let seq = 0;
+  // Status tokeninin hash-i B2B/ictimai cavablara çıxmır (yalnız getByStatusTokenHash axtarışı üçün)
+  const pub = ({ statusTokenHash, ...l }) => ({ ...l, source: l.type === 'selection' ? l.source || 'selection' : l.source || null });
   return {
     list, // yalnız testlər üçün
     async insert(lead) {
@@ -67,11 +70,17 @@ function createLeadRepo({ max = 2000 } = {}) {
       };
       list.push(rec);
       while (list.length > max) list.shift();
-      return { ...rec };
+      return pub(rec);
     },
     async listForAgency(agencyId, limit = 200, { status } = {}) {
       return list.filter((l) => l.type === 'selection' && l.agencyId === agencyId && (!status || l.status === status))
-        .slice(-limit).reverse().map((l) => ({ ...l }));
+        .slice(-limit).reverse().map(pub);
+    },
+    // Müştərinin status səhifəsi (/r/<token>): yalnız tokenin SHA-256 hash-i ilə axtarılır
+    async getByStatusTokenHash(hash) {
+      if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash)) return null;
+      const l = list.find((x) => x.statusTokenHash === hash);
+      return l ? pub(l) : null;
     },
     async statusCountsForAgency(agencyId) {
       const out = {};
@@ -88,7 +97,7 @@ function createLeadRepo({ max = 2000 } = {}) {
       }
       if (managerNote !== undefined) l.managerNote = managerNote;
       l.updatedAt = at;
-      return { ...l };
+      return pub(l);
     },
     async count() { return list.length; },
     async purgeBefore(date) {
@@ -352,6 +361,66 @@ function createFileMarkupRepo(dir = env.dataDir) {
   };
 }
 
+// ---------------------------------------------------------------- Vidjet + marketplace ayarları (JSON fayl)
+// Agentlik üzrə: publicId (vidjet), frameDomains, markupPct, marketplace profili. Yazma atomikdir, fayl 0600.
+const WIDGET_DEFAULTS = { publicId: null, frameDomains: [], markupPct: 0, marketEnabled: false, marketId: null, marketName: '', marketCity: '', marketPhone: '', updatedAt: null, updatedBy: null };
+const WIDGET_KEYS = Object.keys(WIDGET_DEFAULTS).filter((k) => k !== 'updatedAt');
+function createFileWidgetRepo(dir = env.dataDir) {
+  const file = path.join(dir, 'agency-widget.json');
+  let db = null;
+  const load = () => {
+    if (db) return db;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      db = parsed && typeof parsed.agencies === 'object' && !Array.isArray(parsed.agencies) ? parsed : { version: 1, agencies: {} };
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw new Error(`Vidjet ayarları faylı oxunmadı (${file}): ${e.message}`, { cause: e });
+      db = { version: 1, agencies: {} };
+    }
+    return db;
+  };
+  const save = () => {
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const tmp = `${file}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    const fd = fs.openSync(tmp, 'wx', 0o600);
+    try {
+      fs.writeSync(fd, JSON.stringify(load(), null, 2));
+      fs.fsyncSync(fd);
+    } finally { fs.closeSync(fd); }
+    fs.renameSync(tmp, file);
+  };
+  const own = (id) => typeof id === 'string' && Object.prototype.hasOwnProperty.call(load().agencies, id);
+  const out = (agencyId, r) => ({ ...WIDGET_DEFAULTS, ...r, frameDomains: [...(r.frameDomains || [])], agencyId });
+  const findBy = (key, v) => {
+    if (typeof v !== 'string' || !v) return null;
+    const hit = Object.entries(load().agencies).find(([, r]) => r[key] === v);
+    return hit ? out(hit[0], hit[1]) : null;
+  };
+  return {
+    kind: 'file',
+    file,
+    async get(agencyId) { return own(agencyId) ? out(agencyId, load().agencies[agencyId]) : null; },
+    async getByPublicId(publicId) { return findBy('publicId', publicId); },
+    async getByMarketId(marketId) { return findBy('marketId', marketId); },
+    // patch: yalnız WIDGET_KEYS; qalan sahələr dəyişmir
+    async upsert(agencyId, patch) {
+      const prev = own(agencyId) ? load().agencies[agencyId] : { ...WIDGET_DEFAULTS };
+      const next = { ...prev };
+      for (const k of WIDGET_KEYS) if (patch && k in patch) next[k] = patch[k];
+      next.updatedAt = new Date().toISOString();
+      Object.defineProperty(load().agencies, agencyId, { value: next, enumerable: true, writable: true, configurable: true });
+      save();
+      return out(agencyId, next);
+    },
+    async listMarketplace() {
+      return Object.entries(load().agencies)
+        .filter(([, r]) => r.marketEnabled && r.marketId && r.marketName)
+        .map(([id, r]) => out(id, r));
+    },
+    _reset() { db = null; },
+  };
+}
+
 // ---------------------------------------------------------------- Qiymət izləmələri (JSON fayl)
 // Yazma atomikdir (müvəqqəti fayl → fsync → rename), fayl 0600, qovluq 0700.
 function createFileAlertRepo(dir = env.dataDir) {
@@ -434,9 +503,10 @@ function createRepos({ accounts = defaultAccounts, dataDir = env.dataDir } = {})
     agencySettings: createFileSettingsRepo(dataDir),
     agencyBrand: createFileBrandRepo(dataDir),
     agencyMarkup: createFileMarkupRepo(dataDir),
+    widgets: createFileWidgetRepo(dataDir),
     flightRequests: createRequestRepo({ max: 5000 }),
     carRequests: createRequestRepo({ max: 1000 }),
   };
 }
 
-module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createShortlistRepo, createRequestRepo, createFileAlertRepo, createFileSettingsRepo, createFileBrandRepo, createFileMarkupRepo };
+module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createShortlistRepo, createRequestRepo, createFileAlertRepo, createFileSettingsRepo, createFileBrandRepo, createFileMarkupRepo, createFileWidgetRepo };

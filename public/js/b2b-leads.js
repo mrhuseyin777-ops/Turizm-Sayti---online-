@@ -16,6 +16,7 @@ Object.assign(I18N.az, {
   crm_open: 'Ətraflı', crm_lead: 'Müraciət #{id}', crm_hotel: 'Otel', crm_date: 'Tarix', crm_price: 'Qiymət', crm_operator: 'Operator', crm_client: 'Müştəri/sorğu',
   crm_client_note: 'Müştərinin qeydi', crm_created: 'Daxil olub', crm_updated: 'Son yeniləmə', crm_changed: 'Statusu dəyişib', crm_no_match: 'Bu statusda müraciət yoxdur.',
   crm_lead_saved: 'Müraciət yeniləndi', crm_err_load: 'Müraciətlər yüklənmədi',
+  crm_source: 'Mənbə', crm_src_selection: '🔗 Seçim linki', crm_src_widget: '🧩 Vidjet', crm_src_marketplace: '🛒 Marketplace',
 });
 Object.assign(I18N.en, {
   crm_settings: 'Settings', crm_settings_title: 'Notification settings', crm_close: 'Close', crm_save: 'Save', crm_saved: 'Settings saved',
@@ -33,6 +34,7 @@ Object.assign(I18N.en, {
   crm_open: 'Details', crm_lead: 'Request #{id}', crm_hotel: 'Hotel', crm_date: 'Date', crm_price: 'Price', crm_operator: 'Operator', crm_client: 'Client/request',
   crm_client_note: 'Client’s note', crm_created: 'Received', crm_updated: 'Last update', crm_changed: 'Status changed', crm_no_match: 'No requests with this status.',
   crm_lead_saved: 'Request updated', crm_err_load: 'Could not load requests',
+  crm_source: 'Source', crm_src_selection: '🔗 Selection link', crm_src_widget: '🧩 Widget', crm_src_marketplace: '🛒 Marketplace',
 });
 Object.assign(I18N.ru, {
   crm_settings: 'Настройки', crm_settings_title: 'Настройки уведомлений', crm_close: 'Закрыть', crm_save: 'Сохранить', crm_saved: 'Настройки сохранены',
@@ -50,6 +52,7 @@ Object.assign(I18N.ru, {
   crm_open: 'Подробнее', crm_lead: 'Заявка #{id}', crm_hotel: 'Отель', crm_date: 'Дата', crm_price: 'Цена', crm_operator: 'Оператор', crm_client: 'Клиент/запрос',
   crm_client_note: 'Комментарий клиента', crm_created: 'Получена', crm_updated: 'Обновлена', crm_changed: 'Статус изменил', crm_no_match: 'Нет заявок с этим статусом.',
   crm_lead_saved: 'Заявка обновлена', crm_err_load: 'Не удалось загрузить заявки',
+  crm_source: 'Источник', crm_src_selection: '🔗 Ссылка-подборка', crm_src_widget: '🧩 Виджет', crm_src_marketplace: '🛒 Маркетплейс',
 });
 
 // Telefon → tel: və wa.me üçün normallaşdırma (AZ yerli formatları: 050…, 50…; 00… beynəlxalq prefiks)
@@ -77,6 +80,9 @@ const B2BLeads = (() => {
   let settings = null;
 
   const when = (iso) => (iso ? new Date(iso).toLocaleString(LANG === 'en' ? 'en-GB' : LANG === 'ru' ? 'ru-RU' : 'az-AZ') : '');
+  // Müraciət mənbəyi: seçim linki / sayt vidjeti / Odiola marketplace (B2C)
+  const SOURCES = ['selection', 'widget', 'marketplace'];
+  const srcChip = (src) => { const s = SOURCES.includes(src) ? src : 'selection'; return `<span class="src src-${s}">${esc(t('crm_src_' + s))}</span>`; };
   const stChip = (st) => `<span class="st st-${esc(STATUSES.includes(st) ? st : 'new')}">${esc(t('crm_st_' + (STATUSES.includes(st) ? st : 'new')))}</span>`;
   const contacts = (phone) => {
     const n = crmNormPhone(phone);
@@ -110,7 +116,7 @@ const B2BLeads = (() => {
     $('#leads').innerHTML = leads.length ? leads.map((l) => {
       const it = l.item || {};
       return `<div class="lead crm-lead" tabindex="0" role="button" data-lead="${esc(l.id)}" aria-label="${esc(t('crm_lead', { id: l.id }))}">
-        <div class="crm-row"><b>${esc(l.name)}</b>${stChip(l.status)}</div>
+        <div class="crm-row"><b>${esc(l.name)}</b><span class="crm-chips">${srcChip(l.source)}${stChip(l.status)}</span></div>
         ${contacts(l.phone)}<br>
         <small>${esc(it.name || '')}${it.checkIn ? ' · ' + esc(fmtDate(it.checkIn)) : ''}${it.clientPrice != null ? ' · ' + esc(money(it.clientPrice, it.currency || 'AZN')) : ''}</small><br>
         <small class="muted">${l.client ? esc(l.client) + ' · ' : ''}${esc(t('crm_updated'))}: ${esc(when(l.updatedAt || l.createdAt))}</small>
@@ -150,6 +156,7 @@ const B2BLeads = (() => {
         ${row('crm_date', esc([it.checkIn ? fmtDate(it.checkIn) : '', it.nights ? t('nights_n', { n: it.nights }) : '', it.board || ''].filter(Boolean).join(' · ')))}
         ${row('crm_price', it.clientPrice != null ? esc(money(it.clientPrice, it.currency || 'AZN')) : '')}
         ${row('crm_operator', esc(it.providerName || ''))}
+        ${row('crm_source', srcChip(l.source))}
         ${row('crm_client', esc(l.client || ''))}
         ${row('crm_client_note', esc(l.note || ''))}
         ${row('crm_created', esc(when(l.createdAt)))}

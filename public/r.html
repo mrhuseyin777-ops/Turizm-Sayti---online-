@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="theme-color" content="#ea580c">
+  <title>Müraciət statusu</title>
+  <meta name="description" content="Müraciətinizin vəziyyəti.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/status.css">
+</head>
+<body>
+  <header class="sel-hero">
+    <div class="container">
+      <h1 id="rTitle" data-i18n="r_title">Müraciətinizin statusu</h1>
+      <div id="rBy" class="r-by"></div>
+    </div>
+  </header>
+  <main class="container r-main">
+    <div id="rBody"><div class="spinner"></div></div>
+  </main>
+  <footer><div class="container">© Odiola<nav class="foot-links" aria-label="Hüquqi məlumat"><a href="/privacy.html" data-i18n="ft_privacy">Məxfilik siyasəti</a><span aria-hidden="true"> · </span><a href="/terms.html" data-i18n="ft_terms">İstifadə şərtləri</a></nav>
+    <select id="lang" aria-label="Dil" class="r-lang"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select></div></footer>
+  <!-- errors.js: səhifə yolu serverdə /r/:token kimi maskalanır (src/routes/observability.js) -->
+  <script src="/js/errors.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/r.js"></script>
+</body>
+</html>
