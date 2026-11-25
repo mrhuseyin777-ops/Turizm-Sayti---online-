@@ -4,7 +4,13 @@
   const cfg = await api('/api/config');
   const state = { type: 'package', view: 'matrix', data: null, selected: new Set(), sortKey: 'price', sortDir: 1, facetFor: '' };
   const markup = () => Math.max(0, Number($('#markup').value) || 0);
-  const withMarkup = (p) => Math.round(p * (1 + markup() / 100));
+  // Müştəri qiyməti. Təklif obyekti ötürülür: agentliyin komissiya qaydaları aktivdirsə serverin hesabladığı
+  // clientPrice (src/markup.js applyMarkup, /api/b2b/search), yoxdursa tək % sahəsi (server düsturu ilə eyni).
+  const pricingActive = () => !!(state.data && state.data.pricing && state.data.pricing.active);
+  const withMarkup = (x) => {
+    if (x && typeof x === 'object') return pricingActive() && Number.isFinite(x.clientPrice) ? x.clientPrice : Math.round(x.price * (1 + markup() / 100));
+    return Math.round(x * (1 + markup() / 100));
+  };
   const CH = window.B2BCheapest;
 
   // Giriş: server tərəfli sessiya (httpOnly cookie). JS yalnız /api/b2b/me cavabını görür —
@@ -66,7 +72,8 @@
     get lastParams() { return state.lastParams; },
     get summary() { return state.summary; },
     get me() { return me; },
-    markup, withMarkup, onAuthError, sessionInfo,
+    markup, withMarkup, onAuthError, sessionInfo, pricingActive,
+    rerun: () => { if (state.data) run(); },
     client: () => $('#client').value,
     // Variantı "Müştəriyə təklif" / "Seçim linki" seçiminə əlavə et və istəyə görə həmin pəncərəni aç
     select(id, open) {
@@ -138,7 +145,8 @@
       seatsOnly: $('#seatsOnly').checked ? '1' : '', noStopSale: $('#noStopSale').checked ? '1' : '', instantOnly: $('#instantOnly').checked ? '1' : '',
     };
     try {
-      state.data = await api('/api/search', p);
+      // B2B axtarışı: /api/search ilə eyni + komissiya qaydaları aktivdirsə hər təklifdə serverin clientPrice-ı
+      state.data = await api('/api/b2b/search', p);
       state.lastParams = p;
       state.selected.clear();
       saveHistory(p);
@@ -211,8 +219,7 @@
       // Eyni otel üçün operatorların sırası: ucuzdan bahalıya (1 = ən ucuz)
       const ranked = [...g.providers].sort((a, b) => a.price - b.price);
       const rankOf = Object.fromEntries(ranked.map((o, i) => [o.providerId, i + 1]));
-      const minP = ranked.length ? ranked[0].price : 0;
-      const order = ranked.map((o, i) => `<span class="rk-step${i === 0 ? ' first' : ''}"><b>${i + 1}.</b> ${esc(o.providerName)}${i ? ` <span class="muted">+${money(withMarkup(o.price) - withMarkup(minP), 'AZN')}</span>` : ''}</span>`).join('<span class="rk-arrow" aria-hidden="true">›</span>');
+            const order = ranked.map((o, i) => `<span class="rk-step${i === 0 ? ' first' : ''}"><b>${i + 1}.</b> ${esc(o.providerName)}${i ? ` <span class="muted">+${money(withMarkup(o) - withMarkup(ranked[0]), 'AZN')}</span>` : ''}</span>`).join('<span class="rk-arrow" aria-hidden="true">›</span>');
       return `<tr>
         <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div>
           ${ranked.length > 1 ? `<div class="rk-order" title="${esc(t('rk_order_t'))}">${order}</div>` : ''}</td>
@@ -224,7 +231,7 @@
           const sel = state.selected.has(o.id);
           const rk = rankOf[s.id];
           return `<td class="num${top ? ' top-cell' : ''}" style="${best ? 'background:var(--good-soft);font-weight:700' : ''}">
-            ${top ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span><br>` : ''}<span class="rk-chip${rk === 1 ? ' first' : ''}" title="${esc(t('rk_chip_t', { n: rk }))}">${rk}</span> <label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o.price), 'AZN')}</label>
+            ${top ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span><br>` : ''}<span class="rk-chip${rk === 1 ? ' first' : ''}" title="${esc(t('rk_chip_t', { n: rk }))}">${rk}</span> <label style="cursor:pointer"><input type="checkbox" data-sel="${esc(o.id)}" ${sel ? 'checked' : ''}> ${money(withMarkup(o), 'AZN')}</label>
             <button type="button" class="fav-btn" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">♡</button>
             <br><small class="muted" title="${esc([roomText(o), priceTypeText(o), flightText(o), o.stopSale ? t('stop_sale') : ''].filter(Boolean).join(' · '))}">${fmtDate(o.checkIn).slice(0, 5)} ${esc(o.board || '')}${o.earlyBooking ? ' · ER' : o.priceType === 'SPO' ? ' · SPO' : ''}${o.stopSale ? ' · ⛔' : ''}</small>
             <br><small class="muted mx-room">${esc(o.room || '')}</small></td>`;
@@ -264,7 +271,7 @@
         <td class="wrap"><small>${esc(roomText(o))}</small></td>
         <td class="num">${money(o.price, 'AZN')}</td>
         <td class="num"><small>${o.opCurrency ? money(o.opPrice, o.opCurrency) : ''}</small></td>
-        <td class="num"><b>${money(withMarkup(o.price), 'AZN')}</b></td>
+        <td class="num"><b>${money(withMarkup(o), 'AZN')}</b></td>
         <td class="wrap"><small>${esc(priceTypeText(o))}</small></td>
         <td><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${esc(o.providerColor)}"></span> ${esc(o.providerName)}</td>
         <td>${o.stopSale ? `⛔ ${esc(t('stop_sale'))}` : o.availability === 'instant' ? '✅ Mövcud' : '⏳ Sorğu ilə'}</td><td><small>${esc(termsShort(o))}</small></td></tr>`).join('')}
@@ -318,11 +325,12 @@
         `${i + 1}) ${o.name} ${starStr(o.stars)}`,
         `   📅 ${fmtDate(o.checkIn)} · ${o.nights} gecə${o.boardLabel ? ' · ' + o.boardLabel + ' (' + o.board + ')' : ''}${o.includesFlight ? ' · ✈ aviabilet daxil' : ''}${o.flight ? ' (uçuş ' + o.flight.out.time + ', ' + t('cls_' + o.flight.cls) + ')' : ''}`,
         o.room || o.district ? `   🛏 ${[o.room, o.district ? 'rayon: ' + o.district : ''].filter(Boolean).join(' · ')}` : '',
-        `   💰 ${money(withMarkup(o.price), 'AZN')} (cəmi)${o.earlyBooking ? ' — erkən rezervasiya endirimi' : ''}`,
+        `   💰 ${money(withMarkup(o), 'AZN')} (cəmi)${o.earlyBooking ? ' — erkən rezervasiya endirimi' : ''}`,
       ].filter(Boolean).join('\n')),
       '',
       'Qiymətlər yerlərin mövcudluğundan asılı olaraq dəyişə bilər.',
-      s.manager ? `Hörmətlə, ${s.manager} — ${s.agency}` : '',
+      // İmza: agentliyin brend profili (ad, telefon/WhatsApp, sayt, lisenziya) — public/js/b2b-brand.js
+      window.B2BBrand ? window.B2BBrand.signature(s) : (s.manager ? `Hörmətlə, ${s.manager} — ${s.agency}` : ''),
     ];
     return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
   }
@@ -348,7 +356,7 @@
     const list = selectedOffers().slice(0, 10);
     $('#modalBody').innerHTML = `<h3>${esc(t('b2b_share_title'))}</h3>
       <p class="muted" style="margin-top:-6px">${esc(t('b2b_share_note'))} ${esc(t('b2b_need_select'))}</p>
-      <table>${list.map((o) => `<tr><td>${esc(o.name)}</td><td>${fmtDate(o.checkIn)}</td><td style="text-align:right"><b>${money(withMarkup(o.price), 'AZN')}</b></td></tr>`).join('')}</table>
+      <table>${list.map((o) => `<tr><td>${esc(o.name)}</td><td>${fmtDate(o.checkIn)}</td><td style="text-align:right"><b>${money(withMarkup(o), 'AZN')}</b></td></tr>`).join('')}</table>
       <textarea id="shareMsg" rows="2" maxlength="400" placeholder="${esc(t('b2b_msg'))}"></textarea>
       <div id="shareOut"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap">
@@ -386,7 +394,7 @@
       'Net qiymət (AZN)', 'Operator qiyməti', 'Operator valyutası', 'Müştəri qiyməti (AZN)', 'Qiymət növü', 'Otel yer', 'Reys yer (gediş)', 'Reys yer (dönüş)', 'Stop-sale', 'Status', 'Reytinq (demo)', 'Rəy sayı (demo)', 'Çimərlik xətti', 'Əsas məsafə (m)'];
     const rows = state.data.offers.map((o) => [o.name, o.destination.name, o.district || '', o.tourName || '', o.providerName, o.checkIn,
       o.flight ? o.flight.out.time : '', o.flight ? o.flight.cls : '', o.nights, o.board || '', o.room || '', o.accommodation || '', o.stars,
-      o.price, o.opPrice ?? '', o.opCurrency || '', withMarkup(o.price), o.priceTypeLabel || '', o.hotelSeats || '',
+      o.price, o.opPrice ?? '', o.opCurrency || '', withMarkup(o), o.priceTypeLabel || '', o.hotelSeats || '',
       o.flight ? o.flight.out.seats : '', o.flight ? o.flight.back.seats : '', o.stopSale ? 'bəli' : '', o.availability,
       o.rating ?? '', o.reviewCount ?? '', o.location && o.location.line ? o.location.line : '', keyDist(o.location) ?? '']);
     const csv = '﻿' + [head, ...rows].map((r) => r.map((c) => `"${csvCell(c)}"`).join(';')).join('\n');

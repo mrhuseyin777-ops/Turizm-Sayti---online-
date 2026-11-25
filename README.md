@@ -70,6 +70,16 @@ və menecer qeydi saxlanılır. Qısaca: @BotFather ilə bot yaradın → tokeni
 botu agentlik qrupuna əlavə edin → chat_id-ni tapın (`getUpdates` və ya @userinfobot) → B2B → **Ayarlar** →
 «Test mesajı göndər» → «Yadda saxla». Ətraflı: [`docs/OPERATIONS.md` §9](docs/OPERATIONS.md).
 
+### Agentlik brendi, komissiya qaydaları, "niyə bu otel"
+
+B2B → **Ayarlar** (yalnız admin) → **Brend**: görünən ad, loqo (PNG/JPEG/WebP, maks. 200 KB), əsas rəng, telefon/WhatsApp,
+lisenziya №, ünvan, sayt — seçim linkində (`/s/<id>`), çap/PDF təklifdə və WhatsApp təklif mətninin imzasında avtomatik.
+**Komissiya**: default %, operator / istiqamət / qiymət növü (EB/SPO/STD) / məhsul tipi üzrə qaydalar, sabit ₼, minimum marja,
+yuvarlaqlaşdırma (1/5/10 ₼ yuxarı). Prioritet: ən spesifik qayda (çox kriteriya) qalib gəlir; bərabərdə operator > istiqamət >
+qiymət növü > məhsul tipi, sonra siyahıda yuxarıdakı. Müştəri qiyməti hər yerdə serverdə tək funksiya ilə hesablanır
+(`src/markup.js` → `applyMarkup`). Seçim linki və çap təklifində hər variant üçün qaydaya əsaslanan 2–4 səbəb və "Oxşar otellər"
+(`src/whyhotel.js`; auditoriya sorğunun sərnişin tərkibindən). Miqrasiya: `migrations/004_agency_brand_markup.sql`.
+
 Təhlükəsizlik modeli, tətbiq olunan qorunmalar və production üçün qalan addımlar: [`SECURITY.md`](SECURITY.md).
 
 ## Keyfiyyət və CI

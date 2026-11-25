@@ -14,6 +14,10 @@
 //                  count(), purgeBefore(date)
 //   agencySettings get(agencyId) → {telegramChatId, notifyEmail, updatedAt, updatedBy} | null,
 //                  set(agencyId, {telegramChatId, notifyEmail, updatedBy})
+//   agencyBrand    get(agencyId) → {publicId, displayName, color, phone, whatsapp, licenseNo, address, website, logo:{mime,size,sha256,updatedAt}|null}
+//                  | null, set(agencyId, fields, {newPublicId}), setLogo(agencyId, {bytes,mime,sha256,updatedBy}, {newPublicId}),
+//                  deleteLogo(agencyId), getLogo(publicId) → {bytes, mime, sha256, updatedAt} | null (public URL yalnız publicId ilə)
+//   agencyMarkup   get(agencyId) → {config, updatedAt, updatedBy} | null, set(agencyId, {config, updatedBy}) — src/markup.js
 //   selections     insert(sel), get(id), delete(id), countForAgency(agencyId), trimForAgency(agencyId, keep),
 //                  purgeBefore(date)
 //   shortlists     insert(item) → item | {...mövcud, existed:true}, listForAgency(agencyId, limit), get(agencyId, id),

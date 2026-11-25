@@ -14,24 +14,31 @@
   <meta property="og:title" content="Seçilmiş variantlar — Odiola">
   <meta property="og:description" content="Agentliyinizin sizin üçün seçdiyi tur variantları.">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/brand.css">
 </head>
 <body>
-  <header class="sel-hero">
-    <div class="container">
-      <h1 id="agency">…</h1>
-      <div id="by" style="opacity:.9"></div>
+  <header class="sel-hero" id="hero">
+    <div class="container brand-head">
+      <span id="brandLogo"></span>
+      <div>
+        <h1 id="agency">…</h1>
+        <div id="by" style="opacity:.9"></div>
+        <div id="brandContacts"></div>
+      </div>
     </div>
   </header>
   <main class="container" style="padding-bottom:40px">
     <div id="intro" style="margin-top:16px"></div>
     <div id="items"><div class="spinner"></div></div>
     <p class="muted" id="priceNote" style="font-size:13px"></p>
+    <div id="similar"></div>
   </main>
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody"></div></div>
   <footer><div class="container"><div id="payStrip"></div><span id="made"></span><nav class="foot-links" aria-label="Hüquqi məlumat"><a href="/privacy.html" data-i18n="ft_privacy">Məxfilik siyasəti</a><span aria-hidden="true"> · </span><a href="/terms.html" data-i18n="ft_terms">İstifadə şərtləri</a><span aria-hidden="true"> · </span><a href="/how.html" data-i18n="how_link">Necə işləyirik</a></nav>
     <select id="lang" aria-label="Dil" style="margin-left:8px"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select></div></footer>
   <script src="/js/errors.js"></script>
   <script src="/js/common.js"></script>
+  <script src="/js/brand-view.js"></script>
   <script src="/js/s.js"></script>
 </body>
 </html>
