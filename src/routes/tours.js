@@ -52,11 +52,13 @@ router.get('/api/tours/calendar', rateLimit({ name: 'tour-calendar', windowMs: 6
 });
 
 // Müraciət: type = 'offer' (kartdan) | 'callback' ("Sizə zəng edək") | 'selection' (paylaşılan linkdən)
+// partner = marketplace agentliyinin ictimai id-si (ixtiyari, src/leads.js) → müraciət həmin agentliyə
 // Qorunma: IP limiti, honeypot sahəsi, ağ siyahı + uzunluq + telefon formatı (src/leads.js)
 router.post('/api/leads', rateLimit({ name: 'leads', windowMs: 10 * 60 * 1000, max: 20 }), honeypot, async (req, res, next) => {
   try {
     const lead = await createLead(req.body);
-    res.status(201).json({ ok: true, id: lead.id });
+    // statusUrl: müştərinin status səhifəsi (/r/<token>; token yalnız bu cavabda, DB-də yalnız hash)
+    res.status(201).json({ ok: true, id: lead.id, statusUrl: `/r/${lead.statusToken}` });
   } catch (e) { fail(res, e, next); }
 });
 

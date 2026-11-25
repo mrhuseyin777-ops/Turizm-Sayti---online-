@@ -2,11 +2,18 @@
 // Saxlama: src/storage (DATABASE_URL varsa PostgreSQL, yoxdursa yaddaş). Leadlər DATA_RETENTION_DAYS,
 // seçim linkləri 30 gün sonra avtomatik silinir (src/storage/cleanup.js). Yeni müraciət → Telegram/e-poçt
 // bildirişi (src/notify, asinxron). B2B CRM: status, menecer qeydi (updateLeadForAgency).
+// Status səhifəsi (/r/<token>): hər müraciətə təsadüfi token (24 bayt), DB-də YALNIZ SHA-256 hash.
+// Marketplace (B2C "Agentlik vasitəsilə al"): body.partner = agentliyin ictimai marketplace id-si → müraciət
+// həmin agentliyin "Müraciətlər" bölməsinə (type='selection', source='marketplace').
 const crypto = require('crypto');
 const { maskPhone, maskName } = require('./security/http');
 const { search } = require('./search');
 const storage = require('./storage');
 const notify = require('./notify');
+const config = require('./config');
+const { publicSupport, cleanPhone } = require('./support');
+const { hotelById, tours, destinations, boardLabels } = require('./data/catalog');
+const { providers } = require('./providers');
 
 class InputError extends Error {}
 
@@ -29,23 +36,100 @@ const CTRL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const text = (v, max) => str(v, max * 2).replace(CTRL_RE, '').slice(0, max);
 const validPhone = (p) => PHONE_RE.test(p) && (() => { const d = p.replace(/\D/g, '').length; return d >= 7 && d <= 15; })();
 
-// selections / leads — repository (default: src/storage); testlərdə ayrıca nüsxə ötürülə bilər
-async function createLead(body, { selections: selStore, leads: leadStore } = {}) {
-  const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+// Ad + telefon + qeyd (bütün müraciət formaları üçün ortaq yoxlama)
+function validateContact(b) {
   const name = str(b.name, 80).replace(/\s+/g, ' ');
   const phone = str(b.phone, 30);
   if (!name || !phone) throw new InputError('Ad və telefon tələb olunur');
   if (!NAME_RE.test(name)) throw new InputError('Ad 2–80 hərf olmalıdır');
   if (!validPhone(phone)) throw new InputError('Telefon nömrəsi düzgün deyil');
+  return { name, phone, note: text(b.note, 500) };
+}
+
+// ---------------- Status linki (/r/<token>) ----------------
+// 24 bayt (192 bit) kriptoqrafik təsadüf → 32 simvol base64url; saxlanılan yalnız SHA-256 (hex)
+const STATUS_TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
+const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+function newStatusToken() {
+  const token = crypto.randomBytes(24).toString('base64url');
+  return { token, hash: hashToken(token) };
+}
+
+// Saxla + logla (maskalı) + bildiriş. Qaytarır: saxlanılmış qeyd + statusToken (yalnız cavab üçün, DB-də yoxdur)
+async function saveLead(lead, leadStore) {
+  const { token, hash } = newStatusToken();
+  const saved = await (leadStore || storage.get().leads).insert({ ...lead, statusTokenHash: hash });
+  // Loga yalnız maskalanmış məlumat yazılır
+  console.info('[lead] yeni müraciət', { id: saved.id, type: lead.type, source: lead.source || null, name: maskName(lead.name), phone: maskPhone(lead.phone), agencyId: saved.agencyId || null });
+  notify.leadCreated(lead.type, saved); // asinxron: cavabı gecikdirmir, uğursuzluq müraciətə təsir etmir
+  return { ...saved, statusToken: token };
+}
+
+// Təklif id-sindən qısa məlumat: "funsun:antalya-h1|2026-12-17|7|BB|..." / "summer:t-georgia|2026-12-17"
+const OFFER_ID_RE = /^([a-z0-9-]{1,30}):([a-z0-9-]{1,40})\|(\d{4}-\d{2}-\d{2})(?:\|(\d{1,2})\|([A-Z]{2,3})?)?/;
+function offerSummary(offerId) {
+  const m = OFFER_ID_RE.exec(String(offerId || ''));
+  if (!m) return null;
+  const h = hotelById.get(m[2]);
+  const t = h ? null : tours.find((x) => x.id === m[2]);
+  if (!h && !t) return null;
+  const dest = destinations.find((d) => d.id === (h || t).destinationId);
+  return {
+    kind: h ? 'hotel' : 'tour', providerId: m[1], itemId: m[2], name: (h || t).name, destinationId: dest ? dest.id : null,
+    destination: dest ? dest.name : '', checkIn: m[3], nights: h ? Number(m[4]) || null : t.nights, board: h ? m[5] || '' : '',
+  };
+}
+
+// Marketplace müraciəti: təklif SERVERDƏ yenidən axtarılır (qiymət klientdən götürülmür).
+// q: { type, adults, childAges } — klientin axtarış parametrləri (qalanı təklif id-sindən)
+async function resolveOfferItem(offerId, q, resolveOffers = resolveOffersBySearch) {
+  const sum = offerSummary(offerId);
+  if (!sum) return null;
+  const prov = providers.find((p) => p.id === sum.providerId);
+  const item = {
+    name: sum.name, destination: sum.destination, checkIn: sum.checkIn, nights: sum.nights, board: sum.board,
+    clientPrice: null, currency: 'AZN', providerName: prov ? prov.name : '', offerId,
+  };
+  const src = q && typeof q === 'object' && !Array.isArray(q) ? q : {};
+  const type = sum.kind === 'tour' ? 'tour' : (['package', 'hotel'].includes(src.type) ? src.type : 'package');
+  const raw = { type, destinationId: sum.destinationId, checkIn: sum.checkIn, adults: /^[1-8]$/.test(String(src.adults)) ? String(src.adults) : '2' };
+  if (sum.nights) raw.nights = String(sum.nights);
+  if (typeof src.childAges === 'string' && /^[\d,]{0,20}$/.test(src.childAges)) raw.childAges = src.childAges;
+  try {
+    const r = await resolveOffers(raw, [offerId]);
+    const o = r.offers[0];
+    if (o && Number.isFinite(Number(o.price)) && Number(o.price) > 0) item.clientPrice = Math.round(Number(o.price));
+  } catch { /* qiymət tapılmadı — müraciət qiymətsiz saxlanılır, menecer dəqiqləşdirir */ }
+  return item;
+}
+
+// selections / leads — repository (default: src/storage); testlərdə ayrıca nüsxə ötürülə bilər
+async function createLead(body, { selections: selStore, leads: leadStore, widgets: widgetStore, resolveOffers } = {}) {
+  const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  const { name, phone, note } = validateContact(b);
   const type = ['offer', 'callback', 'selection'].includes(b.type) ? b.type : 'offer';
   const lead = {
     type,
     name,
     phone,
-    note: text(b.note, 500),
+    note,
     offerId: str(b.offerId, 200) || null,
     createdAt: new Date().toISOString(),
   };
+  // "Agentlik vasitəsilə al": seçilmiş tərəfdaş agentlik (yalnız marketplace-də görünən). İctimai id → agentlik
+  // serverdə tapılır; agentliyin daxili id-si klientə göstərilmir və klientdən qəbul edilmir.
+  if (type === 'offer' && b.partner !== undefined && b.partner !== null && b.partner !== '') {
+    const pid = typeof b.partner === 'string' && /^[A-Za-z0-9_-]{16}$/.test(b.partner) ? b.partner : null;
+    const w = pid ? await (widgetStore || storage.get().widgets).getByMarketId(pid) : null;
+    if (!w || !w.marketEnabled || !w.marketName) throw new InputError('Seçilmiş agentlik tapılmadı');
+    lead.type = 'selection';
+    lead.source = 'marketplace';
+    lead.agencyId = w.agencyId;
+    lead.agency = str(w.marketName, 80);
+    lead.manager = '';
+    lead.client = null;
+    lead.item = lead.offerId ? await resolveOfferItem(lead.offerId, b.query, resolveOffers) : null;
+  }
   if (type === 'callback') {
     lead.preferredTime = ['now', 'morning', 'afternoon', 'evening'].includes(b.preferredTime) ? b.preferredTime : 'now';
     lead.context = text(b.context, 300) || null; // məs. "Antalya · 16.12 · 2+1"
@@ -59,17 +143,75 @@ async function createLead(body, { selections: selStore, leads: leadStore } = {})
     if (!Number.isInteger(idx) || idx < 0 || idx >= sel.items.length) throw new InputError('Variant düzgün deyil');
     const it = sel.items[idx];
     lead.selectionId = sel.id;
+    lead.source = 'selection';
     lead.agencyId = sel.agencyId;
     lead.agency = sel.agency;
     lead.manager = sel.manager;
     lead.client = sel.client;
     lead.item = { name: it.name, destination: it.destination, checkIn: it.checkIn, nights: it.nights, board: it.board, clientPrice: it.clientPrice, currency: sel.currency, providerName: it.providerName, offerId: it.offerId };
   }
-  const saved = await (leadStore || storage.get().leads).insert(lead);
-  // Loga yalnız maskalanmış məlumat yazılır
-  console.info('[lead] yeni müraciət', { id: saved.id, type, name: maskName(name), phone: maskPhone(phone), agencyId: saved.agencyId || null });
-  notify.leadCreated(type, saved); // asinxron: cavabı gecikdirmir, uğursuzluq müraciətə təsir etmir
-  return saved;
+  return saveLead(lead, leadStore);
+}
+
+// ---------------- Müştərinin status səhifəsi ----------------
+// Şəxsi məlumat maskalanır: ad — hər sözün ilk hərfi, telefon — yalnız son 2 rəqəm.
+const maskPersonName = (n) => String(n || '').split(/\s+/).filter(Boolean).map((w) => `${[...w][0]}***`).join(' ');
+const maskPersonPhone = (p) => {
+  const d = String(p || '').replace(/\D/g, '');
+  return d.length < 4 ? '***' : `${String(p).trim().startsWith('+') ? '+' : ''}${'•'.repeat(Math.max(3, d.length - 2))}${d.slice(-2)}`;
+};
+const contactOf = (phone) => {
+  const c = cleanPhone(phone);
+  return c ? { phone: c, whatsapp: c.slice(1) } : null;
+};
+
+// token → ictimai görünüş və ya null (tapılmadı / format yanlış — eyni nəticə, mövcudluq sızmır)
+async function leadStatusByToken(token, { leads: leadStore, selections: selStore, widgets: widgetStore } = {}) {
+  if (typeof token !== 'string' || !STATUS_TOKEN_RE.test(token)) return null;
+  const repos = storage.get();
+  const l = await (leadStore || repos.leads).getByStatusTokenHash(hashToken(token));
+  if (!l) return null;
+  // Əlaqə: seçim linkində menecerin telefonu, vidjet/marketplace-də agentliyin marketplace telefonu,
+  // ümumi müraciətdə Odiola dəstəyi (config.support; yoxdursa düymə gizlənir)
+  let contact = null;
+  if (l.type === 'selection' && l.agencyId) {
+    if (l.selectionId) {
+      const sel = await (selStore || repos.selections).get(l.selectionId).catch(() => null);
+      if (sel && sel.agencyId === l.agencyId) contact = contactOf(sel.phone);
+    }
+    if (!contact) {
+      const w = await (widgetStore || repos.widgets).get(l.agencyId).catch(() => null);
+      if (w) contact = contactOf(w.marketPhone);
+    }
+  } else {
+    const s = publicSupport(config.support);
+    if (s.phone || s.whatsapp) contact = { phone: s.phone, whatsapp: s.whatsapp };
+  }
+  let item = null;
+  if (l.item && typeof l.item === 'object') {
+    const it = l.item;
+    const price = it.clientPrice == null ? null : Number(it.clientPrice);
+    item = {
+      name: str(it.name, 120), destination: str(it.destination, 80), checkIn: DATE_RE.test(it.checkIn || '') ? it.checkIn : null,
+      nights: Number.isInteger(it.nights) ? it.nights : null, board: str(it.board, 4), price: Number.isFinite(price) ? Math.round(price) : null, currency: str(it.currency, 3) || 'AZN',
+    };
+  } else if (l.offerId) {
+    const sum = offerSummary(l.offerId);
+    if (sum) item = { name: sum.name, destination: sum.destination, checkIn: sum.checkIn, nights: sum.nights, board: sum.board, price: null, currency: 'AZN' };
+  }
+  if (item) item.boardLabel = item.board ? boardLabels[item.board] || '' : '';
+  return {
+    status: LEAD_STATUSES.includes(l.status) ? l.status : 'new',
+    createdAt: l.createdAt,
+    updatedAt: l.updatedAt || l.createdAt,
+    statusChangedAt: l.statusChangedAt || null,
+    agency: l.type === 'selection' && l.agency ? l.agency : null, // null → "Odiola"
+    manager: l.type === 'selection' && l.manager ? l.manager : null,
+    contact,
+    customer: { name: maskPersonName(l.name), phone: maskPersonPhone(l.phone) },
+    item,
+    // agencyId, operator adı, offerId, qeydlər, menecer qeydi, tam ad/telefon QAYTARILMIR
+  };
 }
 
 // ---------------- B2B CRM: status və menecer qeydi ----------------
@@ -231,4 +373,5 @@ function publicSelection(sel) {
 module.exports = {
   InputError, LIMITS, SEL_QUERY_KEYS, LEAD_STATUSES, MANAGER_NOTE_MAX, resolveOffersBySearch, createLead, leadsForAgency, leadCountsForAgency,
   updateLeadForAgency, createSelection, getSelectionRecord, publicSelection,
+  validateContact, saveLead, newStatusToken, hashToken, STATUS_TOKEN_RE, leadStatusByToken, offerSummary, resolveOfferItem, maskPersonName, maskPersonPhone,
 };

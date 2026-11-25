@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="az">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <title>Tur axtarışı</title>
+  <link rel="stylesheet" href="/css/widget.css">
+</head>
+<body>
+  <!-- Agentlik saytı üçün yığcam axtarış vidjeti (/w/<publicId>). Cookie/sessiya istifadə etmir. -->
+  <div class="wg">
+    <header class="wg-head">
+      <div><b id="wgAgency">…</b> <span class="wg-sub" id="wgSub"></span></div>
+      <select id="wgLang" aria-label="Dil / Language"><option value="az">AZ</option><option value="en">EN</option><option value="ru">RU</option></select>
+    </header>
+    <form id="wgForm" class="wg-form" autocomplete="off" novalidate>
+      <label class="wg-f wg-dest"><span data-t="dest"></span><select id="wgDest" required></select></label>
+      <label class="wg-f"><span data-t="type"></span><select id="wgType"><option value="package" data-t="type_package"></option><option value="hotel" data-t="type_hotel"></option></select></label>
+      <label class="wg-f"><span data-t="date"></span><input id="wgDate" type="date" required></label>
+      <label class="wg-f"><span data-t="nights"></span><select id="wgNights"></select></label>
+      <label class="wg-f"><span data-t="adults"></span><select id="wgAdults"></select></label>
+      <label class="wg-f"><span data-t="children"></span><select id="wgChildren"></select></label>
+      <label class="wg-f"><span data-t="budget"></span><input id="wgBudget" type="number" min="0" step="50" inputmode="numeric"></label>
+      <div class="wg-ages" id="wgAges" hidden></div>
+      <button class="wg-btn wg-go" id="wgGo" data-t="search"></button>
+    </form>
+    <div id="wgMsg" class="wg-msg" role="status" aria-live="polite"></div>
+    <div id="wgResults" class="wg-results"></div>
+    <footer class="wg-foot"><span data-t="demo"></span> · <a href="/privacy.html" target="_blank" rel="noopener noreferrer" data-t="privacy"></a> · <span data-t="powered"></span></footer>
+  </div>
+  <div class="wg-modal" id="wgModal" hidden><div class="wg-dialog" id="wgDialog" role="dialog" aria-modal="true" aria-labelledby="wgDlgTitle"></div></div>
+  <script src="/js/errors.js"></script>
+  <script src="/js/includes.js"></script>
+  <script src="/js/widget.js"></script>
+</body>
+</html>

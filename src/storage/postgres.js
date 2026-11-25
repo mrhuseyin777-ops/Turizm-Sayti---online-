@@ -130,18 +130,27 @@ function createRepos(pool) {
     if (r.type === 'selection') {
       Object.assign(l, { selectionId: r.selection_id, agencyId: r.agency_id, agency: r.agency_name, manager: r.manager, client: r.client, item: r.item });
     }
+    // Mənbə (006): agentliyə bağlı müraciətlərdə köhnə qeydlər (NULL) = seçim linki. Token hash-i qaytarılmır.
+    l.source = r.type === 'selection' ? r.source || 'selection' : r.source || null;
     return l;
   };
   const leads = {
     async insert(l) {
       const { rows } = await q(`INSERT INTO leads (type, name, phone, note, offer_id, preferred_time, context,
-          selection_id, agency_id, agency_name, manager, client, item, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`, [
+          selection_id, agency_id, agency_name, manager, client, item, created_at, source, status_token_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`, [
         l.type, l.name, l.phone, l.note || '', l.offerId || null, l.preferredTime || null, l.context || null,
         l.selectionId || null, l.agencyId || null, l.agency ?? null, l.manager ?? null, l.client ?? null,
         l.item ? JSON.stringify(l.item) : null, l.createdAt ? new Date(l.createdAt) : new Date(),
+        l.source || null, l.statusTokenHash || null,
       ]);
       return leadRow(rows[0]);
+    },
+    // Müştərinin status səhifəsi (/r/<token>): yalnız tokenin SHA-256 hash-i ilə (unikal indeks)
+    async getByStatusTokenHash(hash) {
+      if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash)) return null;
+      const r = (await q('SELECT * FROM leads WHERE status_token_hash = $1', [hash])).rows[0];
+      return r ? leadRow(r) : null;
     },
     async listForAgency(agencyId, limit = 200, { status } = {}) {
       if (typeof agencyId !== 'string' || !agencyId) return [];
@@ -189,6 +198,52 @@ function createRepos(pool) {
           updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by
         RETURNING *`, [agencyId, telegramChatId, notifyEmail, updatedBy]);
       return settingsRow(rows[0]);
+    },
+  };
+
+  // ---------------------------------------------------------------- Vidjet + marketplace ayarları (006)
+  const widgetRow = (r) => (r ? {
+    agencyId: r.agency_id, publicId: r.public_id, frameDomains: Array.isArray(r.frame_domains) ? r.frame_domains : [],
+    markupPct: Number(r.markup_pct), marketEnabled: r.market_enabled, marketId: r.market_id, marketName: r.market_name,
+    marketCity: r.market_city, marketPhone: r.market_phone, updatedAt: iso(r.updated_at), updatedBy: r.updated_by,
+  } : null);
+  const WIDGET_DEFAULTS = { publicId: null, frameDomains: [], markupPct: 0, marketEnabled: false, marketId: null, marketName: '', marketCity: '', marketPhone: '', updatedBy: null };
+  const widgets = {
+    kind: 'postgres',
+    async get(agencyId) {
+      if (typeof agencyId !== 'string') return null;
+      return widgetRow((await q('SELECT * FROM agency_widget WHERE agency_id = $1', [agencyId])).rows[0]);
+    },
+    async getByPublicId(publicId) {
+      if (typeof publicId !== 'string' || !publicId) return null;
+      return widgetRow((await q('SELECT * FROM agency_widget WHERE public_id = $1', [publicId])).rows[0]);
+    },
+    async getByMarketId(marketId) {
+      if (typeof marketId !== 'string' || !marketId) return null;
+      return widgetRow((await q('SELECT * FROM agency_widget WHERE market_id = $1', [marketId])).rows[0]);
+    },
+    // patch yalnız məlum sahələrdən; qalanı mövcud qeyddən (və ya default-dan) götürülür
+    async upsert(agencyId, patch) {
+      const prev = (await widgets.get(agencyId)) || WIDGET_DEFAULTS;
+      const n = { ...WIDGET_DEFAULTS, ...prev };
+      for (const k of Object.keys(WIDGET_DEFAULTS)) if (patch && k in patch) n[k] = patch[k];
+      const { rows } = await q(`INSERT INTO agency_widget (agency_id, public_id, frame_domains, markup_pct, market_enabled, market_id,
+          market_name, market_city, market_phone, updated_at, updated_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10)
+        ON CONFLICT (agency_id) DO UPDATE SET public_id = EXCLUDED.public_id, frame_domains = EXCLUDED.frame_domains,
+          markup_pct = EXCLUDED.markup_pct, market_enabled = EXCLUDED.market_enabled, market_id = EXCLUDED.market_id,
+          market_name = EXCLUDED.market_name, market_city = EXCLUDED.market_city, market_phone = EXCLUDED.market_phone,
+          updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by
+        RETURNING *`, [
+        agencyId, n.publicId, JSON.stringify(n.frameDomains || []), n.markupPct, !!n.marketEnabled, n.marketId,
+        n.marketName || '', n.marketCity || '', n.marketPhone || '', n.updatedBy,
+      ]);
+      return widgetRow(rows[0]);
+    },
+    async listMarketplace() {
+      const { rows } = await q(`SELECT * FROM agency_widget WHERE market_enabled AND market_id IS NOT NULL AND market_name <> ''
+        ORDER BY market_name`);
+      return rows.map(widgetRow);
     },
   };
 
@@ -340,7 +395,7 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM car_requests WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
-  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings };
+  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings, widgets };
 }
 
 module.exports = { createRepos };

@@ -54,6 +54,28 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
 - **HSTS** (`max-age=31536000; includeSubDomains`) yalnız `NODE_ENV=production` və HTTPS sorğularında.
 - `X-Powered-By` söndürülüb. Bütün `/api/*` cavabları `Cache-Control: no-store` (sessiya/şəxsi məlumat keşə düşmür).
 - CORS başlıqları verilmir → başqa saytlar API cavablarını oxuya bilmir.
+- **Framing istisnası — YALNIZ agentlik vidjeti `/w/<publicId>`** (`src/routes/widget.js`, `src/widget.js`):
+  bu marşrutda CSP `frame-ancestors 'self' <agentliyin icazəli domenləri>` olur və `X-Frame-Options` çıxarılır.
+  Domen siyahısı B2B → Ayarlar → Vidjet-də (yalnız admin, CSRF) saxlanılır; hər dəyər ciddi regex ilə yoxlanılır
+  (sxem `https://`/`http://` + host + ixtiyari port, ixtiyari `*.` alt-domen maskası; yol, sorğu, boşluq, `;`, dırnaq,
+  tək `*`, `*.az` kimi geniş maska, IDN (punycode yazılmalıdır) rədd edilir; ən çox 10) və CSP-yə yazılmazdan əvvəl
+  yenidən normallaşdırılır. **Siyahı boşdursa — yalnız `'self'`** (hər yerə icazə YOX). Vidjetin digər CSP
+  direktivləri dəyişmir. Mövcud olmayan/yenilənmiş id → 404 və default `frame-ancestors 'none'`. Statik
+  `/widget.html`, `/r.html` və bütün başqa səhifələr `frame-ancestors 'none'` + `X-Frame-Options: DENY` qalır — testlə
+  yoxlanılır (`test/widget-status.test.js`). Vidjet səhifəsi cookie/sessiya/brauzer yaddaşı istifadə etmir (`fetch`
+  `credentials: 'omit'`), vəziyyəti dəyişən yeganə əməliyyatı müraciət göndərməkdir (B2B sessiyası tələb etmir), ona görə
+  clickjacking ilə menecer adından əməliyyat mümkün deyil. Rate limit: səhifə/config 120/dəq, axtarış 30/dəq,
+  müraciət 10/10 dəq (IP), honeypot, Origin yoxlaması (iframe Odiola origin-indədir).
+- **Vidjet id-ləri**: `publicId` — 128 bit (`crypto.randomBytes(16)`), marketplace `marketId` — 96 bit; agentliyin daxili
+  id-si (`ag_…`) heç bir ictimai cavaba çıxmır. "Linki yenilə" köhnə id-ni dərhal etibarsız edir. Vidjetə operator adı,
+  net qiymət və təklif id-si GÖNDƏRİLMİR: təklif opaq `ref` (HMAC-SHA256, açar `WIDGET_REF_SECRET` / `IP_HASH_SECRET`,
+  yoxdursa proses üçün təsadüfi) kimi verilir, müraciətdə təklif serverdə yenidən axtarılıb tapılır — qiymət klientdən
+  götürülmür. Marketplace müraciətində də qiymət serverdə yenidən axtarılır.
+- **Müraciət status linki `/r/<token>`**: token 192 bit (`crypto.randomBytes(24)`, base64url), DB-də yalnız SHA-256
+  (`leads.status_token_hash`, unikal indeks); token yalnız müraciət cavabında bir dəfə qaytarılır. Səhv/format xaricində
+  token → 404 (mövcudluq sızmır). Səhifədə ad və telefon maskalıdır (`Ə*** M***`, `+••••••••33`); operator adı, offer id,
+  agentlik id-si, müştəri/menecer qeydi qaytarılmır. `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`,
+  `Cache-Control: no-store`, 30 sorğu/dəq (IP). Brauzer xəta bildirişində səhifə yolu `/r/:token`, `/w/:id` kimi maskalanır.
 
 ### 2.2 B2B autentifikasiya (`src/auth/`)
 

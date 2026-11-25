@@ -1,0 +1,28 @@
+/* Müraciət status səhifəsi (/r/<token>) — public/js/r.js */
+.r-by { opacity: .9; }
+.r-main { padding-top: 16px; padding-bottom: 40px; max-width: 720px; }
+.r-card { margin-bottom: 12px; }
+.r-card h3 { margin: 0 0 6px; font-size: 16px; }
+.r-status { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.r-status .st { font-size: 14px; padding: 4px 12px; }
+.r-steps { list-style: none; display: flex; gap: 0; margin: 16px 0 8px; padding: 0; counter-reset: s; }
+.r-steps li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font-size: 13px; color: var(--muted); position: relative; }
+.r-steps li + li::before { content: ""; position: absolute; top: 14px; right: 50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
+.r-steps li.done + li::before, .r-steps li.done + li.cur::before { background: var(--good); }
+.r-dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: var(--surface-2); border: 2px solid var(--border); color: var(--muted); }
+.r-steps li.done .r-dot { background: var(--good); border-color: var(--good); color: #fff; }
+.r-steps li.cur { color: var(--text); font-weight: 700; }
+.r-steps li.cur .r-dot { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.r-steps li.cur.cancel .r-dot { background: #dc2626; border-color: #dc2626; color: #fff; }
+.r-desc { margin: 8px 0 12px; }
+.r-who { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 12px; }
+.r-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.r-item { margin: 0; overflow-wrap: anywhere; }
+.r-private { font-size: 13px; }
+.r-lang { margin-left: 8px; }
+/* CRM status rəngləri (b2b-crm.css ilə eyni) */
+.st { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.st-new { background: var(--primary); color: var(--primary-ink); }
+.st-in_progress { background: var(--warn-soft); color: var(--accent); }
+.st-sold { background: var(--good-soft); color: var(--good); }
+.st-cancelled { background: var(--surface-2); color: var(--muted); }

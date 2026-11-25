@@ -11,9 +11,11 @@
 //                  purgeExpired({now, idleMs}), count()
 //   leads          insert(lead) → {id,...}, listForAgency(agencyId, limit, {status}), statusCountsForAgency(agencyId),
 //                  updateForAgency(agencyId, id, {status, managerNote, by, now}) → lead | null (IDOR: agency_id şərti),
-//                  count(), purgeBefore(date)
+//                  count(), purgeBefore(date), getByStatusTokenHash(sha256hex) — müştəri status səhifəsi (/r/<token>)
 //   agencySettings get(agencyId) → {telegramChatId, notifyEmail, updatedAt, updatedBy} | null,
 //                  set(agencyId, {telegramChatId, notifyEmail, updatedBy})
+//   widgets        get(agencyId), getByPublicId(id), getByMarketId(id), upsert(agencyId, patch), listMarketplace()
+//                  — vidjet (/w/<publicId>, frameDomains, markupPct) və marketplace profili (006)
 //   selections     insert(sel), get(id), delete(id), countForAgency(agencyId), trimForAgency(agencyId, keep),
 //                  purgeBefore(date)
 //   shortlists     insert(item) → item | {...mövcud, existed:true}, listForAgency(agencyId, limit), get(agencyId, id),
