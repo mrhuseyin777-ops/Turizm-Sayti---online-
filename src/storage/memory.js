@@ -2,6 +2,8 @@
 //  - accounts:      JSON fayl (src/auth/store.js, <TURTAP_DATA_DIR>/accounts.json)
 //  - flightAlerts:  JSON fayl (<TURTAP_DATA_DIR>/flight-alerts.json)
 //  - agencySettings: JSON fayl (<TURTAP_DATA_DIR>/agency-settings.json) — bildiriş ayarları
+//  - agencyBrand:   JSON fayl (agency-brand.json) + loqo faylları (<TURTAP_DATA_DIR>/logos/<publicId>.img)
+//  - agencyMarkup:  JSON fayl (agency-markup.json) — komissiya qaydaları
 //  - sessions, leads, selections, shortlists, flightRequests, carRequests: yalnız proses yaddaşında
 //    (yenidən başlamada itir, bir neçə server nüsxəsi arasında paylaşılmır).
 // Interfeys: src/storage/index.js. Bütün metodlar async-dir (PostgreSQL ilə eyni).
@@ -248,6 +250,108 @@ function createFileSettingsRepo(dir = env.dataDir) {
   };
 }
 
+// ---------------------------------------------------------------- Ümumi: atomik JSON fayl (0600)
+function jsonFile(dir, name, empty) {
+  const file = path.join(dir, name);
+  let db = null;
+  const load = () => {
+    if (db) return db;
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      db = parsed && typeof parsed.agencies === 'object' && parsed.agencies && !Array.isArray(parsed.agencies) ? parsed : empty();
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw new Error(`Fayl oxunmadı (${file}): ${e.message}`, { cause: e });
+      db = empty();
+    }
+    return db;
+  };
+  const writeAtomic = (target, data, mode = 0o600) => {
+    fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o700 });
+    const tmp = `${target}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    const fd = fs.openSync(tmp, 'wx', mode);
+    try { fs.writeSync(fd, data); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+    fs.renameSync(tmp, target);
+  };
+  const save = () => writeAtomic(file, JSON.stringify(load(), null, 2));
+  const own = (agencyId) => typeof agencyId === 'string' && Object.prototype.hasOwnProperty.call(load().agencies, agencyId);
+  const put = (agencyId, rec) => Object.defineProperty(load().agencies, agencyId, { value: rec, enumerable: true, writable: true, configurable: true });
+  return { file, load, save, own, put, writeAtomic, reset: () => { db = null; } };
+}
+
+// ---------------------------------------------------------------- Agentlik brend profili (JSON + loqo faylı)
+// Metadata: <dataDir>/agency-brand.json; loqo baytları: <dataDir>/logos/<publicId>.img (0600).
+const BRAND_FIELDS = ['displayName', 'color', 'phone', 'whatsapp', 'licenseNo', 'address', 'website'];
+function createFileBrandRepo(dir = env.dataDir) {
+  const j = jsonFile(dir, 'agency-brand.json', () => ({ version: 1, agencies: {} }));
+  const logoFile = (publicId) => path.join(dir, 'logos', `${publicId}.img`);
+  const copy = (r) => (r ? structuredClone(r) : null);
+  const ensure = (agencyId, newPublicId) => {
+    if (j.own(agencyId)) return j.load().agencies[agencyId];
+    const rec = { publicId: newPublicId(), displayName: '', color: null, phone: '', whatsapp: '', licenseNo: '', address: '', website: '', logo: null, updatedAt: null, updatedBy: null };
+    j.put(agencyId, rec);
+    return rec;
+  };
+  return {
+    kind: 'file',
+    file: j.file,
+    async get(agencyId) { return j.own(agencyId) ? copy(j.load().agencies[agencyId]) : null; },
+    async set(agencyId, fields, { newPublicId }) {
+      const rec = ensure(agencyId, newPublicId);
+      for (const k of BRAND_FIELDS) if (k in fields) rec[k] = fields[k];
+      rec.updatedAt = new Date().toISOString();
+      rec.updatedBy = fields.updatedBy || null;
+      j.save();
+      return copy(rec);
+    },
+    async setLogo(agencyId, { bytes, mime, sha256, updatedBy }, { newPublicId }) {
+      const rec = ensure(agencyId, newPublicId);
+      j.writeAtomic(logoFile(rec.publicId), bytes);
+      const now = new Date().toISOString();
+      rec.logo = { mime, size: bytes.length, sha256, updatedAt: now };
+      rec.updatedAt = now;
+      rec.updatedBy = updatedBy || null;
+      j.save();
+      return copy(rec);
+    },
+    async deleteLogo(agencyId, { updatedBy } = {}) {
+      if (!j.own(agencyId)) return null;
+      const rec = j.load().agencies[agencyId];
+      try { fs.unlinkSync(logoFile(rec.publicId)); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+      rec.logo = null;
+      rec.updatedAt = new Date().toISOString();
+      rec.updatedBy = updatedBy || null;
+      j.save();
+      return copy(rec);
+    },
+    async getLogo(publicId) {
+      if (typeof publicId !== 'string' || !/^pb_[A-Za-z0-9_-]{16}$/.test(publicId)) return null;
+      const rec = Object.values(j.load().agencies).find((r) => r && r.publicId === publicId);
+      if (!rec || !rec.logo) return null;
+      try {
+        return { mime: rec.logo.mime, sha256: rec.logo.sha256, updatedAt: rec.logo.updatedAt, bytes: fs.readFileSync(logoFile(publicId)) };
+      } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
+    },
+    _reset() { j.reset(); },
+  };
+}
+
+// ---------------------------------------------------------------- Komissiya qaydaları (JSON fayl)
+function createFileMarkupRepo(dir = env.dataDir) {
+  const j = jsonFile(dir, 'agency-markup.json', () => ({ version: 1, agencies: {} }));
+  return {
+    kind: 'file',
+    file: j.file,
+    async get(agencyId) { return j.own(agencyId) ? structuredClone(j.load().agencies[agencyId]) : null; },
+    async set(agencyId, { config, updatedBy = null }) {
+      const rec = { config: structuredClone(config), updatedAt: new Date().toISOString(), updatedBy };
+      j.put(agencyId, rec);
+      j.save();
+      return structuredClone(rec);
+    },
+    _reset() { j.reset(); },
+  };
+}
+
 // ---------------------------------------------------------------- Qiymət izləmələri (JSON fayl)
 // Yazma atomikdir (müvəqqəti fayl → fsync → rename), fayl 0600, qovluq 0700.
 function createFileAlertRepo(dir = env.dataDir) {
@@ -328,9 +432,11 @@ function createRepos({ accounts = defaultAccounts, dataDir = env.dataDir } = {})
     shortlists: createShortlistRepo(),
     flightAlerts: createFileAlertRepo(dataDir),
     agencySettings: createFileSettingsRepo(dataDir),
+    agencyBrand: createFileBrandRepo(dataDir),
+    agencyMarkup: createFileMarkupRepo(dataDir),
     flightRequests: createRequestRepo({ max: 5000 }),
     carRequests: createRequestRepo({ max: 1000 }),
   };
 }
 
-module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createShortlistRepo, createRequestRepo, createFileAlertRepo, createFileSettingsRepo };
+module.exports = { createRepos, createSessionRepo, createLeadRepo, createSelectionRepo, createShortlistRepo, createRequestRepo, createFileAlertRepo, createFileSettingsRepo, createFileBrandRepo, createFileMarkupRepo };

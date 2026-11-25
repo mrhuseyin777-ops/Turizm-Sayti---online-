@@ -7,6 +7,7 @@ const { InputError, createLead, createSelection, getSelectionRecord, publicSelec
 const { requireAuth, requireCsrf } = require('../auth');
 const { rateLimit } = require('../security/rateLimit');
 const { honeypot } = require('../security/http');
+const { publicBrand, getBrand } = require('../brand');
 
 const router = express.Router();
 
@@ -80,7 +81,8 @@ router.get('/api/selections/:id', async (req, res, next) => {
   try {
     const sel = await getSelectionRecord(req.params.id);
     if (!sel) return res.status(404).json({ error: 'Seçim tapılmadı və ya müddəti bitib' });
-    res.json(publicSelection(sel));
+    // Agentliyin brend profili (canlı: loqo/rəng dəyişəndə köhnə linklər də yenilənir); daxili id-lər yoxdur
+    res.json({ ...publicSelection(sel), brand: publicBrand(await getBrand(sel.agencyId), sel.agency) });
   } catch (e) { next(e); }
 });
 

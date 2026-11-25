@@ -22,6 +22,10 @@
   const opLink = (o, label, cls = 'btn secondary sm') => (o && (o.operatorLink !== false) && /^https:\/\//.test(o.url || '')
     ? `<a class="${cls}" href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener noreferrer">${esc(label)} ↗</a>` : '');
   const roomOf = (o) => [o.room, o.accommodation].filter(Boolean).join(' / ');
+  // Seçilmişin müştəri qiyməti: server komissiya qaydaları ilə hesablayıbsa (clientPrice) o, yoxdursa tək %
+  const cpOf = (it, m) => (Number.isFinite(it.clientPrice) ? it.clientPrice : CH.clientPrice(it.netPrice, m));
+  const prevCpOf = (it, m) => (Number.isFinite(it.prevClientPrice) ? it.prevClientPrice : CH.clientPrice(it.prevNetPrice, m));
+  const markupLabel = (a, m) => (a && a.pricingActive && a.pricingActive() ? t('mk_rules_on') : m ? t('ch_markup', { m }) : '');
 
   // ------------------------------------------------------------ "Ən ucuz təklif" paneli
   function renderPanel() {
@@ -32,10 +36,10 @@
     const b = sum.best;
     const m = a.markup();
     const s2 = sum.second;
-    const diff = s2 ? a.withMarkup(s2.price) - a.withMarkup(b.price) : null;
+    const diff = s2 ? a.withMarkup(s2) - a.withMarkup(b) : null;
     const diffHtml = !s2 ? `<div class="cheap-diff-sub">${esc(t('ch_only'))}</div>`
       : diff > 0 ? `<div class="cheap-diff">${esc(t('ch_cheaper', { v: money(diff, 'AZN') }))}</div>
-        <div class="cheap-diff-sub">${esc(t('ch_cheaper_vs', { name: s2.name, op: s2.providerName, price: money(a.withMarkup(s2.price), 'AZN') }))}</div>`
+        <div class="cheap-diff-sub">${esc(t('ch_cheaper_vs', { name: s2.name, op: s2.providerName, price: money(a.withMarkup(s2), 'AZN') }))}</div>`
         : `<div class="cheap-diff-sub">${esc(t('ch_same', { name: s2.name, op: s2.providerName }))}</div>`;
     const facts = [
       `${opDot(b.providerColor)}<b>${esc(b.providerName)}</b>`,
@@ -47,7 +51,7 @@
     ].filter(Boolean).map((x) => `<span class="cheap-fact">${x}</span>`).join('');
     const inSl = sl.items.some((x) => x.offerId === b.id);
     const mini = (o, label) => (o
-      ? `<span class="cheap-chip"><span class="cheap-chip-l">${label}</span> <b>${money(a.withMarkup(o.price), 'AZN')}</b> <span class="cheap-chip-n">${esc(o.name)}${o.providerName ? ' · ' + esc(o.providerName) : ''}</span><button type="button" class="fav-btn${sl.items.some((x) => x.offerId === o.id) ? ' on' : ''}" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">${sl.items.some((x) => x.offerId === o.id) ? '♥' : '♡'}</button></span>`
+      ? `<span class="cheap-chip"><span class="cheap-chip-l">${label}</span> <b>${money(a.withMarkup(o), 'AZN')}</b> <span class="cheap-chip-n">${esc(o.name)}${o.providerName ? ' · ' + esc(o.providerName) : ''}</span><button type="button" class="fav-btn${sl.items.some((x) => x.offerId === o.id) ? ' on' : ''}" data-fav="${esc(o.id)}" title="${esc(t('sl_add'))}" aria-label="${esc(t('sl_add'))}">${sl.items.some((x) => x.offerId === o.id) ? '♥' : '♡'}</button></span>`
       : `<span class="cheap-chip muted"><span class="cheap-chip-l">${label}</span> ${esc(t('ch_none'))}</span>`);
     el.innerHTML = `
       <div class="cheap-main">
@@ -62,8 +66,8 @@
           </div>
           <div class="cheap-price">
             <div class="cheap-net"><small>${esc(t('ch_net'))}</small> ${money(b.price, 'AZN')}</div>
-            <small class="muted">${esc(t('ch_client'))}${m ? ' · ' + esc(t('ch_markup', { m })) : ''}</small>
-            <div class="cheap-big">${money(a.withMarkup(b.price), 'AZN')}</div>
+            <small class="muted">${esc(t('ch_client'))}${markupLabel(a, m) ? ' · ' + esc(markupLabel(a, m)) : ''}</small>
+            <div class="cheap-big">${money(a.withMarkup(b), 'AZN')}</div>
             ${diffHtml}
           </div>
         </div>
@@ -150,8 +154,8 @@
   const trendHtml = (it, m) => {
     const tr = CH.priceTrend(it);
     if (!tr) return '';
-    const d = Math.abs(CH.clientPrice(it.netPrice, m) - CH.clientPrice(it.prevNetPrice, m));
-    const prev = money(CH.clientPrice(it.prevNetPrice, m), 'AZN');
+    const d = Math.abs(cpOf(it, m) - prevCpOf(it, m));
+    const prev = money(prevCpOf(it, m), 'AZN');
     return tr === 'up'
       ? `<span class="trend up" title="${esc(t('sl_up_t', { p: prev }))}">${esc(t('sl_up', { v: money(d, 'AZN') }))}</span>`
       : `<span class="trend down" title="${esc(t('sl_down_t', { p: prev }))}">${esc(t('sl_down', { v: money(d, 'AZN') }))}</span>`;
@@ -168,7 +172,7 @@
       </div>
       <div class="sl-item-price">
         <small class="muted">${esc(t('ch_net'))} ${money(it.netPrice, 'AZN')}</small>
-        <b>${money(CH.clientPrice(it.netPrice, m), 'AZN')}</b>
+        <b>${money(cpOf(it, m), 'AZN')}</b>
         ${trendHtml(it, m)}
       </div>
       <div class="sl-item-act">
@@ -186,7 +190,7 @@
     $('#slBody').innerHTML = `
       <div class="sl-top"><h3 id="slTitle">${esc(t('sl_title'))} <span class="badge">${sl.items.length}</span></h3>
         <button type="button" class="btn secondary sm" data-sl-close>${esc(t('sl_close'))}</button></div>
-      <p class="muted sl-sub">${esc(t('sl_sub'))}${m ? ' · ' + esc(t('ch_markup', { m })) : ''}</p>
+      <p class="muted sl-sub">${esc(t('sl_sub'))}${markupLabel(a, m) ? ' · ' + esc(markupLabel(a, m)) : ''}</p>
       ${a && !a.client() ? `<p class="sl-hint">${esc(t('sl_client_hint'))}</p>` : ''}
       ${groups.length ? groups.map((g, gi) => `<section class="sl-group" data-sl-group="${gi}">
         <div class="sl-group-head">
@@ -263,7 +267,7 @@
     const a = App();
     const m = a.markup();
     const s = a.sessionInfo();
-    const list = groupItems(client).filter((x) => x.available).sort((x, y) => x.netPrice - y.netPrice);
+    const list = groupItems(client).filter((x) => x.available).sort((x, y) => cpOf(x, m) - cpOf(y, m));
     const lines = [
       t('sl_hello', { c: client ? ', ' + client : '' }),
       '',
@@ -271,11 +275,11 @@
         `${i + 1}) ${o.name} ${starStr(o.stars)}${o.destination ? ' — ' + o.destination : ''}`,
         `   📅 ${o.checkIn ? fmtDate(o.checkIn) : ''} · ${t('ch_nights', { n: o.nights })}${o.boardLabel ? ' · ' + o.boardLabel + ' (' + o.board + ')' : ''}${o.includesFlight ? ' · ✈ ' + t('ch_flight') : ''}`,
         roomOf(o) || o.district ? `   🛏 ${[roomOf(o), o.district].filter(Boolean).join(' · ')}` : '',
-        `   💰 ${money(CH.clientPrice(o.netPrice, m), 'AZN')} ${t('sl_total')}`,
+        `   💰 ${money(cpOf(o, m), 'AZN')} ${t('sl_total')}`,
       ].filter(Boolean).join('\n')),
       '',
       t('sl_price_note'),
-      s.manager ? t('sl_regards', { m: s.manager, a: s.agency }) : '',
+      window.B2BBrand ? window.B2BBrand.signature(s) : (s.manager ? t('sl_regards', { m: s.manager, a: s.agency }) : ''),
     ];
     return lines.filter((l, i, arr) => !(l === '' && arr[i - 1] === '')).join('\n').trim();
   }

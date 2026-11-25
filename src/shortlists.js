@@ -10,6 +10,9 @@ const crypto = require('crypto');
 const storage = require('./storage');
 const { search } = require('./search');
 const { InputError, SEL_QUERY_KEYS, createSelection, LIMITS: SEL_LIMITS } = require('./leads');
+const { applyMarkup, pricingFor, offerAttrs } = require('./markup');
+const { explainItems, similarHotels } = require('./whyhotel');
+const brand = require('./brand');
 
 const LIMITS = {
   perAgency: 300, // agentlik üzrə maks. seçilmiş variant
@@ -43,7 +46,7 @@ async function resolveBySearch(query, offerIds) {
   const r = await search({ ...query, currency: 'AZN', flat: '1' }, { offerLimit: Infinity });
   const byId = new Map((r.offers || []).map((o) => [o.id, o]));
   const childAges = Array.isArray(r.query.childAges) ? r.query.childAges.map((a) => (a == null ? 'x' : a)).join(',') : '';
-  return { pax: { adults: r.query.adults, children: r.query.children, childAges }, offers: offerIds.map((id) => byId.get(id) || null) };
+  return { pax: { adults: r.query.adults, children: r.query.children, childAges }, offers: offerIds.map((id) => byId.get(id) || null), all: r.offers || [] };
 }
 
 async function resolveOne(query, offerId, resolveOffers) {
@@ -53,7 +56,7 @@ async function resolveOne(query, offerId, resolveOffers) {
   } catch (e) {
     throw new InputError(e instanceof InputError ? e.message : 'Axtarış parametrləri düzgün deyil');
   }
-  return { pax: r.pax || {}, offer: r.offers[0] || null };
+  return { pax: r.pax || {}, offer: r.offers[0] || null, all: Array.isArray(r.all) ? r.all : [] };
 }
 
 const netOf = (o) => {
@@ -70,6 +73,10 @@ function snapshotOf(o, pax) {
     itemId: str(o.itemId, 80),
     stars: Math.min(5, Math.max(0, parseInt(o.stars, 10) || 0)),
     destination: str(o.destination && o.destination.name, 80),
+    // Komissiya qaydaları üçün (src/markup.js): istiqamət id, qiymət növü, məhsul tipi
+    destinationId: str(o.destination && o.destination.id, 40) || str(o.destinationId, 40),
+    priceType: offerAttrs(o).priceType,
+    productType: offerAttrs(o).productType,
     district: str(o.district, 80),
     checkIn: DATE_RE.test(o.checkIn || '') ? o.checkIn : '',
     nights: Math.min(28, Math.max(0, parseInt(o.nights, 10) || 0)),
@@ -93,8 +100,17 @@ function snapshotOf(o, pax) {
   };
 }
 
-// API cavabı (agentlik üçün): daxili sahələr (agencyId, userId, query-nin özü) çıxarılır
-function publicItem(it) {
+// API cavabı (agentlik üçün): daxili sahələr (agencyId, userId, query-nin özü) çıxarılır.
+// pricing aktivdirsə (agentliyin komissiya qaydaları) müştəri qiyməti serverdə hesablanır: clientPrice / prevClientPrice.
+function publicItem(it, pricing) {
+  const base = publicItemBase(it);
+  if (pricing && pricing.active) {
+    base.clientPrice = applyMarkup({ ...it.snapshot, price: it.netPrice }, pricing.rules);
+    base.prevClientPrice = it.prevNetPrice != null ? applyMarkup({ ...it.snapshot, price: it.prevNetPrice }, pricing.rules) : null;
+  }
+  return base;
+}
+function publicItemBase(it) {
   return {
     id: it.id,
     client: it.client,
@@ -109,9 +125,10 @@ function publicItem(it) {
   };
 }
 
-async function listShortlist(agencyId, { store } = {}) {
+async function listShortlist(agencyId, { store, pricing } = {}) {
   if (typeof agencyId !== 'string' || !agencyId) return [];
-  return (await repoOf(store).listForAgency(agencyId, LIMITS.perAgency)).map(publicItem);
+  const pr = pricing || await pricingFor(agencyId);
+  return (await repoOf(store).listForAgency(agencyId, LIMITS.perAgency)).map((it) => publicItem(it, pr));
 }
 
 async function addToShortlist(body, { account, store, resolveOffers = resolveBySearch } = {}) {
@@ -145,7 +162,7 @@ async function addToShortlist(body, { account, store, resolveOffers = resolveByS
     checkedAt: now,
     createdAt: now,
   });
-  return { item: publicItem(saved), existed: !!saved.existed };
+  return { item: publicItem(saved, await pricingFor(account.agencyId)), existed: !!saved.existed };
 }
 
 const checkId = (id) => typeof id === 'string' && ID_RE.test(id);
@@ -162,7 +179,7 @@ async function updateShortlistItem(agencyId, id, body, { store } = {}) {
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   if (!('client' in b)) throw new InputError('Dəyişiklik yoxdur');
   try {
-    return publicItem(await repoOf(store).update(agencyId, id, { client: cleanClient(b.client) }));
+    return publicItem(await repoOf(store).update(agencyId, id, { client: cleanClient(b.client) }), await pricingFor(agencyId));
   } catch (e) {
     if (e.code === 'DUPLICATE') throw new InputError('Bu müştəridə həmin variant artıq var');
     throw e;
@@ -194,13 +211,15 @@ async function refreshItem(it, { store, resolveOffers = resolveBySearch } = {}) 
     patch.snapshot = snapshotOf(res.offer, { adults: it.snapshot.adults, children: it.snapshot.children, ...res.pax });
   }
   const saved = await repoOf(store).update(it.agencyId, it.id, patch);
-  return { item: publicItem(saved), changed: 'netPrice' in patch, previous: it.netPrice };
+  const pr = await pricingFor(it.agencyId);
+  return { item: publicItem(saved, pr), changed: 'netPrice' in patch, previous: it.netPrice, offer: res.offer, all: res.all || [], saved };
 }
 
 async function refreshShortlistItem(agencyId, id, opts = {}) {
   const it = await getOwn(agencyId, id, opts.store);
   if (!it) return null;
-  return refreshItem(it, opts);
+  const { item, changed, previous } = await refreshItem(it, opts);
+  return { item, changed, previous };
 }
 
 // Qrup (müştəri) və ya id siyahısı üzrə öz qeydlərini seç
@@ -227,31 +246,51 @@ const parseMarkup = (v) => {
   return m;
 };
 
-// Çap/PDF kommersiya təklifi. Qiymətlər serverdə yenidən yoxlanılır (refresh), operator adı və net GİZLİ.
+// Çap/PDF kommersiya təklifi. Qiymətlər serverdə yenidən yoxlanılır (refresh) və agentliyin komissiya qaydaları ilə
+// (yoxdursa klientin tək %-i) serverdə hesablanır; operator adı və net GİZLİ. Brend profili, "niyə bu otel" səbəbləri
+// və "oxşar otellər" də serverdən.
 async function buildQuote(body, { account, store, resolveOffers = resolveBySearch } = {}) {
   if (!account || !account.agencyId) throw new InputError('Agentlik hesabı tələb olunur');
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const markup = parseMarkup(b.markup);
   const picked = await pickItems(account.agencyId, b, store);
   if (!picked) return null;
+  const pr = await pricingFor(account.agencyId, markup);
   const fresh = [];
   for (const it of picked) fresh.push(await refreshItem(it, { store, resolveOffers }));
-  const items = fresh.map(({ item, changed, previous }) => ({
-    name: item.name, stars: item.stars, destination: item.destination, district: item.district,
-    checkIn: item.checkIn, nights: item.nights, board: item.board, boardLabel: item.boardLabel,
-    room: item.room, accommodation: item.accommodation, includesFlight: item.includesFlight, flightTime: item.flightTime,
-    prepayment: item.prepayment, freeCancelUntil: item.freeCancelUntil, adults: item.adults, children: item.children,
-    available: item.available,
-    clientPrice: Math.round(item.netPrice * (1 + markup / 100)),
-    priceChange: changed ? Math.round(item.netPrice * (1 + markup / 100)) - Math.round(previous * (1 + markup / 100)) : 0,
-  })).sort((a, c) => Number(c.available) - Number(a.available) || a.clientPrice - c.clientPrice);
+  const priceOf = (snap, net) => applyMarkup({ ...snap, price: net }, pr.rules);
+  const rows = fresh.map(({ item, changed, previous, offer, saved }) => {
+    const snap = saved.snapshot;
+    const clientPrice = priceOf(snap, item.netPrice);
+    return {
+      offer: item.available ? offer : null,
+      clientPrice,
+      out: {
+        name: item.name, stars: item.stars, destination: item.destination, district: item.district,
+        checkIn: item.checkIn, nights: item.nights, board: item.board, boardLabel: item.boardLabel,
+        room: item.room, accommodation: item.accommodation, includesFlight: item.includesFlight, flightTime: item.flightTime,
+        prepayment: item.prepayment, freeCancelUntil: item.freeCancelUntil, adults: item.adults, children: item.children,
+        available: item.available,
+        clientPrice,
+        priceChange: changed ? clientPrice - priceOf(snap, previous) : 0,
+      },
+    };
+  });
+  const pax = { adults: rows[0] ? rows[0].out.adults : 2, children: rows[0] ? rows[0].out.children : 0 };
+  const whys = explainItems(rows.map((r) => ({ offer: r.offer, clientPrice: r.out.available ? r.clientPrice : NaN })), pax);
+  rows.forEach((r, i) => { r.out.why = whys[i]; });
+  const all = fresh.flatMap((f) => f.all || []);
+  const similar = similarHotels(all, rows.map((r) => r.offer).filter(Boolean), pr.rules, { pax, limit: 3 });
+  const items = rows.map((r) => r.out).sort((a, c) => Number(c.available) - Number(a.available) || a.clientPrice - c.clientPrice);
   return {
     agency: str(account.agencyName, 80),
     manager: str(account.managerName, 80),
     client: picked[0].client,
     currency: 'AZN',
     createdAt: new Date().toISOString(),
+    brand: brand.publicBrand(await brand.getBrand(account.agencyId), account.agencyName),
     items,
+    similar,
     // operator adı, net qiymət, komissiya və agencyId müştəri sənədinə GÖNDƏRİLMİR
   };
 }
@@ -271,13 +310,15 @@ async function selectionFromShortlist(body, { account, store, selectionStore, re
   const perItemResolver = async (_query, offerIds) => {
     let pax = null;
     const offers = [];
+    const all = [];
     for (const id of offerIds) {
       const it = byOffer.get(id);
       const r = await resolveOne(it.query, id, resolveOffers);
       pax = pax || r.pax;
       offers.push(r.offer);
+      all.push(...r.all);
     }
-    return { pax: pax || {}, offers };
+    return { pax: pax || {}, offers, all };
   };
   return createSelection({
     client: picked[0].client, message: b.message, markup, query: {}, offerIds: [...byOffer.keys()],

@@ -192,17 +192,86 @@ function createRepos(pool) {
     },
   };
 
+  // ---------------------------------------------------------------- Agentlik brend profili (loqo bytea-da)
+  // Loqo baytları yalnız getLogo(publicId) ilə oxunur; get() metadata qaytarır (bytea yüklənmir).
+  const BRAND_META = `agency_id, public_id, display_name, color, phone, whatsapp, license_no, address, website,
+    logo_mime, octet_length(logo) AS logo_size, logo_sha256, logo_updated_at, updated_at, updated_by`;
+  const brandRow = (r) => (r ? {
+    publicId: r.public_id, displayName: r.display_name, color: r.color, phone: r.phone, whatsapp: r.whatsapp,
+    licenseNo: r.license_no, address: r.address, website: r.website,
+    logo: r.logo_mime ? { mime: r.logo_mime, size: Number(r.logo_size), sha256: r.logo_sha256, updatedAt: iso(r.logo_updated_at) } : null,
+    updatedAt: iso(r.updated_at), updatedBy: r.updated_by,
+  } : null);
+  // Sətir yoxdursa yeni public_id ilə yarat (unikallıq toqquşmasında yenidən cəhd)
+  const ensureBrand = async (agencyId, newPublicId) => {
+    for (let i = 0; i < 3; i++) {
+      try {
+        await q('INSERT INTO agency_brand (agency_id, public_id) VALUES ($1, $2) ON CONFLICT (agency_id) DO NOTHING', [agencyId, newPublicId()]);
+        return;
+      } catch (e) { if (e.code !== UNIQUE_VIOLATION || i === 2) throw e; }
+    }
+  };
+  const agencyBrand = {
+    kind: 'postgres',
+    async get(agencyId) {
+      if (typeof agencyId !== 'string') return null;
+      return brandRow((await q(`SELECT ${BRAND_META} FROM agency_brand WHERE agency_id = $1`, [agencyId])).rows[0]);
+    },
+    async set(agencyId, f, { newPublicId }) {
+      await ensureBrand(agencyId, newPublicId);
+      const { rows } = await q(`UPDATE agency_brand SET display_name = $2, color = $3, phone = $4, whatsapp = $5, license_no = $6,
+          address = $7, website = $8, updated_at = now(), updated_by = $9 WHERE agency_id = $1 RETURNING ${BRAND_META}`, [
+        agencyId, f.displayName || '', f.color || null, f.phone || '', f.whatsapp || '', f.licenseNo || '', f.address || '', f.website || '', f.updatedBy || null,
+      ]);
+      return brandRow(rows[0]);
+    },
+    async setLogo(agencyId, { bytes, mime, sha256, updatedBy }, { newPublicId }) {
+      await ensureBrand(agencyId, newPublicId);
+      const { rows } = await q(`UPDATE agency_brand SET logo = $2, logo_mime = $3, logo_sha256 = $4, logo_updated_at = now(),
+          updated_at = now(), updated_by = $5 WHERE agency_id = $1 RETURNING ${BRAND_META}`, [agencyId, bytes, mime, sha256, updatedBy || null]);
+      return brandRow(rows[0]);
+    },
+    async deleteLogo(agencyId, { updatedBy } = {}) {
+      if (typeof agencyId !== 'string') return null;
+      const { rows } = await q(`UPDATE agency_brand SET logo = NULL, logo_mime = NULL, logo_sha256 = NULL, logo_updated_at = NULL,
+          updated_at = now(), updated_by = $2 WHERE agency_id = $1 RETURNING ${BRAND_META}`, [agencyId, updatedBy || null]);
+      return brandRow(rows[0]);
+    },
+    async getLogo(publicId) {
+      if (typeof publicId !== 'string' || !/^pb_[A-Za-z0-9_-]{16}$/.test(publicId)) return null;
+      const r = (await q('SELECT logo, logo_mime, logo_sha256, logo_updated_at FROM agency_brand WHERE public_id = $1 AND logo IS NOT NULL', [publicId])).rows[0];
+      return r ? { bytes: r.logo, mime: r.logo_mime, sha256: r.logo_sha256, updatedAt: iso(r.logo_updated_at) } : null;
+    },
+  };
+
+  // ---------------------------------------------------------------- Komissiya qaydaları
+  const agencyMarkup = {
+    kind: 'postgres',
+    async get(agencyId) {
+      if (typeof agencyId !== 'string') return null;
+      const r = (await q('SELECT config, updated_at, updated_by FROM agency_markup WHERE agency_id = $1', [agencyId])).rows[0];
+      return r ? { config: r.config, updatedAt: iso(r.updated_at), updatedBy: r.updated_by } : null;
+    },
+    async set(agencyId, { config, updatedBy = null }) {
+      const { rows } = await q(`INSERT INTO agency_markup (agency_id, config, updated_at, updated_by) VALUES ($1, $2, now(), $3)
+        ON CONFLICT (agency_id) DO UPDATE SET config = EXCLUDED.config, updated_at = EXCLUDED.updated_at, updated_by = EXCLUDED.updated_by
+        RETURNING config, updated_at, updated_by`, [agencyId, JSON.stringify(config), updatedBy]);
+      return { config: rows[0].config, updatedAt: iso(rows[0].updated_at), updatedBy: rows[0].updated_by };
+    },
+  };
+
   // ---------------------------------------------------------------- Seçim linkləri
   const selRow = (r) => (r ? {
     id: r.id, agencyId: r.agency_id, agency: r.agency_name, manager: r.manager, client: r.client, phone: r.phone,
-    message: r.message, currency: r.currency, markup: Number(r.markup), pax: r.pax, items: r.items, createdAt: msOf(r.created_at),
+    message: r.message, currency: r.currency, markup: Number(r.markup), pax: r.pax, items: r.items, similar: Array.isArray(r.similar_hotels) ? r.similar_hotels : [],
+    createdAt: msOf(r.created_at),
   } : null);
   const selections = {
     async insert(s) {
-      await q(`INSERT INTO selections (id, agency_id, agency_name, manager, client, phone, message, currency, markup, pax, items, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, [
+      await q(`INSERT INTO selections (id, agency_id, agency_name, manager, client, phone, message, currency, markup, pax, items, similar_hotels, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`, [
         s.id, s.agencyId, s.agency, s.manager || '', s.client || '', s.phone || '', s.message || '', s.currency, s.markup,
-        JSON.stringify(s.pax), JSON.stringify(s.items), new Date(s.createdAt),
+        JSON.stringify(s.pax), JSON.stringify(s.items), JSON.stringify(Array.isArray(s.similar) ? s.similar : []), new Date(s.createdAt),
       ]);
       return s;
     },
@@ -340,7 +409,7 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM car_requests WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
-  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings };
+  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings, agencyBrand, agencyMarkup };
 }
 
 module.exports = { createRepos };

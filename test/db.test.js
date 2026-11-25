@@ -432,3 +432,39 @@ test('002: lead CRM (status, qeyd, kim/nə vaxt) — IDOR şərti DB-də; agentl
   await assert.rejects(st.set(B.agency.id, { telegramChatId: '1; DROP TABLE x' }), 'CHECK: chat_id formatı');
   await assert.rejects(st.set('ag_yoxdur000000', { telegramChatId: '-100' }), 'FK: agentlik mövcud olmalıdır');
 });
+
+test('004: agentlik brendi (loqo bytea, public_id), komissiya qaydaları (jsonb), selections.similar_hotels — CHECK və IDOR', async () => {
+  await admin.query(fs.readFileSync(path.join(__dirname, '..', 'migrations', '004_agency_brand_markup.sql'), 'utf8'));
+  const cols = (await sql(`SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = 'selections'`, [SCHEMA])).map((r) => r.column_name);
+  assert.ok(cols.includes('similar_hotels'));
+  const A = await account('Brend DB A', 'brand-db-a');
+  const B = await account('Brend DB B', 'brand-db-b');
+  const br = repos.agencyBrand;
+  const { newPublicId } = require('../src/brand');
+  assert.strictEqual(await br.get(A.agency.id), null);
+  const s1 = await br.set(A.agency.id, { displayName: 'A Tur', color: '#0e7490', phone: '+994125551122', updatedBy: 'Admin' }, { newPublicId });
+  assert.match(s1.publicId, /^pb_[A-Za-z0-9_-]{16}$/);
+  const bytes = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32, 7)]);
+  const sha = crypto.createHash('sha256').update(bytes).digest('hex');
+  const s2 = await br.setLogo(A.agency.id, { bytes, mime: 'image/png', sha256: sha, updatedBy: 'Admin' }, { newPublicId });
+  assert.strictEqual(s2.publicId, s1.publicId, 'public_id sabit qalır');
+  assert.deepStrictEqual({ m: s2.logo.mime, n: s2.logo.size }, { m: 'image/png', n: bytes.length });
+  const got = await br.getLogo(s1.publicId);
+  assert.ok(Buffer.from(got.bytes).equals(bytes));
+  assert.strictEqual(await br.getLogo(A.agency.id), null, 'daxili id ilə tapılmır');
+  assert.strictEqual(await br.get(B.agency.id), null, 'IDOR: B-də yoxdur');
+  await assert.rejects(sql(`UPDATE ${SCHEMA}.agency_brand SET color = 'red' WHERE agency_id = $1`, [A.agency.id]), 'CHECK rəng');
+  await assert.rejects(sql(`UPDATE ${SCHEMA}.agency_brand SET logo_mime = 'image/svg+xml' WHERE agency_id = $1`, [A.agency.id]), 'CHECK mime');
+  await assert.rejects(sql(`UPDATE ${SCHEMA}.agency_brand SET logo = $2 WHERE agency_id = $1`, [A.agency.id, Buffer.alloc(204801)]), 'CHECK ölçü');
+  const d = await br.deleteLogo(A.agency.id, { updatedBy: 'Admin' });
+  assert.strictEqual(d.logo, null);
+  assert.strictEqual(await br.getLogo(s1.publicId), null);
+
+  const mk = repos.agencyMarkup;
+  const { validateConfig } = require('../src/markup');
+  const cfg = validateConfig({ defaultPct: 10, rounding: 5, rules: [{ destinationId: 'antalya', pct: 12 }] });
+  await mk.set(A.agency.id, { config: cfg, updatedBy: 'Admin' });
+  assert.deepStrictEqual((await mk.get(A.agency.id)).config, cfg);
+  assert.strictEqual(await mk.get(B.agency.id), null);
+  await assert.rejects(sql(`INSERT INTO ${SCHEMA}.agency_markup (agency_id, config) VALUES ($1, '[]')`, [B.agency.id]), 'CHECK jsonb obyekt');
+});

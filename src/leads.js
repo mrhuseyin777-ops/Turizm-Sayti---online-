@@ -7,6 +7,8 @@ const { maskPhone, maskName } = require('./security/http');
 const { search } = require('./search');
 const storage = require('./storage');
 const notify = require('./notify');
+const { applyMarkup, pricingFor } = require('./markup');
+const { explainItems, similarHotels } = require('./whyhotel');
 
 class InputError extends Error {}
 
@@ -133,10 +135,13 @@ async function resolveOffersBySearch(query, offerIds) {
   raw.flat = '1';
   const r = await search(raw, { offerLimit: Infinity }); // seçilmiş təklif 1000-lik limitdən kənarda qala bilər
   const byId = new Map((r.offers || []).map((o) => [o.id, o]));
-  return { pax: { adults: r.query.adults, children: r.query.children }, offers: offerIds.map((id) => byId.get(id) || null) };
+  // all: "Oxşar otellər" üçün eyni axtarışın bütün təklifləri (yalnız serverdə istifadə olunur)
+  return { pax: { adults: r.query.adults, children: r.query.children }, offers: offerIds.map((id) => byId.get(id) || null), all: r.offers || [] };
 }
 
-async function createSelection(body, { account, store, resolveOffers = resolveOffersBySearch } = {}) {
+// Müştəri qiyməti: agentliyin aktiv komissiya qaydaları (src/markup.js) — yoxdursa klientin tək % sahəsi.
+// pricing ötürülməyibsə serverdə agentlik üzrə oxunur (klientə etibar edilmir).
+async function createSelection(body, { account, store, resolveOffers = resolveOffersBySearch, pricing } = {}) {
   const repo = store || storage.get().selections;
   if (!account || !account.agencyId || !account.agencyName) throw new InputError('Agentlik hesabı tələb olunur');
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
@@ -157,6 +162,7 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
     throw new InputError(e instanceof InputError ? e.message : 'Axtarış parametrləri düzgün deyil');
   }
   if (resolved.offers.some((o) => !o)) throw new InputError('Seçilmiş təklif(lər) artıq mövcud deyil — axtarışı yeniləyin');
+  const pr = pricing || await pricingFor(account.agencyId, markup);
 
   const items = resolved.offers.map((o) => {
     const net = Number(o.price);
@@ -176,9 +182,14 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
       // Daxili (yalnız agentlik görür): operator və net qiymət
       providerName: str(o.providerName, 60),
       netPrice: Math.round(net),
-      clientPrice: Math.round(net * (1 + markup / 100)),
+      clientPrice: applyMarkup(o, pr.rules),
     };
   });
+  const paxIn = resolved.pax || {};
+  // "Niyə bu otel" (qayda əsaslı) və "Oxşar otellər" — yaradılarkən serverdə hesablanır
+  const whys = explainItems(resolved.offers.map((o, i) => ({ offer: o, clientPrice: items[i].clientPrice })), paxIn);
+  items.forEach((it, i) => { it.why = whys[i]; });
+  const similar = similarHotels(resolved.all, resolved.offers, pr.rules, { pax: paxIn, limit: 3 });
   const sel = {
     id: newId(),
     agencyId: account.agencyId,
@@ -188,12 +199,13 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
     phone,
     message: text(b.message, 400),
     currency: 'AZN',
-    markup,
+    markup: pr.active ? Math.min(100, Math.max(0, Number(pr.rules.defaultPct) || 0)) : markup,
     pax: {
       adults: Math.min(8, Math.max(1, parseInt(resolved.pax && resolved.pax.adults, 10) || 1)),
       children: Math.min(6, Math.max(0, parseInt(resolved.pax && resolved.pax.children, 10) || 0)),
     },
     items,
+    similar,
     createdAt: Date.now(),
   };
   // Agentlik limiti dolubsa YALNIZ həmin agentliyin ən köhnə linki silinir
@@ -223,8 +235,9 @@ function publicSelection(sel) {
     currency: sel.currency,
     pax: sel.pax,
     createdAt: new Date(sel.createdAt).toISOString(),
-    items: sel.items.map(({ providerName, netPrice, offerId, ...pub }) => pub),
-    // agencyId, markup və net qiymətlər müştəriyə GÖNDƏRİLMİR
+    items: sel.items.map(({ providerName, netPrice, offerId, ...pub }) => ({ ...pub, why: Array.isArray(pub.why) ? pub.why : [] })),
+    similar: Array.isArray(sel.similar) ? sel.similar : [],
+    // agencyId, markup və net qiymətlər müştəriyə GÖNDƏRİLMİR; brend route-da (src/routes/tours.js) əlavə olunur
   };
 }
 

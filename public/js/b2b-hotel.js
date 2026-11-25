@@ -8,7 +8,8 @@
   const dest = $('#dest');
   if (!box || !dest) return;
   const app = () => window.B2BApp || {};
-  const mk = (p) => (typeof app().withMarkup === 'function' ? app().withMarkup(p) : p);
+  // Müştəri qiyməti: komissiya qaydaları aktivdirsə serverin clientPrice-ı, yoxdursa formadakı %
+  const mk = (o) => (Number.isFinite(o.clientPrice) ? o.clientPrice : typeof app().withMarkup === 'function' ? app().withMarkup(o.price) : o.price);
   let reqSeq = 0;
 
   // Otel seçimi silinəndə (başqa istiqamət yazılanda) panel gizlənir
@@ -29,7 +30,7 @@
       adults: p.adults, children: p.children, childAges: p.childAges, noStopSale: '1' };
     const t0 = performance.now();
     try {
-      const d = await api(`/api/hotels/${encodeURIComponent(hotelId)}/offers`, q);
+      const d = await api(`/api/b2b/hotels/${encodeURIComponent(hotelId)}/offers`, q);
       if (seq !== reqSeq) return;
       render(d, Math.round(performance.now() - t0));
     } catch (err) {
@@ -57,7 +58,7 @@
     const q = d.query || {};
     const pax = `${q.adults || ''}${q.children ? ' + ' + q.children : ''}`;
     const dates = q.dateFrom && q.dateTo && q.dateFrom !== q.dateTo ? `${fmtDate(q.dateFrom)} – ${fmtDate(q.dateTo)}` : (q.dateFrom ? fmtDate(q.dateFrom) : '');
-    const profit = (o) => mk(o.price) - o.price;
+    const profit = (o) => mk(o) - o.price;
 
     box.innerHTML = `
       <div class="hc-head">
@@ -75,7 +76,7 @@
             <small class="muted">${esc(fmtDate(o.checkIn))} · ${esc(t('nights_n', { n: o.nights }))} · ${esc(o.board || '')} · ${esc(roomText(o))}</small></div>
           <div class="hc-nums">
             <div><small class="muted">${esc(t('hc_net'))}</small><b>${money(o.price, 'AZN')}</b></div>
-            <div><small class="muted">${esc(t('hc_client'))}</small><b>${money(mk(o.price), 'AZN')}</b></div>
+            <div><small class="muted">${esc(t('hc_client'))}</small><b>${money(mk(o), 'AZN')}</b></div>
             <div><small class="muted">${esc(t('hc_profit'))}</small><b class="good">${money(profit(o), 'AZN')}</b></div>
             <div class="hc-diff">${i === 0 ? `<span class="best-badge">🏆 ${esc(t('ch_badge'))}</span>` : `<span class="muted">+${money(o.price - best.price, 'AZN')}</span>`}</div>
           </div>
@@ -94,7 +95,7 @@
             <td>${esc(o.board || '—')}</td>
             <td>${esc(fmtDate(o.checkIn))} · ${esc(String(o.nights))}g</td>
             <td class="num">${money(o.price, 'AZN')}</td>
-            <td class="num"><b>${money(mk(o.price), 'AZN')}</b></td>
+            <td class="num"><b>${money(mk(o), 'AZN')}</b></td>
             <td class="num good">${money(profit(o), 'AZN')}</td>
             <td>${opLink(o, t('hc_open_short'))}</td>
           </tr>`).join('')}</tbody>

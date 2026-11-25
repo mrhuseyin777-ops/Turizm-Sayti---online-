@@ -1,3 +1,4 @@
+/* global BrandView */
 // Agentliyin müştəriyə paylaşdığı seçim səhifəsi (/s/<id> və ya /s.html?id=<id>).
 // Operator adları və net qiymət serverdən heç gəlmir — yalnız müştəri qiyməti.
 (async function () {
@@ -12,8 +13,15 @@
     $('#made').textContent = t('s_made');
     $('#payStrip').innerHTML = paymentStripHtml();
     if (!sel) return;
-    document.title = `${sel.agency} — ${t('s_title')}`;
+    const br = sel.brand || { name: sel.agency };
+    const agencyName = br.name || sel.agency;
+    document.title = `${agencyName} — ${t('s_title')}`;
     $('#agency').textContent = sel.agency;
+    if (agencyName !== sel.agency) $('#agency').textContent = agencyName; // brend profilinin görünən adı
+    // Agentlik brendi: loqo, rəng (yalnız #rrggbb → CSS dəyişəni), əlaqə (bax public/js/brand-view.js)
+    $('#brandLogo').innerHTML = BrandView.logoHtml(br);
+    $('#brandContacts').innerHTML = BrandView.contactsHtml(br);
+    BrandView.applyColor(document.body, br);
     $('#by').textContent = `${t('s_title')}${sel.client ? ' · ' + sel.client : ''}${sel.manager ? ' · ' + sel.manager : ''}${sel.phone ? ' · ' + t('s_contact') + ': ' + sel.phone : ''}`;
     $('#intro').innerHTML = sel.message ? `<div class="panel">${esc(sel.message)}</div>` : '';
     const cur = sel.currency;
@@ -22,11 +30,13 @@
         <h3>${i + 1}) ${esc(it.name)} <span class="stars">${starStr(it.stars)}</span></h3>
         <div class="muted" style="font-size:14px">${esc(it.destination)} · ${fmtDate(it.checkIn)} · ${esc(t('nights_n', { n: it.nights }))}${it.boardLabel ? ' · ' + esc(it.boardLabel) : ''}${it.includesFlight ? ' · ✈ ' + esc(t('flight_incl')) : ''}</div>
         <div class="badges">${termBadges(it)}</div>
+        ${BrandView.whyHtml(it.why)}
       </div>
       <div><div class="amount">${money(it.clientPrice, cur)}</div>
         <button class="btn sm" data-want="${i}" style="margin-top:6px">${esc(t('s_want'))}</button></div>
     </article>`).join('');
     $('#priceNote').textContent = t('s_price_note', { pax: sel.pax.adults + sel.pax.children });
+    $('#similar').innerHTML = BrandView.similarHtml(sel.similar, cur);
   }
 
   document.addEventListener('langchange', render);
@@ -58,7 +68,7 @@
       try {
         await postJson('/api/leads', { ...fd, type: 'selection', selectionId: sel.id, itemIndex: +b.dataset.want });
         $('#modal').classList.remove('open');
-        toast(t('s_ok', { agency: sel.agency }));
+        toast(t('s_ok', { agency: (sel.brand && sel.brand.name) || sel.agency }));
       } catch (err) { toast(err.message); }
     });
   });

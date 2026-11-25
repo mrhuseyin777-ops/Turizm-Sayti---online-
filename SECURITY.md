@@ -89,6 +89,19 @@ Brauzerdən gələn **heç bir** dəyərə (qiymət, agentlik adı, rol, `localS
 - **Avtomobil sifarişi**: server axtarışı təkrarlayır, təklifi id ilə tapır (əvvəlcədən belə idi).
 - **Paylaşılan seçimdən lead**: qiymət və agentlik serverdə saxlanılan seçimdən götürülür.
 - Müştəri görünüşündə (`/api/selections/:id`) operator adı, net qiymət, komissiya, `agencyId` göndərilmir.
+- **Komissiya qaydaları** (`src/markup.js`): seçim linki, seçilmişlərdən link və çap təklifində müştəri qiyməti serverdə agentliyin
+  saxlanılmış qaydaları ilə hesablanır; qaydalar aktivdirsə klientin göndərdiyi `markup` nəzərə alınmır. Qaydaları yalnız
+  `role=admin` dəyişir (auth + CSRF + Origin); operator/istiqamət id-ləri ağ siyahıdan, maks. 50 qayda. `/api/b2b/search`
+  nəticəsi annotasiyadan əvvəl klonlanır — provayder keşi agentliklər arasında çirklənmir.
+
+### 2.3.1 Agentlik brendi və loqo yükləmə (`src/brand.js`, `src/routes/brand.js`)
+
+- Dəyişiklik yalnız `role=admin`, agentlik sessiyadan (IDOR yoxdur). Loqo: JSON-da base64; qlobal 16 KB parser bu yolu ötürür,
+  body yalnız auth + CSRF + admin yoxlamasından sonra 280 KB limitlə parse olunur; fayl ≤ 200 KB.
+- Format **magic byte** ilə (PNG/JPEG/WebP); klientin dediyi tip (data: prefiksi) nəzərə alınmır; SVG/HTML/GIF rədd (XSS).
+- `GET /a/<publicId>/logo`: `publicId` təsadüfi 96 bit (`pb_…`), daxili `ag_…` id-si sızmır; Content-Type serverdən,
+  `nosniff`, `Content-Security-Policy: default-src 'none'; sandbox`, ETag, `?v=<hash>` ilə uzunmüddətli keş.
+- Rəng yalnız `#rrggbb` (server + klient) — style atributunda yalnız CSS dəyişəni kimi; sayt yalnız http/https; bütün mətn esc().
 
 ### 2.4 Giriş məlumatlarının yoxlanması və injection
 

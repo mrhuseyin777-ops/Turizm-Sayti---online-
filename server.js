@@ -42,7 +42,11 @@ app.use(['/api/search', '/api/explore', '/api/flights/search', '/api/cars/search
 //    prototype pollution / dərinlik yoxlaması
 app.use('/api/', checkOrigin);
 app.use('/api/', requireJson);
-app.use(express.json({ limit: '16kb', strict: true, type: 'application/json' }));
+// İstisna: loqo yükləmə (JSON-da base64, maks. 200 KB fayl) — body öz marşrutunda autentifikasiyadan SONRA
+// ayrıca limitlə (280 KB) parse olunur (src/routes/brand.js). Qalan bütün API-lər üçün 16 KB.
+const jsonSmall = express.json({ limit: '16kb', strict: true, type: 'application/json' });
+const OWN_BODY_PARSER = new Set(['/api/b2b/brand/logo']);
+app.use((req, res, next) => (OWN_BODY_PARSER.has(req.path) ? next() : jsonSmall(req, res, next)));
 app.use(sanitizeBody);
 
 // 4) Statik fayllar (gizli fayllar verilmir; HTML keşlənmir ki, CSP/JS yeniləmələri dərhal tətbiq olunsun)
