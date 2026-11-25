@@ -3,6 +3,7 @@
 // (USER_COLUMNS) götürülür — istifadəçi dəyəri heç vaxt SQL mətninə birləşdirilmir.
 const crypto = require('crypto');
 const { USERNAME_RE, ROLES, clean, normUsername, agencyNameKey, validateNewUser } = require('../auth/store');
+const { createPgCrm } = require('./crm');
 
 const iso = (d) => (d == null ? null : new Date(d).toISOString());
 const msOf = (d) => (d == null ? null : new Date(d).getTime());
@@ -124,7 +125,7 @@ function createRepos(pool) {
     const l = {
       id: Number(r.id), type: r.type, name: r.name, phone: r.phone, note: r.note, offerId: r.offer_id, createdAt: iso(r.created_at),
       status: r.status || 'new', managerNote: r.manager_note || '', statusChangedAt: iso(r.status_changed_at),
-      statusChangedBy: r.status_changed_by ?? null, updatedAt: iso(r.updated_at || r.created_at),
+      statusChangedBy: r.status_changed_by ?? null, updatedAt: iso(r.updated_at || r.created_at), clientId: r.client_id ?? null,
     };
     if (r.type === 'callback') { l.preferredTime = r.preferred_time; l.context = r.context; }
     if (r.type === 'selection') {
@@ -135,11 +136,11 @@ function createRepos(pool) {
   const leads = {
     async insert(l) {
       const { rows } = await q(`INSERT INTO leads (type, name, phone, note, offer_id, preferred_time, context,
-          selection_id, agency_id, agency_name, manager, client, item, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`, [
+          selection_id, agency_id, agency_name, manager, client, item, created_at, client_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`, [
         l.type, l.name, l.phone, l.note || '', l.offerId || null, l.preferredTime || null, l.context || null,
         l.selectionId || null, l.agencyId || null, l.agency ?? null, l.manager ?? null, l.client ?? null,
-        l.item ? JSON.stringify(l.item) : null, l.createdAt ? new Date(l.createdAt) : new Date(),
+        l.item ? JSON.stringify(l.item) : null, l.createdAt ? new Date(l.createdAt) : new Date(), l.clientId || null,
       ]);
       return leadRow(rows[0]);
     },
@@ -196,13 +197,14 @@ function createRepos(pool) {
   const selRow = (r) => (r ? {
     id: r.id, agencyId: r.agency_id, agency: r.agency_name, manager: r.manager, client: r.client, phone: r.phone,
     message: r.message, currency: r.currency, markup: Number(r.markup), pax: r.pax, items: r.items, createdAt: msOf(r.created_at),
+    clientId: r.client_id ?? null,
   } : null);
   const selections = {
     async insert(s) {
-      await q(`INSERT INTO selections (id, agency_id, agency_name, manager, client, phone, message, currency, markup, pax, items, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`, [
+      await q(`INSERT INTO selections (id, agency_id, agency_name, manager, client, phone, message, currency, markup, pax, items, created_at, client_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`, [
         s.id, s.agencyId, s.agency, s.manager || '', s.client || '', s.phone || '', s.message || '', s.currency, s.markup,
-        JSON.stringify(s.pax), JSON.stringify(s.items), new Date(s.createdAt),
+        JSON.stringify(s.pax), JSON.stringify(s.items), new Date(s.createdAt), s.clientId || null,
       ]);
       return s;
     },
@@ -224,17 +226,17 @@ function createRepos(pool) {
   const slRow = (r) => (r ? {
     id: r.id, agencyId: r.agency_id, userId: r.user_id, client: r.client, offerId: r.offer_id, paxKey: r.pax_key,
     query: r.query, snapshot: r.snapshot, netPrice: Number(r.net_price), prevNetPrice: num(r.prev_net_price),
-    available: r.available, checkedAt: iso(r.checked_at), createdAt: iso(r.created_at),
+    available: r.available, checkedAt: iso(r.checked_at), createdAt: iso(r.created_at), clientId: r.client_id ?? null,
   } : null);
   const SL_COLUMNS = { client: 'client', netPrice: 'net_price', prevNetPrice: 'prev_net_price', available: 'available', checkedAt: 'checked_at', snapshot: 'snapshot' };
   const shortlists = {
     async insert(it) {
       const { rows } = await q(`INSERT INTO shortlist_items (id, agency_id, user_id, client, offer_id, pax_key, query, snapshot,
-          net_price, prev_net_price, available, checked_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          net_price, prev_net_price, available, checked_at, created_at, client_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         ON CONFLICT (agency_id, client, offer_id, pax_key) DO NOTHING RETURNING *`, [
         it.id, it.agencyId, it.userId || null, it.client || '', it.offerId, it.paxKey, JSON.stringify(it.query), JSON.stringify(it.snapshot),
-        it.netPrice, it.prevNetPrice ?? null, it.available !== false, new Date(it.checkedAt), new Date(it.createdAt),
+        it.netPrice, it.prevNetPrice ?? null, it.available !== false, new Date(it.checkedAt), new Date(it.createdAt), it.clientId || null,
       ]);
       if (rows[0]) return slRow(rows[0]);
       const ex = (await q('SELECT * FROM shortlist_items WHERE agency_id = $1 AND client = $2 AND offer_id = $3 AND pax_key = $4',
@@ -340,7 +342,9 @@ function createRepos(pool) {
     async purgeBefore(date) { return (await q('DELETE FROM car_requests WHERE created_at < $1', [new Date(date)])).rowCount; },
   };
 
-  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings };
+  // Müştəri bazası və otel siyahıları (src/storage/crm.js)
+  const crm = createPgCrm(pool, { slRow, selRow, leadRow });
+  return { kind: 'postgres', pool, accounts, sessions, leads, selections, shortlists, flightAlerts, flightRequests, carRequests, agencySettings, ...crm };
 }
 
 module.exports = { createRepos };

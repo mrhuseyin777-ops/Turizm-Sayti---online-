@@ -71,6 +71,7 @@
           <button type="button" class="btn sm primary" data-ch-act="quote">${esc(t('ch_add_quote'))}</button>
           <button type="button" class="btn secondary sm" data-ch-act="share">${esc(t('ch_add_share'))}</button>
           <button type="button" class="btn secondary sm${inSl ? ' on' : ''}" data-fav="${esc(b.id)}">${inSl ? '♥' : '♡'} ${esc(t('sl_add'))}</button>
+          ${b.itemType === 'hotel' ? `<button type="button" class="btn secondary sm hl-btn" data-hl="${esc(b.itemId)}">☆ ${esc(t('hl_add'))}</button>` : ''}
           ${opLink(b, t('ch_check_op'))}
         </div>
         ${sum.excludedStopSale ? `<small class="muted">${esc(t('ch_stop_note', { n: sum.excludedStopSale }))}</small>` : ''}
@@ -130,7 +131,7 @@
     if (!a || !a.data || !a.lastParams) return toast('Əvvəlcə axtarış edin');
     if (btn) btn.disabled = true;
     try {
-      const r = await postJson('/api/b2b/shortlist', { client: a.client(), query: a.lastParams, offerId });
+      const r = await postJson('/api/b2b/shortlist', { client: a.client(), clientId: (a.clientId && a.clientId()) || undefined, query: a.lastParams, offerId });
       if (r.existed) toast(t('sl_exists'));
       else {
         sl.items.unshift(r.item);

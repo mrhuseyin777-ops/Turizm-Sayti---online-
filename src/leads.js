@@ -63,6 +63,7 @@ async function createLead(body, { selections: selStore, leads: leadStore } = {})
     lead.agency = sel.agency;
     lead.manager = sel.manager;
     lead.client = sel.client;
+    lead.clientId = sel.clientId || null;
     lead.item = { name: it.name, destination: it.destination, checkIn: it.checkIn, nights: it.nights, board: it.board, clientPrice: it.clientPrice, currency: sel.currency, providerName: it.providerName, offerId: it.offerId };
   }
   const saved = await (leadStore || storage.get().leads).insert(lead);
@@ -149,6 +150,8 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
   if (!b.query || typeof b.query !== 'object' || Array.isArray(b.query)) throw new InputError('Axtarış parametrləri (query) tələb olunur');
   const phone = str(b.phone, 30);
   if (phone && !validPhone(phone)) throw new InputError('Telefon nömrəsi düzgün deyil');
+  // Müştəri bazası ilə əlaqə (src/clients.js): yalnız öz agentliyinin müştərisi
+  const cRec = await require('./clients').resolveClientRef(account.agencyId, b.clientId);
 
   let resolved;
   try {
@@ -184,7 +187,8 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
     agencyId: account.agencyId,
     agency: str(account.agencyName, 80),
     manager: str(account.managerName, 80),
-    client: text(b.client, 80),
+    client: cRec ? text(cRec.name, 80) : text(b.client, 80),
+    clientId: cRec ? cRec.id : null,
     phone,
     message: text(b.message, 400),
     currency: 'AZN',
@@ -199,6 +203,7 @@ async function createSelection(body, { account, store, resolveOffers = resolveOf
   // Agentlik limiti dolubsa YALNIZ həmin agentliyin ən köhnə linki silinir
   await repo.trimForAgency(sel.agencyId, LIMITS.selectionsPerAgency - 1);
   await repo.insert(sel);
+  if (cRec) await require('./clients').touchClient(account.agencyId, cRec.id);
   return sel;
 }
 
