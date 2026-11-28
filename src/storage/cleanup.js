@@ -2,6 +2,7 @@
 //  - leadlər, avia/avto müraciətləri: DATA_RETENTION_DAYS gündən köhnə (default 180) → silinir
 //  - B2B seçim linkləri: 30 gündən köhnə (LIMITS.selectionTtlMs) → silinir
 //  - B2B seçilmişlər (shortlist): 90 gündən köhnə (src/shortlists.js LIMITS.ttlDays) → silinir
+//  - B2B müştəri kartları: son fəaliyyətdən 365 gün sonra (src/clients.js LIMITS.retentionDays) → silinir
 //  - qiymət izləmələri: gediş tarixi keçmiş → silinir
 //  - sessiyalar: mütləq və ya hərəkətsizlik müddəti bitmiş → silinir
 // İş setInterval ilə işləyir (unref — prosesin bağlanmasını gecikdirmir). Test rejimində default
@@ -27,6 +28,10 @@ async function runCleanup({ repos = storage.get(), now = Date.now(), retentionDa
   if (repos.shortlists) {
     const { LIMITS: SL } = require('../shortlists');
     await step('shortlists', () => repos.shortlists.purgeBefore(new Date(now - SL.ttlDays * DAY_MS)));
+  }
+  if (repos.clients) {
+    const { LIMITS: CL } = require('../clients');
+    await step('clients', () => repos.clients.purgeInactiveBefore(new Date(now - CL.retentionDays * DAY_MS)));
   }
   await step('flightAlerts', () => repos.flightAlerts.purgeDepartedBefore(new Date(now).toISOString().slice(0, 10)));
   await step('sessions', () => repos.sessions.purgeExpired({ now, idleMs: IDLE_MS }));

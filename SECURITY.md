@@ -258,6 +258,19 @@ müddət bitməsi, IDOR (agentlik A ↔ B), SQL injection payload-ları, qiymət
 - **Data retention** (`src/storage/cleanup.js`, saatda bir): leadlər, avia/avto müraciətləri `DATA_RETENTION_DAYS`
   (default 180) gündən sonra, seçim linkləri 30 gündən sonra, gediş tarixi keçmiş izləmələr və bitmiş sessiyalar silinir.
   Backup-larda silinmiş məlumat backup saxlanma müddəti qədər qalır — bax `docs/OPERATIONS.md`.
+- **B2B müştəri bazası** (`src/clients.js`, `migrations/005_clients_hotel_lists.sql`): ad, telefon, e-poçt (ixtiyari),
+  uşaq yaşları, büdcə, istiqamətlər, qida tərcihi, qeyd və son 20 axtarış. Yalnız sessiyadakı agentlik görür (hər sorğu
+  `agency_id` ilə; başqa agentliyin id-si → 404). Ağ siyahı sahələr, format/uzunluq limitləri, agentlik üzrə maks. 2000
+  müştəri, 30 otel siyahısı × 60 otel; loglarda yalnız id-lər.
+  - **Saxlama müddəti:** kart son fəaliyyətdən (yaradılma, redaktə, axtarış, seçilmiş/link) **365 gün** sonra avtomatik
+    silinir (cleanup işi); əlaqəli qeydlərin öz müddəti var (müraciətlər `DATA_RETENTION_DAYS`, linklər 30, seçilmişlər 90 gün).
+  - **"Unut" düyməsi** (`DELETE /api/b2b/clients/:id`, bir tranzaksiyada): kart silinir; seçilmişlər `Anonim-xxxxxx`
+    qrupuna köçür; seçim linklərində müştəri adı/telefonu/mesajı, müraciətlərdə ad/telefon/qeyd/menecer qeydi silinir.
+    Əlaqə: yeni qeydlərdə `client_id`, köhnələrdə ad (yalnız agentlikdə həmin adda TƏK müştəri varsa) və telefonun son
+    9 rəqəmi. Brauzerdə "Son sorğular" (localStorage) tarixçəsindən də həmin müştəri silinir. Backup-larda məlumat
+    backup müddəti qədər qalır.
+- **Kanal postu** (`public/js/b2b-post.js`): mətn və PNG kart brauzerdə ağ siyahı sahələrindən qurulur — operator adı,
+  net qiymət və operator linki postda olmur (testlə yoxlanılır). Canvas-a mətn `fillText` ilə yazılır.
 
 ## 3. Bilinən məhdudiyyətlər və qalan risklər
 

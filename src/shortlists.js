@@ -114,6 +114,7 @@ function publicItemBase(it) {
   return {
     id: it.id,
     client: it.client,
+    clientId: it.clientId || null,
     offerId: it.offerId,
     query: it.query, // axtarışı təkrarlamaq üçün (öz agentliyinin məlumatı)
     ...it.snapshot,
@@ -137,8 +138,11 @@ async function addToShortlist(body, { account, store, resolveOffers = resolveByS
   const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const offerId = typeof b.offerId === 'string' ? b.offerId : '';
   if (!offerId || offerId.length > 200) throw new InputError('Təklif id-si düzgün deyil');
-  const client = cleanClient(b.client);
+  let client = cleanClient(b.client);
   const query = cleanQuery(b.query);
+  // Müştəri bazasından seçilibsə (clientId) — yalnız öz agentliyinin müştərisi; qrup adı kartdakı ad olur
+  const cRec = await require('./clients').resolveClientRef(account.agencyId, b.clientId);
+  if (cRec) client = cleanClient(cRec.name);
 
   const all = await repo.listForAgency(account.agencyId, LIMITS.perAgency + 1);
   if (all.length >= LIMITS.perAgency) throw new InputError(`Seçilmişlər siyahısı doludur (maks. ${LIMITS.perAgency}) — köhnələri silin`);
@@ -152,6 +156,7 @@ async function addToShortlist(body, { account, store, resolveOffers = resolveByS
     agencyId: account.agencyId,
     userId: account.userId || null,
     client,
+    clientId: cRec ? cRec.id : null,
     offerId: offer.id,
     paxKey: `${parseInt(pax.adults, 10) || 0}|${String(pax.childAges ?? pax.children ?? '').slice(0, 30)}`,
     query,
@@ -162,6 +167,7 @@ async function addToShortlist(body, { account, store, resolveOffers = resolveByS
     checkedAt: now,
     createdAt: now,
   });
+  if (cRec) await require('./clients').touchClient(account.agencyId, cRec.id);
   return { item: publicItem(saved, await pricingFor(account.agencyId)), existed: !!saved.existed };
 }
 
@@ -320,8 +326,14 @@ async function selectionFromShortlist(body, { account, store, selectionStore, re
     }
     return { pax: pax || {}, offers, all };
   };
+  // Müştəri kartı ilə əlaqə: qrupdakı qeydin client_id-si (hələ mövcud və bu agentliyindirsə)
+  const linked = picked.find((x) => x.clientId);
+  let clientId = null;
+  if (linked) {
+    try { clientId = (await require('./clients').resolveClientRef(account.agencyId, linked.clientId)) ? linked.clientId : null; } catch { clientId = null; }
+  }
   return createSelection({
-    client: picked[0].client, message: b.message, markup, query: {}, offerIds: [...byOffer.keys()],
+    client: picked[0].client, message: b.message, markup, query: {}, offerIds: [...byOffer.keys()], clientId,
   }, { account, store: selectionStore, resolveOffers: perItemResolver });
 }
 

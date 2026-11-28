@@ -74,7 +74,10 @@
     get me() { return me; },
     markup, withMarkup, onAuthError, sessionInfo, pricingActive,
     rerun: () => { if (state.data) run(); },
+    refreshHistory: () => renderHistory(),
     client: () => $('#client').value,
+    // Müştəri bazasından seçilmiş müştəri (public/js/b2b-clients.js) — yoxdursa ''
+    clientId: () => $('#client').dataset.clientId || '',
     // Variantı "Müştəriyə təklif" / "Seçim linki" seçiminə əlavə et və istəyə görə həmin pəncərəni aç
     select(id, open) {
       if (!state.data || !state.data.offers.some((o) => o.id === id)) return false;
@@ -141,7 +144,8 @@
       childAges: readChildAges($('#childAges')).join(','),
       maxPrice: $('#maxPrice').value, stars: $('#stars').value, boards: $('#board').value, earlyOnly: $('#earlyOnly').checked ? '1' : '', flat: '1',
       lastMinute: $('#lastMinute').checked ? '1' : '', prepay: $('#prepayNone').checked ? 'none' : '', freeCancel: $('#freeCancel').checked ? '1' : '',
-      districts: msValue(districtMs).join(','), hotels: [$('#dest').dataset.hotel, ...msValue(hotelMs)].filter(Boolean).join(','), attrs: checkedAttrs,
+      // Otel adı ilə seçilmiş otel + çoxseçimli otel filtri; "Siyahı" seçilibsə (public/js/b2b-lists.js) — yalnız həmin otellər
+      districts: msValue(districtMs).join(','), hotels: (() => { const sel = [$('#dest').dataset.hotel, ...msValue(hotelMs)].filter(Boolean); return window.B2BLists ? window.B2BLists.hotelsParam(sel) : sel.join(','); })(), attrs: checkedAttrs,
       seatsOnly: $('#seatsOnly').checked ? '1' : '', noStopSale: $('#noStopSale').checked ? '1' : '', instantOnly: $('#instantOnly').checked ? '1' : '',
     };
     try {
@@ -150,6 +154,7 @@
       state.lastParams = p;
       state.selected.clear();
       saveHistory(p);
+      document.dispatchEvent(new CustomEvent('b2b:search', { detail: { params: p } }));
       const f = state.data.facets || { districts: [], hotels: [] };
       msSetItems(districtMs, f.districts.map((d) => ({ id: d.id, label: d.name, sub: d.destination || '', count: d.count })));
       msSetItems(hotelMs, f.hotels.map((h) => ({ id: h.id, label: `${h.name}${h.stars ? ' ' + h.stars + '*' : ''}`, sub: h.district || '', count: h.count })));
@@ -160,7 +165,7 @@
 
   function saveHistory(p) {
     const h = store.get('b2bHistory', []).filter((x) => !(x.q === p.q && x.checkIn === p.checkIn && x.type === p.type));
-    h.unshift({ ...p, client: $('#client').value, at: Date.now() });
+    h.unshift({ ...p, client: $('#client').value, clientId: $('#client').dataset.clientId || '', at: Date.now() });
     store.set('b2bHistory', h.slice(0, 15));
     renderHistory();
   }
@@ -178,6 +183,8 @@
     $('#nightsTo').value = x.nightsTo || x.nights || '';
     renderChildAges($('#childAges'), x.children, String(x.childAges || '').split(',').filter(Boolean).map(Number));
     $('#client').value = x.client || '';
+    if (x.clientId) $('#client').dataset.clientId = x.clientId; else delete $('#client').dataset.clientId;
+    $('#client').dispatchEvent(new Event('b2b:client-set'));
     if (['package', 'hotel', 'tour'].includes(x.type)) $(`#typeTabs [data-type="${x.type}"]`).click();
     run();
   });
@@ -221,7 +228,7 @@
       const rankOf = Object.fromEntries(ranked.map((o, i) => [o.providerId, i + 1]));
             const order = ranked.map((o, i) => `<span class="rk-step${i === 0 ? ' first' : ''}"><b>${i + 1}.</b> ${esc(o.providerName)}${i ? ` <span class="muted">+${money(withMarkup(o) - withMarkup(ranked[0]), 'AZN')}</span>` : ''}</span>`).join('<span class="rk-arrow" aria-hidden="true">›</span>');
       return `<tr>
-        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span><br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div>
+        <td><b>${esc(g.name)}</b> <span class="stars">${starStr(g.stars)}</span>${g.itemType === 'hotel' ? ` <button type="button" class="fav-btn hl-btn" data-hl="${esc(g.itemId)}" title="${esc(t('hl_add'))}" aria-label="${esc(t('hl_add'))}">☆</button>` : ''}<br><small class="muted">${esc(g.destination.name)}${g.district ? ' · ' + esc(g.district) : ''}${g.rating != null ? ' · ' + esc(ratingText(g)) : ''}</small><div class="badges tight">${attrBadges(g.attrs)}${locationBadge(g.location)}</div>
           ${ranked.length > 1 ? `<div class="rk-order" title="${esc(t('rk_order_t'))}">${order}</div>` : ''}</td>
         ${ops.map((s) => {
           const o = byOp[s.id];
@@ -263,7 +270,7 @@
         <td>${esc(fmtDate(o.checkIn))}${o.flight ? `<br><small class="muted">✈ ${esc(o.flight.out.time)} · ${esc(t('cls_' + o.flight.cls))}</small>` : ''}</td>
         <td class="wrap"><small>${esc(o.tourName || '')}</small></td>
         <td class="num">${esc(o.nights)}</td>
-        <td class="wrap">${esc(o.name)}${o.district ? ` <small class="muted">(${esc(o.district)})</small>` : ''}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}<div class="badges tight">${attrBadges(o.attrs)}</div></td>
+        <td class="wrap">${esc(o.name)}${o.itemType === 'hotel' ? ` <button type="button" class="fav-btn hl-btn" data-hl="${esc(o.itemId)}" title="${esc(t('hl_add'))}" aria-label="${esc(t('hl_add'))}">☆</button>` : ''}${o.district ? ` <small class="muted">(${esc(o.district)})</small>` : ''}${o.earlyBooking ? ' <span class="badge early">ER</span>' : ''}${o.lastMinute ? ' <span class="badge hot">LM</span>' : ''}<div class="badges tight">${attrBadges(o.attrs)}</div></td>
         <td>${esc(o.stars || '')}</td>
         <td>${seatsHtml(o)}</td>
         <td class="wrap"><small>${esc(locationText(o.location) || '—')}</small>${o.rating != null ? `<br><small class="muted">${esc(ratingText(o))}</small>` : ''}</td>
@@ -368,7 +375,7 @@
         // Server qiymətləri öz axtarışından yenidən götürür: yalnız axtarış parametrləri və təklif id-ləri göndərilir.
         // Agentlik/menecer adı sessiyadan gəlir.
         const r = await postJson('/api/selections', {
-          client: $('#client').value, message: $('#shareMsg').value, markup: markup(),
+          client: $('#client').value, clientId: $('#client').dataset.clientId || undefined, message: $('#shareMsg').value, markup: markup(),
           query: state.lastParams, offerIds: list.map((o) => o.id),
         });
         if (!/^\/s\/[A-Za-z0-9_-]{12}$/.test(r.url || '')) throw new Error('Gözlənilməz cavab');

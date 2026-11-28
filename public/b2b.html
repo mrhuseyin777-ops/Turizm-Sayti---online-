@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/css/b2b-crm.css">
   <link rel="stylesheet" href="/css/brand.css">
   <link rel="stylesheet" href="/css/b2b-widget.css">
+  <link rel="stylesheet" href="/css/b2b-clients.css">
 </head>
 <body>
   <header class="topbar">
@@ -90,7 +91,7 @@
         <button type="button" class="tab" data-type="hotel">Yalnız otel</button>
         <button type="button" class="tab" data-type="tour">Ekskursiya turu</button>
         <span class="sep"></span>
-        <input id="client" placeholder="Müştəri adı / sorğu №" style="height:36px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:var(--surface)">
+        <span class="cl-pick" id="clientPick"><input id="client" placeholder="Müştəri adı / sorğu №" data-i18n-ph="cl_picker_ph" autocomplete="off" maxlength="80" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="clientDrop" aria-label="Müştəri"></span>
       </div>
       <div class="fields b2b-fields">
         <div class="field"><label>İstiqamət / otel</label><input id="dest" required placeholder="Antalya, Kemer, Dubay..."></div>
@@ -101,6 +102,7 @@
         <div class="field"><label>Böyük</label><input id="adults" type="number" min="1" max="8" value="2"></div>
         <div class="field"><label>Uşaq</label><input id="children" type="number" min="0" max="6" value="0"></div>
         <div class="field"><label>Büdcə maks.</label><input id="maxPrice" type="number" min="0" step="50" placeholder="—"></div>
+        <div class="field"><label for="hotelList" data-i18n="hl_field">Siyahı</label><select id="hotelList"><option value="" data-i18n="hl_none">— hamısı —</option></select></div>
         <button class="btn primary">Axtar</button>
       </div>
       <div class="child-ages" id="childAges" hidden></div>
@@ -123,6 +125,9 @@
       <button type="button" class="btn secondary sm" id="shareBtn" data-i18n="b2b_share"></button>
       <button type="button" class="btn sm" id="quoteBtn">Müştəriyə təklif (<span id="selCount">0</span>)</button>
       <button type="button" class="btn secondary sm sl-open" id="slBtn"><span data-i18n="sl_btn">♥ Seçilmişlər</span> (<span id="slCount">0</span>)</button>
+      <button type="button" class="btn secondary sm" id="clBtn" data-i18n="cl_btn">👤 Müştərilər</button>
+      <button type="button" class="btn secondary sm" id="hlBtn" data-i18n="hl_btn">☆ Siyahılar</button>
+      <button type="button" class="btn secondary sm" id="postBtn" data-i18n="po_btn">📣 Post hazırla</button>
     </div>
     <div class="b2b-bar b2b-filters" id="advFilters">
       <div id="districtMs"></div>
@@ -154,6 +159,10 @@
     <div class="demo-note">DEMO: qiymətlər nümunədir. Real inteqrasiyadan sonra operatorların canlı qiymətləri və rezervasiya linkləri göstəriləcək.</div>
   </div>
 
+  <div class="modal-bg" id="clModal"><div class="modal cl-modal" id="clBody" role="dialog" aria-modal="true" aria-labelledby="clTitle"></div></div>
+  <div class="modal-bg" id="hlModal"><div class="modal cl-modal" id="hlBody" role="dialog" aria-modal="true" aria-labelledby="hlTitle"></div></div>
+  <div class="modal-bg" id="postModal"><div class="modal po-modal" id="postBody" role="dialog" aria-modal="true" aria-labelledby="poTitle"></div></div>
+  <div class="hl-menu" id="hlMenu" hidden role="menu"></div>
   <div class="modal-bg" id="slModal"><div class="modal sl-modal" id="slBody" role="dialog" aria-modal="true" aria-labelledby="slTitle"></div></div>
   <div class="modal-bg" id="leadModal"><div class="modal crm-modal" id="leadModalBody" role="dialog" aria-modal="true" aria-labelledby="leadModalTitle"></div></div>
   <div class="modal-bg" id="modal"><div class="modal" id="modalBody" style="max-width:640px"></div></div>
@@ -169,5 +178,9 @@
   <script src="/js/b2b-hotel.js"></script>
   <script src="/js/brand-view.js"></script>
   <script src="/js/b2b-brand.js"></script>
+  <script src="/js/hotel-art.js"></script>
+  <script src="/js/b2b-clients.js"></script>
+  <script src="/js/b2b-lists.js"></script>
+  <script src="/js/b2b-post.js"></script>
 </body>
 </html>

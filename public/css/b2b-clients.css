@@ -1,0 +1,90 @@
+/* B2B: müştəri bazası (b2b-clients.js), otel siyahıları (b2b-lists.js), kanal postu (b2b-post.js) */
+
+/* Axtarış formasında "Siyahı" sahəsi üçün əlavə sütun */
+.fields.b2b-fields { grid-template-columns: 1.7fr 1.2fr 1.2fr .6fr .6fr .6fr .6fr .8fr 1fr auto; }
+@media (max-width: 980px) { .fields.b2b-fields { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .fields.b2b-fields { grid-template-columns: 1fr; } }
+#hotelList { width: 100%; }
+#hotelList.hl-active { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); font-weight: 600; }
+
+/* ---------------------------------------------------------------- Müştəri seçicisi */
+.cl-pick { position: relative; display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.cl-pick #client { height: 36px; width: 260px; max-width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; background: var(--surface); color: var(--text); }
+.cl-pick #client.cl-linked { border-color: var(--good); box-shadow: 0 0 0 2px var(--good-soft); font-weight: 600; }
+.cl-card-btn { height: 36px; min-width: 36px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; font-size: 16px; }
+.cl-card-btn:hover { border-color: var(--primary); }
+.cl-drop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; width: max(100%, 320px); max-width: calc(100vw - 32px); max-height: 320px; overflow: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 4px; }
+.cl-opt { padding: 8px 10px; border-radius: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.cl-opt:hover, .cl-opt.active { background: var(--primary-soft); }
+.cl-opt-new { color: var(--primary); font-weight: 600; }
+.cl-opt-all { border-top: 1px dashed var(--border); margin-top: 2px; }
+@media (max-width: 760px) {
+  .cl-pick { flex: 1 1 100%; }
+  .cl-pick #client { width: auto; flex: 1; }
+}
+
+/* ---------------------------------------------------------------- Müştərilər / siyahılar pəncərəsi */
+.modal.cl-modal { max-width: 820px; }
+.cl-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.cl-toolbar input { margin: 0; flex: 1; min-width: 0; }
+.cl-list, .cl-hlist, .hl-hotels { list-style: none; margin: 0; padding: 0; }
+.cl-row { width: 100%; display: flex; justify-content: space-between; gap: 10px; align-items: center; text-align: left; border: 0; border-top: 1px dashed var(--border);
+  background: transparent; padding: 10px 6px; cursor: pointer; color: var(--text); border-radius: 8px; overflow-wrap: anywhere; }
+.cl-row:hover, .cl-row:focus-visible { background: var(--surface-2); outline: none; }
+.cl-form .cl-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 12px; }
+.cl-form .cl-wide { grid-column: 1 / -1; }
+.cl-form label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+.cl-form select { width: 100%; height: 42px; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; margin-bottom: 10px; background: var(--surface); color: var(--text); }
+.cl-form textarea { color: var(--text); resize: vertical; }
+.btn.danger, .btn.secondary.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+.cl-hist { border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+.cl-hist summary { cursor: pointer; }
+.cl-hlist li, .hl-hotels li { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px dashed var(--border); overflow-wrap: anywhere; }
+.cl-hlist li:first-child, .hl-hotels li:first-child { border-top: 0; }
+.cl-slg { margin-top: 6px; }
+.linklike { border: 0; background: none; padding: 0; color: var(--primary); cursor: pointer; text-align: left; font: inherit; }
+.linklike:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .cl-form .cl-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 420px) {
+  .cl-form .cl-grid { grid-template-columns: 1fr; }
+  .cl-toolbar { flex-wrap: wrap; }
+}
+
+/* ---------------------------------------------------------------- ☆ otel siyahısı menyusu */
+.hl-btn.on { color: #d97706; }
+.btn.hl-btn.on { border-color: #d97706; }
+.hl-menu { position: fixed; z-index: 60; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; }
+.hl-menu-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hl-menu-hotel { font-size: 13px; margin: 2px 0 8px; overflow-wrap: anywhere; }
+.hl-menu-lists { display: flex; flex-direction: column; gap: 2px; max-height: 220px; overflow: auto; }
+.hl-menu-item { display: flex; gap: 8px; align-items: center; text-align: left; border: 0; background: transparent; color: var(--text); padding: 7px 8px; border-radius: 8px; cursor: pointer; font: inherit; }
+.hl-menu-item small { margin-left: auto; }
+.hl-menu-item:hover { background: var(--surface-2); }
+.hl-menu-item.on span { color: #d97706; }
+.hl-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.hl-new { display: flex; gap: 6px; margin-top: 8px; }
+.hl-new input, .hl-rename input { flex: 1; min-width: 0; height: 36px; border: 1px solid var(--border); border-radius: 10px; padding: 0 10px; margin: 0; background: var(--surface); color: var(--text); }
+.hl-rename { display: flex; gap: 6px; flex: 1 1 260px; min-width: 0; }
+.hl-group .sl-group-head { align-items: center; }
+.hl-hotels { margin-top: 8px; }
+
+/* ---------------------------------------------------------------- 📣 Post hazırla */
+.modal.po-modal { max-width: 1040px; }
+.po-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 8px; }
+.po-controls select, .po-controls input { height: 36px; border: 1px solid var(--border); border-radius: 8px; padding: 0 8px; background: var(--surface); color: var(--text); margin: 0; }
+.po-controls input { width: 190px; }
+.po-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 18px; }
+.po-grid h4 { margin: 10px 0 6px; }
+.po-list { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+.po-item { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.po-item input { width: auto; margin: 0; }
+.po-item.on { background: var(--primary-soft); }
+.po-item-main { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.po-price { white-space: nowrap; color: var(--primary); }
+.po-modal textarea.quote { min-height: 220px; font-size: 13px; }
+.po-canvas { width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 14px; border: 1px solid var(--border); display: block; background: var(--surface-2); }
+@media (max-width: 860px) { .po-grid { grid-template-columns: 1fr; } .po-canvas { max-width: 420px; margin: 0 auto; } }
+@media (max-width: 420px) { .po-controls input { width: 100%; } .po-controls label { flex: 1 1 100%; } }

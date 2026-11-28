@@ -5,7 +5,7 @@
 //  - agencyBrand:   JSON fayl (agency-brand.json) + loqo faylları (<TURTAP_DATA_DIR>/logos/<publicId>.img)
 //  - agencyMarkup:  JSON fayl (agency-markup.json) — komissiya qaydaları
 //  - widgets:       JSON fayl (<TURTAP_DATA_DIR>/agency-widget.json) — vidjet və marketplace ayarları
-//  - sessions, leads, selections, shortlists, flightRequests, carRequests: yalnız proses yaddaşında
+//  - sessions, leads, selections, shortlists, clients, hotelLists, flightRequests, carRequests: yalnız proses yaddaşında
 //    (yenidən başlamada itir, bir neçə server nüsxəsi arasında paylaşılmır).
 // Interfeys: src/storage/index.js. Bütün metodlar async-dir (PostgreSQL ilə eyni).
 const fs = require('fs');
@@ -13,6 +13,7 @@ const path = require('path');
 const crypto = require('crypto');
 const env = require('../env');
 const { store: defaultAccounts } = require('../auth/store');
+const { createMemoryCrm } = require('./crm');
 
 const ms = (d) => (d instanceof Date ? d.getTime() : Number(d));
 
@@ -492,13 +493,18 @@ function createFileAlertRepo(dir = env.dataDir) {
 }
 
 function createRepos({ accounts = defaultAccounts, dataDir = env.dataDir } = {}) {
+  const leads = createLeadRepo();
+  const selections = createSelectionRepo();
+  const shortlists = createShortlistRepo();
   return {
     kind: 'memory',
     accounts,
     sessions: createSessionRepo(),
-    leads: createLeadRepo(),
-    selections: createSelectionRepo(),
-    shortlists: createShortlistRepo(),
+    leads,
+    selections,
+    shortlists,
+    // Müştəri bazası və otel siyahıları (src/storage/crm.js)
+    ...createMemoryCrm({ shortlists, selections, leads }),
     flightAlerts: createFileAlertRepo(dataDir),
     agencySettings: createFileSettingsRepo(dataDir),
     agencyBrand: createFileBrandRepo(dataDir),
